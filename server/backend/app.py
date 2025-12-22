@@ -122,7 +122,8 @@ def hash_reset_token(raw: str) -> str:
   return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def create_reset_request(conn, user_id: int, ttl_minutes: int = 30) -> str:
+def create_reset_request(conn, user_id: int, ttl_minutes: int = 60) -> str:
+  # Increased token expiration time to 60 minutes
   token = secrets.token_urlsafe(32)
   token_hash = hash_reset_token(token)
   expires_at = datetime.utcnow() + timedelta(minutes=ttl_minutes)
@@ -133,6 +134,7 @@ def create_reset_request(conn, user_id: int, ttl_minutes: int = 30) -> str:
   )
   conn.commit()
   cur.close()
+  print(f"[DEBUG] Reset token created: {token}, Expires at: {expires_at}")  # Debug logging
   return token
 
 
@@ -288,56 +290,71 @@ def forgot_password():
 
 @app.post("/api/reset-password")
 def reset_password():
-  data = request.get_json(silent=True) or {}
-  token = (data.get("token") or "").strip()
-  password = data.get("password") or ""
-  confirm = data.get("confirmPassword") or ""
+    data = request.get_json(silent=True) or {}
+    token = (data.get("token") or "").strip()
+    password = data.get("password") or ""
+    confirm = data.get("confirmPassword") or ""
 
-  if not token:
-    return jsonify({"message": "Reset token is required."}), 400
-  if password != confirm:
-    return jsonify({"message": "Passwords do not match."}), 400
-  if not validate_password(password):
-    return jsonify({"message": "Password must be 8+ chars and include upper, lower, number, and special."}), 400
+    if not token:
+        return jsonify({"message": "Reset token is required."}), 400
+    if password != confirm:
+        return jsonify({"message": "Passwords do not match."}), 400
+    if not validate_password(password):
+        return jsonify({"message": "Password must be 8+ chars and include upper, lower, number, and special."}), 400
 
-  token_hash = hash_reset_token(token)
-  conn = get_connection()
-  try:
-    cur = conn.cursor()
-    cur.execute(
-      """
-      SELECT pr.id, pr.user_id, u.provider
-      FROM password_resets pr
-      JOIN users u ON u.id = pr.user_id
-      WHERE pr.token_hash=%s AND pr.used=0 AND pr.expires_at > NOW()
-      LIMIT 1
-      """,
-      (token_hash,),
-    )
-    row = cur.fetchone()
-    if not row:
-      cur.close()
-      return jsonify({"message": "Invalid or expired reset link."}), 400
+    token_hash = hash_reset_token(token)
+    print(f"[DEBUG] Received token: {token}")  # Debug logging
+    print(f"[DEBUG] Hashed token: {token_hash}")  # Debug logging
 
-    reset_id, user_id, provider = row
-    if provider != "password":
-      cur.close()
-      return jsonify({"message": "Invalid or expired reset link."}), 400
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT pr.id, pr.user_id, u.provider
+            FROM password_resets pr
+            JOIN users u ON u.id = pr.user_id
+            WHERE pr.token_hash=%s AND pr.used=0 AND pr.expires_at > %s
+            LIMIT 1
+            """,
+            (token_hash, datetime.utcnow()),
+        )
+        row = cur.fetchone()
+        # Ensure we consume/close the cursor for the SELECT before starting updates
+        cur.close()
+        
+        print(f"[DEBUG] Token validation query result: {row}")  # Debug logging
+        
+        if not row:
+            return jsonify({"message": "Invalid or expired reset link."}), 400
 
-    pw_hash = hash_password(password)
+        reset_id, user_id, provider = row
+        if provider != "password":
+            return jsonify({"message": "Invalid or expired reset link."}), 400
 
-    conn.start_transaction()
-    cur.execute("UPDATE users SET password_hash=%s WHERE id=%s", (pw_hash, user_id))
-    cur.execute("UPDATE password_resets SET used=1 WHERE id=%s", (reset_id,))
-    conn.commit()
-    cur.close()
+        pw_hash = hash_password(password)
 
-    return jsonify({"message": "Password updated successfully."}), 200
-  except Exception:
-    conn.rollback()
-    return jsonify({"message": "Unable to reset password right now."}), 500
-  finally:
-    conn.close()
+        # Start a new cursor for transaction updates
+        # Implicit transaction is already active due to previous queries or default behavior
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET password_hash=%s WHERE id=%s", (pw_hash, user_id))
+        cur.execute("UPDATE password_resets SET used=1 WHERE id=%s", (reset_id,))
+        conn.commit()
+        cur.close()
+
+        return jsonify({"message": "Password updated successfully."}), 200
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] Exception during reset: {e}")  # Debug logging
+        # Log to file to help USER see the error
+        try:
+            with open("reset_error.log", "w") as f:
+                f.write(f"Error: {str(e)}")
+        except:
+            pass
+        return jsonify({"message": "Unable to reset password right now."}), 500
+    finally:
+        conn.close()
 
 
 @app.get("/health")
