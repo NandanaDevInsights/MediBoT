@@ -1,89 +1,81 @@
 <<<<<<< HEAD
-# 🌱 EcoGrow – Greenhouse Environment Monitoring System
+MediBot – Smart Clinical Laboratory Automation System
 
-EcoGrow is an IoT-based greenhouse monitoring system that uses an ESP32 and sensors to measure temperature, humidity, and CO₂ levels in real time. An AI model analyzes these readings to check whether the environment is safe for plant growth or if it may lead to harmful bacteria or fungal development. The system provides alerts when conditions become risky and also stores historical data to help farmers understand environmental changes over time.
+MediBot is a smart, automated laboratory management system designed to simplify the diagnostic testing process for patients and laboratories. Using WhatsApp, OCR technology, and intelligent scheduling, MediBot allows patients to submit prescriptions digitally, book lab tests seamlessly, and receive reports online. The system improves efficiency, reduces manual workload, and ensures a smooth, user-friendly experience for both patients and lab staff.
 
-## ⭐ What EcoGrow Does
-- Monitors temperature, humidity, and CO₂ inside a greenhouse  
-- Uses AI to detect unsafe environmental conditions  
-- Predicts chances of bacteria or fungus growth  
-- Sends alerts when conditions become risky  
-- Shows historical readings and trend graphs  
-- Helps farmers maintain a healthy environment for their crops  
+⭐ What MediBot Does
 
-## ⭐ How EcoGrow Works
-1. **ESP32 Sensor Module**  
-   The ESP32 collects temperature, humidity, and CO₂ data using connected sensors.
+Allows patients to submit prescription images via WhatsApp
 
-2. **Data Transfer to Backend**  
-   Sensor readings are sent to the backend server for processing.
+Extracts test details automatically using OCR
 
-3. **AI Analysis**  
-   An AI model checks whether conditions are ideal or may lead to bacterial/fungal growth.
+Identifies required lab tests from prescriptions
 
-4. **Alerts & Recommendations**  
-   The system notifies the user when environmental risk increases.
+Generates secure online booking links
 
-5. **History & Trends**  
-   All readings are stored and displayed as easy-to-understand historical data.
+Recommends optimal appointment slots using intelligent analysis
 
-## ⭐ Main Modules
-- Environmental Data Collection  
-- Data Transmission to Backend  
-- AI-Based Risk Prediction  
-- Ideal Condition Comparison  
-- Alerts & Recommendations  
-- History & Trend Analysis  
-- Multi-Zone Monitoring (Optional)
-=======
-🌱 EcoGrow – Greenhouse Environment Monitoring System
+Sends automated reminders and notifications
 
-EcoGrow is an IoT-based greenhouse monitoring system that uses an ESP32 and sensors to measure temperature, humidity, and CO₂ levels in real time. An AI model checks whether these conditions are safe for plant growth or if they could lead to harmful bacterial or fungal development. The system provides alerts when the environment becomes risky and also shows a history of past readings to help farmers understand how greenhouse conditions change over time.
+Delivers digital lab reports via WhatsApp and email
 
-⭐ What EcoGrow Does
+Provides a patient portal to access past reports
 
-Monitors temperature, humidity, and CO₂ in a greenhouse
+⭐ How MediBot Works
 
-Uses an AI model to detect unsafe conditions
+Prescription Submission via WhatsApp
+Patients send their prescription image through WhatsApp.
 
-Predicts chances of bacteria or fungus growth
+Backend Integration Using Twilio
+The backend receives prescription images using the Twilio API.
 
-Sends alerts when risk is high
+OCR Processing & Test Identification
+OCR (Tesseract or Google Vision) extracts text and identifies required tests.
 
-Shows historical data and trends for better understanding
+Booking Link & Frontend Interface
+A secure booking link is generated and sent to the patient on WhatsApp.
 
-Helps farmers maintain a healthy environment for their crops
+Email-Based OTP Verification
+The patient verifies their email using an OTP for secure access.
 
-⭐ How EcoGrow Works
+Intelligent Slot Recommendation
+The system analyzes lab capacity, test duration, and peak hours to recommend the best appointment slots.
 
-ESP32 Sensor Module
-The ESP32 collects temperature, humidity, and CO₂ data using connected sensors.
+Automated Notifications
+Appointment confirmations and reminders are sent automatically.
 
-Data Transfer to Backend
-The ESP32 sends all readings to the backend for processing.
+Result Upload & Report Generation
+Lab staff upload test results, abnormalities are highlighted, and a downloadable report is generated.
 
-AI Analysis
-The backend uses an AI model to check if current conditions are safe or may lead to bacteria/fungal growth.
+Patient Report Delivery & Portal Access
+Final reports are sent via WhatsApp and email, and patients can view or download past reports through the portal.
 
-Alerts & Recommendations
-The system warns the user when conditions become unsafe.
+⭐ Technologies Used
 
-History & Trends
-All readings are stored so the user can view past environmental patterns.
+Frontend: React JS
+
+Backend: Python
+
+Database: MySQL
+
+Communication: Twilio (WhatsApp API)
+
+Text Extraction: OCR (Tesseract / Google Vision)
 
 ⭐ Main Modules
 
-Environmental Data Collection
+Prescription Submission
 
-Data Transmission to Backend
+OCR Processing & Test Identification
 
-AI-Based Risk Prediction
+Secure Booking Link Generation
 
-Ideal Condition Comparison
+Email-Based OTP Verification
 
-Alerts and Recommendations
+Intelligent Slot Recommendation
 
-History & Trend Analysis
+Automated Notifications
 
-Multi-Zone Monitoring (optional)
->>>>>>> e03f96ae29b9689f2a56571804d3ff912347902e
+Result Upload & Report Generation
+
+Patient Portal & Report History
