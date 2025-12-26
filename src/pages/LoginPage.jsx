@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { handleLogin, startGoogleOAuth } from '../services/api'
 import { validateUserInput } from '../utils/validation'
+import './LoginPage.css' // Import the new stylesheet for updated colors
 
 const InputField = ({
   label,
@@ -93,14 +94,14 @@ const LoginPage = () => {
   return (
     <form className="auth-form" onSubmit={onSubmit} noValidate>
       <div className="form-heading">
-        <h1>Login.</h1>
+        <h1>Login to MediBot</h1>
       </div>
 
       <InputField
         label="Email Address"
         name="email"
         type="email"
-        placeholder="farmer@ecogrow.com"
+        placeholder="labuser@medibot.com"
         value={form.email}
         onChange={onInput}
         error={errors.email}
@@ -108,7 +109,7 @@ const LoginPage = () => {
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
               d="M1 3.22222L8.25 7.83333L15.5 3.22222M2.8 1H14.2C15.1941 1 16 1.79218 16 2.76471V11.2353C16 12.2078 15.1941 13 14.2 13H2.8C1.80589 13 1 12.2078 1 11.2353V2.76471C1 1.79218 1.80589 1 2.8 1Z"
-              stroke="#9BBF3C"
+              stroke="#4da3ff"
               strokeWidth="1.2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -128,10 +129,10 @@ const LoginPage = () => {
           error={errors.password}
           icon={
             <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="7" width="12" height="8" rx="1.6" stroke="#9BBF3C" strokeWidth="1.2" />
+              <rect x="3" y="7" width="12" height="8" rx="1.6" stroke="#4da3ff" strokeWidth="1.2" />
               <path
                 d="M6 7V5C6 2.79086 7.79086 1 10 1C12.2091 1 14 2.79086 14 5V7"
-                stroke="#9BBF3C"
+                stroke="#4da3ff"
                 strokeWidth="1.2"
                 strokeLinecap="round"
               />

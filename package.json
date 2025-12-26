@@ -1,5 +1,5 @@
 {
-  "name": "ecogrow",
+  "name": "medibot",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -22,7 +22,8 @@
     "mysql2": "^3.11.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.1.1"
+    "react-router-dom": "^7.1.1",
+    "recharts": "^3.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

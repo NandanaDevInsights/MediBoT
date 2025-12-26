@@ -59,14 +59,14 @@ const SignupPage = () => {
     <form className="auth-form" onSubmit={onSubmit} noValidate>
       <div className="form-heading">
         <h1>Create Account</h1>
-        <p className="sub-text">Sign up with your work email to access EcoGrow.</p>
+        <p className="sub-text">Sign up with your work email to access MediBot.</p>
       </div>
 
       <InputField
         label="Email Address"
         name="email"
         type="email"
-        placeholder="farmer@ecogrow.com"
+        placeholder="user@medibot.com"
         value={form.email}
         onChange={onInput}
         error={errors.email}

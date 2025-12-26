@@ -4,8 +4,8 @@ const LandingPage = () => {
   return (
     <div className="welcome-shell">
       <div className="welcome-card">
-        <h1>Welcome to EcoGrow</h1>
-        <p>Your account is ready. Monitor and grow with confidence.</p>
+        <h1>Welcome to MediBot</h1>
+        <p>Your account is ready. Monitor and manage with confidence.</p>
       </div>
     </div>
   )

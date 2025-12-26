@@ -1,5 +1,5 @@
 """
-Flask signup service for EcoGrow.
+Flask signup service for MediBot.
 
 Security highlights:
 - Passwords arrive in plaintext over HTTPS and are hashed ONLY here with bcrypt.
@@ -51,7 +51,7 @@ SMTP_HOST = os.environ.get("SMTP_HOST")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
 SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASS = os.environ.get("SMTP_PASS")
-SMTP_FROM = os.environ.get("SMTP_FROM", "no-reply@ecogrow.local")
+SMTP_FROM = os.environ.get("SMTP_FROM", "no-reply@medibot.local")
 SMTP_USE_TLS = bool(int(os.environ.get("SMTP_USE_TLS", "0")))
 
 
@@ -143,7 +143,7 @@ def send_reset_email(to_email: str, reset_link: str):
     raise RuntimeError("SMTP is not configured (SMTP_HOST/USER/PASS)")
 
   msg = EmailMessage()
-  msg["Subject"] = "Reset your EcoGrow password"
+  msg["Subject"] = "Reset your MediBot password"
   msg["From"] = SMTP_FROM
   msg["To"] = to_email
   msg.set_content(f"Click the link to reset your password: {reset_link}\nIf you did not request this, you can ignore it.")

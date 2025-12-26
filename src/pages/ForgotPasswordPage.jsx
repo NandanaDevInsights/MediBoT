@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { requestPasswordReset } from '../services/api'
 import { validateUserInput } from '../utils/validation'
+import './ForgotPasswordPage.css' // Import the new stylesheet for updated colors
 
+// Updated content for laboratory management system
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('')
   const [errors, setErrors] = useState({})
@@ -32,7 +34,7 @@ const ForgotPasswordPage = () => {
     <form className="auth-form" onSubmit={onSubmit} noValidate>
       <div className="form-heading">
         <h1>Forgot Password</h1>
-        <p className="sub-text">Enter your account email to receive reset instructions.</p>
+        <p className="sub-text">Enter your account email to receive reset instructions for MediBot.</p>
       </div>
 
       <div className="form-field">
@@ -41,7 +43,7 @@ const ForgotPasswordPage = () => {
           id="email"
           name="email"
           type="email"
-          placeholder="farmer@ecogrow.com"
+          placeholder="labuser@medibot.com"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value)

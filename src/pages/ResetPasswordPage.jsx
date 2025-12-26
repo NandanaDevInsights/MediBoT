@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../services/api'
 import { validateUserInput } from '../utils/validation'
+import './ResetPasswordPage.css' // Import the new stylesheet for updated colors
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate()
@@ -53,7 +54,7 @@ const ResetPasswordPage = () => {
     <form className="auth-form" onSubmit={onSubmit} noValidate>
       <div className="form-heading">
         <h1>Set a new password</h1>
-        <p className="sub-text">Enter a strong password you will remember.</p>
+        <p className="sub-text">Enter a strong password for your MediBot account.</p>
       </div>
 
       <div className="form-field">
