@@ -1,36 +1,71 @@
-# 🌱 MediBot – Healthcare Management System
+<<<<<<< HEAD MediBot – Smart Clinical Laboratory Automation System
 
-MediBot is an IoT-based system that uses sensors to monitor environmental conditions. An AI model analyzes these readings to check whether the environment is safe or if it may lead to risks. The system provides alerts when conditions become risky and also stores historical data to help users understand environmental changes over time.
+MediBot is a smart, automated laboratory management system designed to simplify the diagnostic testing process for patients and laboratories. Using WhatsApp, OCR technology, and intelligent scheduling, MediBot allows patients to submit prescriptions digitally, book lab tests seamlessly, and receive reports online. The system improves efficiency, reduces manual workload, and ensures a smooth, user-friendly experience for both patients and lab staff.
 
-## ⭐ What MediBot Does
-- Monitors environmental conditions
-- Uses AI to detect unsafe conditions
-- Predicts potential risks
-- Sends alerts when conditions become risky
-- Shows historical readings and trend graphs
-- Helps users maintain a healthy environment
+⭐ What MediBot Does
 
-## ⭐ How MediBot Works
-1. **Sensor Module**  
-   The module collects data using connected sensors.
+Allows patients to submit prescription images via WhatsApp
 
-2. **Data Transfer to Backend**  
-   Sensor readings are sent to the backend server for processing.
+Extracts test details automatically using OCR
 
-3. **AI Analysis**  
-   An AI model checks whether conditions are ideal or detrimental.
+Identifies required lab tests from prescriptions
 
-4. **Alerts & Recommendations**  
-   The system notifies the user when risk increases.
+Generates secure online booking links
 
-5. **History & Trends**  
-   All readings are stored and displayed as easy-to-understand historical data.
+Recommends optimal appointment slots using intelligent analysis
 
-## ⭐ Main Modules
-- Environmental Data Collection  
-- Data Transmission to Backend  
-- AI-Based Risk Prediction  
-- Ideal Condition Comparison  
-- Alerts & Recommendations  
-- History & Trend Analysis  
-- Multi-Zone Monitoring (Optional)
+Sends automated reminders and notifications
+
+Delivers digital lab reports via WhatsApp and email
+
+Provides a patient portal to access past reports
+
+⭐ How MediBot Works
+
+Prescription Submission via WhatsApp Patients send their prescription image through WhatsApp.
+
+Backend Integration Using Twilio The backend receives prescription images using the Twilio API.
+
+OCR Processing & Test Identification OCR (Tesseract or Google Vision) extracts text and identifies required tests.
+
+Booking Link & Frontend Interface A secure booking link is generated and sent to the patient on WhatsApp.
+
+Email-Based OTP Verification The patient verifies their email using an OTP for secure access.
+
+Intelligent Slot Recommendation The system analyzes lab capacity, test duration, and peak hours to recommend the best appointment slots.
+
+Automated Notifications Appointment confirmations and reminders are sent automatically.
+
+Result Upload & Report Generation Lab staff upload test results, abnormalities are highlighted, and a downloadable report is generated.
+
+Patient Report Delivery & Portal Access Final reports are sent via WhatsApp and email, and patients can view or download past reports through the portal.
+
+⭐ Technologies Used
+
+Frontend: React JS
+
+Backend: Python
+
+Database: MySQL
+
+Communication: Twilio (WhatsApp API)
+
+Text Extraction: OCR (Tesseract / Google Vision)
+
+⭐ Main Modules
+
+Prescription Submission
+
+OCR Processing & Test Identification
+
+Secure Booking Link Generation
+
+Email-Based OTP Verification
+
+Intelligent Slot Recommendation
+
+Automated Notifications
+
+Result Upload & Report Generation
+
+Patient Portal & Report History

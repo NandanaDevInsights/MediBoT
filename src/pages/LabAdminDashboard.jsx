@@ -41,6 +41,16 @@ const LabAdminDashboard = () => {
         department: 'Pathology & Diagnostics'
     });
 
+    const [labDetails, setLabDetails] = useState({
+        name: 'MediBot Labs - Central Branch',
+        logo: null,
+        address: '123 Healthcare Ave, Springfield, IL',
+        contact: '+1 (555) 123-4567',
+        license: 'LAB-99887766'
+    });
+    const [isEditingLab, setIsEditingLab] = useState(false);
+    const [tempLabDetails, setTempLabDetails] = useState(labDetails);
+
     const handleLogout = () => {
         navigate('/');
     };
@@ -130,7 +140,16 @@ const LabAdminDashboard = () => {
     const [reportForm, setReportForm] = useState({ patientName: '', testType: '', file: null });
 
     // Slot Logic
+    const [slotCapacity, setSlotCapacity] = useState(5);
     const timeSlots = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'];
+
+    const getSlotBookings = (timeSlot) => {
+        const dateToCheck = filterDate || '2025-05-12';
+        return bookings.filter(b => {
+            const bookingTime24 = b.time.split(' ')[0];
+            return bookingTime24 === timeSlot && b.date === dateToCheck && b.status !== 'Cancelled';
+        });
+    };
 
     const getSlotStatus = (timeSlot) => {
         // Simple logic: Check if any booking matches this time AND matches the currently filtered date
@@ -469,39 +488,92 @@ const LabAdminDashboard = () => {
 
                 {/* Time Slot Availability Visualizer */}
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                    <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        📅 Slot Availability <span style={{ fontSize: '0.8rem', fontWeight: 400, color: '#64748b' }}>for {filterDate || 'Today'}</span>
-                    </h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            📅 Slot Availability <span style={{ fontSize: '0.8rem', fontWeight: 400, color: '#64748b' }}>for {filterDate || 'Today'}</span>
+                        </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Seats per Slot:</label>
+                            <input
+                                type="number"
+                                min="1" max="20"
+                                value={slotCapacity}
+                                onChange={(e) => setSlotCapacity(parseInt(e.target.value) || 1)}
+                                style={{ width: '60px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
                         {timeSlots.map(time => {
-                            const status = getSlotStatus(time);
+                            const slotBookings = getSlotBookings(time);
+                            const bookedCount = slotBookings.length;
+                            const isFull = bookedCount >= slotCapacity;
+
                             return (
                                 <div key={time} style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: '12px 8px',
+                                    border: '1px solid #e2e8f0',
                                     borderRadius: '12px',
-                                    background: status === 'booked' ? '#fee2e2' : '#dcfce7',
-                                    border: `1px solid ${status === 'booked' ? '#fca5a5' : '#86efac'}`,
-                                    color: status === 'booked' ? '#991b1b' : '#166534',
-                                    fontWeight: 600,
-                                    fontSize: '0.9rem',
-                                    transition: 'all 0.2s',
-                                    cursor: 'default'
+                                    padding: '12px',
+                                    background: '#f8fafc'
                                 }}>
-                                    <span>{time}</span>
-                                    <span style={{ fontSize: '0.7rem', marginTop: '4px', textTransform: 'uppercase' }}>
-                                        {status === 'booked' ? 'Booked' : 'Open'}
-                                    </span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
+                                        <span>{time}</span>
+                                        <span style={{ fontSize: '0.8rem', color: isFull ? '#ef4444' : '#15803d' }}>{bookedCount}/{slotCapacity}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                        {[...Array(slotCapacity)].map((_, i) => {
+                                            const isBooked = i < bookedCount;
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    onClick={() => {
+                                                        if (isBooked) {
+                                                            // Cancel the booking corresponding to this seat
+                                                            const bookingToCancel = slotBookings[i];
+                                                            if (bookingToCancel && window.confirm('Cancel this booking?')) {
+                                                                handleStatusUpdate(bookingToCancel.id, 'Cancelled');
+                                                            }
+                                                        } else {
+                                                            // Book this seat
+                                                            const newBooking = {
+                                                                id: `B${Math.floor(Math.random() * 1000 + 2000)}`,
+                                                                patient: 'Walk-in Patient',
+                                                                test: 'General Checkup',
+                                                                date: filterDate || '2025-05-12',
+                                                                status: 'Confirmed',
+                                                                time: `${time} ${parseInt(time) < 12 ? 'AM' : 'PM'}`,
+                                                                prescriptionUrl: 'https://placehold.co/400x600?text=Walk-in'
+                                                            };
+                                                            setBookings(prev => [...prev, newBooking]);
+                                                            showToast('Seat booked successfully');
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        width: '24px',
+                                                        height: '24px',
+                                                        borderRadius: '50%',
+                                                        background: isBooked ? '#ef4444' : '#22c55e',
+                                                        cursor: 'pointer',
+                                                        transition: 'transform 0.1s',
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                        border: '2px solid white'
+                                                    }}
+                                                    title={isBooked ? "Booked (Click to Cancel)" : "Available (Click to Book)"}
+                                                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                                                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                                ></div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
+
                     <div style={{ display: 'flex', gap: '16px', marginTop: '16px', fontSize: '0.8rem', color: '#64748b' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '12px', height: '12px', background: '#dcfce7', border: '1px solid #86efac', borderRadius: '4px' }}></span> Available</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '12px', height: '12px', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '4px' }}></span> Booked</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '12px', height: '12px', background: '#22c55e', borderRadius: '50%' }}></span> Available (Click to Book)</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '12px', height: '12px', background: '#ef4444', borderRadius: '50%' }}></span> Booked (Click to Cancel)</div>
                     </div>
                 </div>
 
@@ -1056,7 +1128,29 @@ const LabAdminDashboard = () => {
                             <div style={{ padding: '24px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                     <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#334155' }}>Recent & Upcoming Leaves</h4>
-                                    <button className="lad-btn-outline" style={{ fontSize: '0.8rem', padding: '6px 12px' }}>+ Record Leave</button>
+                                    <button
+                                        className="lad-btn-outline"
+                                        style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                                        onClick={() => {
+                                            const reason = prompt("Enter leave reason:");
+                                            if (reason) {
+                                                const newLeave = {
+                                                    id: Date.now(),
+                                                    staffId: viewLeaves.id,
+                                                    type: 'Casual',
+                                                    startDate: new Date().toISOString().split('T')[0],
+                                                    endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                                                    status: 'Approved',
+                                                    reason: reason
+                                                };
+                                                setStaffLeaves(prev => [...prev, newLeave]);
+                                                setTechnicians(prev => prev.map(t => t.id === viewLeaves.id ? { ...t, status: 'On Leave' } : t));
+                                                showToast('Leave recorded and staff status set to On Leave.');
+                                            }
+                                        }}
+                                    >
+                                        + Record Leave
+                                    </button>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1089,8 +1183,12 @@ const LabAdminDashboard = () => {
                                                 <button
                                                     style={{ border: 'none', background: 'transparent', color: '#ef4444', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
                                                     onClick={() => {
-                                                        alert('Leave retracted. Staff availability restored.');
-                                                        // In real app: call API to delete/cancel leave
+                                                        const confirmRetract = window.confirm('Are you sure you want to retract this leave? This will set the staff member status to "Available".');
+                                                        if (confirmRetract) {
+                                                            setTechnicians(prev => prev.map(t => t.id === viewLeaves.id ? { ...t, status: 'Available' } : t));
+                                                            setStaffLeaves(prev => prev.filter(l => l.id !== leave.id));
+                                                            showToast('Leave retracted and staff status set to Available.');
+                                                        }
                                                     }}
                                                 >
                                                     Retract
@@ -1225,6 +1323,142 @@ const LabAdminDashboard = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Laboratory Details Section */}
+            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', marginTop: '32px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#111827', margin: 0 }}>Laboratory Details</h3>
+                    {!isEditingLab ? (
+                        <button
+                            onClick={() => { setTempLabDetails(labDetails); setIsEditingLab(true); }}
+                            className="lad-btn-outline"
+                            style={{ fontSize: '0.85rem' }}
+                        >
+                            ✏️ Edit Details
+                        </button>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={() => setIsEditingLab(false)}
+                                className="lad-btn-ghost"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => { setLabDetails(tempLabDetails); setIsEditingLab(false); showToast('Lab details updated successfully'); }}
+                                className="lad-btn-primary"
+                            >
+                                Save Details
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {!isEditingLab ? (
+                    // View Mode
+                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '32px', alignItems: 'center' }}>
+                        <div style={{
+                            width: '100px', height: '100px',
+                            background: '#f1f5f9', borderRadius: '12px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            border: '1px solid #e2e8f0', overflow: 'hidden'
+                        }}>
+                            {labDetails.logo ? (
+                                <img src={URL.createObjectURL(labDetails.logo)} alt="Lab Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <span style={{ fontSize: '2rem' }}>🏥</span>
+                            )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Lab Name</label>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#334155' }}>{labDetails.name}</div>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Verified License</label>
+                                <div style={{ fontSize: '1rem', fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {labDetails.license} <span style={{ color: '#16a34a' }}>✔️</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Address</label>
+                                <div style={{ fontSize: '1rem', color: '#334155' }}>{labDetails.address}</div>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Contact Number</label>
+                                <div style={{ fontSize: '1rem', color: '#334155' }}>{labDetails.contact}</div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    // Edit Mode
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'flex', gap: '24px', alignItems: 'start' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                                <div style={{
+                                    width: '100px', height: '100px',
+                                    background: '#f1f5f9', borderRadius: '12px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    border: '1px dashed #cbd5e1', overflow: 'hidden'
+                                }}>
+                                    {tempLabDetails.logo ? (
+                                        <img src={URL.createObjectURL(tempLabDetails.logo)} alt="Logo Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <span style={{ fontSize: '2rem', opacity: 0.5 }}>📷</span>
+                                    )}
+                                </div>
+                                <input
+                                    type="file"
+                                    id="logo-upload"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => e.target.files[0] && setTempLabDetails({ ...tempLabDetails, logo: e.target.files[0] })}
+                                />
+                                <label htmlFor="logo-upload" className="lad-btn-outline" style={{ fontSize: '0.75rem', padding: '4px 8px', cursor: 'pointer' }}>Change Logo</label>
+                            </div>
+
+                            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div className="lad-form-group">
+                                    <label>Lab Name</label>
+                                    <input
+                                        value={tempLabDetails.name}
+                                        onChange={(e) => setTempLabDetails({ ...tempLabDetails, name: e.target.value })}
+                                        className="lad-search-input"
+                                        style={{ width: '100%' }}
+                                    />
+                                </div>
+                                <div className="lad-form-group">
+                                    <label>Verified License No.</label>
+                                    <input
+                                        value={tempLabDetails.license}
+                                        onChange={(e) => setTempLabDetails({ ...tempLabDetails, license: e.target.value })}
+                                        className="lad-search-input"
+                                        style={{ width: '100%' }}
+                                    />
+                                </div>
+                                <div className="lad-form-group" style={{ gridColumn: '1 / -1' }}>
+                                    <label>Address</label>
+                                    <input
+                                        value={tempLabDetails.address}
+                                        onChange={(e) => setTempLabDetails({ ...tempLabDetails, address: e.target.value })}
+                                        className="lad-search-input"
+                                        style={{ width: '100%' }}
+                                    />
+                                </div>
+                                <div className="lad-form-group">
+                                    <label>Contact Number</label>
+                                    <input
+                                        value={tempLabDetails.contact}
+                                        onChange={(e) => setTempLabDetails({ ...tempLabDetails, contact: e.target.value })}
+                                        className="lad-search-input"
+                                        style={{ width: '100%' }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -1369,13 +1603,7 @@ const LabAdminDashboard = () => {
                             </div>
                         )}
 
-                        <button
-                            style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', opacity: 0.7 }}
-                            onClick={() => setActiveTab('settings')}
-                            title="Settings"
-                        >
-                            ⚙️
-                        </button>
+
 
                         <div
                             className="lad-profile-card"
