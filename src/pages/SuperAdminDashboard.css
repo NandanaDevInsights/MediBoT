@@ -1,38 +1,36 @@
-/* SuperAdminDashboard.css - Enterprise Professional Design */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 :root {
-    /* Enterprise Palette */
-    --sad-primary: #2563eb;
-    /* Royal Blue */
-    --sad-primary-dark: #1e40af;
-    --sad-primary-light: #eff6ff;
+    /* Dynamic Theme Variables - Default Blue/White */
+    --sad-primary: #0284c7;
+    /* Sky 600 - Fresh Medical Blue */
+    --sad-primary-dark: #0369a1;
+    --sad-primary-light: #e0f2fe;
 
-    --sad-dark-sidebar: #0f172a;
-    /* Slate 900 */
-    --sad-sidebar-text: #94a3b8;
+    /* Clean White Backgrounds */
+    --sad-bg: #f0f9ff;
+    /* Very faint blue tint for background */
+    --sad-surface: #ffffff;
+
+    /* Sidebar - Deep Blue instead of Slate */
+    --sad-dark-sidebar: #0c4a6e;
+    /* Sky 950 */
+    --sad-sidebar-text: #e0f2fe;
     --sad-sidebar-active: #ffffff;
 
-    --sad-surface: #ffffff;
-    --sad-bg: #f8fafc;
-    /* Slate 50 */
     --sad-border: #e2e8f0;
 
-    --sad-text-head: #1e293b;
-    --sad-text-body: #475569;
+    --sad-text-head: #0f172a;
+    --sad-text-body: #334155;
     --sad-text-muted: #64748b;
 
     --sad-success: #10b981;
     --sad-warning: #f59e0b;
     --sad-danger: #ef4444;
 
-    /* Crisp Radii */
     --sad-radius: 8px;
     --sad-radius-lg: 12px;
 
-    /* Subtle Shadows */
     --sad-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    --sad-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --sad-shadow-hover: 0 10px 15px -3px rgba(0, 132, 199, 0.1), 0 4px 6px -2px rgba(0, 132, 199, 0.05);
 }
 
 .sad-container {
