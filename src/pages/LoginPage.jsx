@@ -93,9 +93,7 @@ const LoginPage = () => {
 
   return (
     <form className="auth-form" onSubmit={onSubmit} noValidate>
-      <div className="form-heading">
-        <h1>Login to MediBot</h1>
-      </div>
+
 
       <InputField
         label="Email Address"

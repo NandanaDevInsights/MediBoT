@@ -5,6 +5,7 @@ import {
   googleOAuthCallback,
   googleOAuthStart,
   login,
+  resetPassword,
   signup,
 } from '../controllers/authController.js'
 
@@ -16,5 +17,6 @@ router.post('/google', googleAuth)
 router.get('/google/start', googleOAuthStart)
 router.get('/google/callback', googleOAuthCallback)
 router.post('/forgot-password', forgotPassword)
+router.post('/reset-password', resetPassword)
 
 export default router

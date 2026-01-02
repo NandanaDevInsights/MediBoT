@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../services/api'
 import { validateUserInput } from '../utils/validation'
-import './ResetPasswordPage.css' // Import the new stylesheet for updated colors
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate()
@@ -42,7 +41,9 @@ const ResetPasswordPage = () => {
     try {
       const result = await resetPassword({ token, password: form.password, confirmPassword: form.confirmPassword })
       setStatus({ type: 'success', message: result?.message || 'Password updated. Redirecting to login…' })
-      setTimeout(() => navigate('/login', { replace: true }), 1200)
+
+      const isAdmin = search.get('type') === 'admin'
+      setTimeout(() => navigate(isAdmin ? '/admin/login' : '/login', { replace: true }), 1200)
     } catch (err) {
       setStatus({ type: 'error', message: err.message || 'Unable to reset password right now.' })
     } finally {
@@ -52,10 +53,6 @@ const ResetPasswordPage = () => {
 
   return (
     <form className="auth-form" onSubmit={onSubmit} noValidate>
-      <div className="form-heading">
-        <h1>Set a new password</h1>
-        <p className="sub-text">Enter a strong password for your MediBot account.</p>
-      </div>
 
       <div className="form-field">
         <label htmlFor="password">New Password</label>

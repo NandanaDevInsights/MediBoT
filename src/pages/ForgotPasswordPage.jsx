@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { requestPasswordReset } from '../services/api'
 import { validateUserInput } from '../utils/validation'
-import './ForgotPasswordPage.css' // Import the new stylesheet for updated colors
 
-// Updated content for laboratory management system
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('')
   const [errors, setErrors] = useState({})
@@ -32,10 +30,7 @@ const ForgotPasswordPage = () => {
 
   return (
     <form className="auth-form" onSubmit={onSubmit} noValidate>
-      <div className="form-heading">
-        <h1>Forgot Password</h1>
-        <p className="sub-text">Enter your account email to receive reset instructions for MediBot.</p>
-      </div>
+
 
       <div className="form-field">
         <label htmlFor="email">Email Address</label>
@@ -68,9 +63,7 @@ const ForgotPasswordPage = () => {
         Remembered your password? <Link to="/login">Back to login</Link>
       </p>
 
-      <div className="email-placeholder">
-        {/* TODO: Integrate transactional email provider for reset links. Place SMTP/API invocation here. */}
-      </div>
+
     </form>
   )
 }

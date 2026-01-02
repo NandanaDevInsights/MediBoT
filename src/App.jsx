@@ -38,7 +38,7 @@ const AuthLayout = ({ children, heading, subheading }) => {
         </div>
         <div className="intro">
           <h2>{heading || (isLogin ? 'Welcome back' : 'Join MediBot')}</h2>
-          <p className="sub-text">Please enter your details to continue.</p>
+          <p className="sub-text">{subheading || 'Please enter your details to continue.'}</p>
         </div>
         {children}
       </div>
@@ -51,16 +51,12 @@ function App() {
     <Routes>
       <Route
         path="/"
-        element={
-          <AuthLayout heading="Welcome back">
-            <LoginPage />
-          </AuthLayout>
-        }
+        element={<LandingPage />}
       />
       <Route
         path="/login"
         element={
-          <AuthLayout heading="Welcome back">
+          <AuthLayout heading="Welcome back" subheading="Please enter your details to access your account.">
             <LoginPage />
           </AuthLayout>
         }
@@ -68,7 +64,7 @@ function App() {
       <Route
         path="/signup"
         element={
-          <AuthLayout heading="Create account">
+          <AuthLayout heading="Create Account" subheading="Sign up with your work email to access MediBot.">
             <SignupPage />
           </AuthLayout>
         }
@@ -76,7 +72,7 @@ function App() {
       <Route
         path="/forgot"
         element={
-          <AuthLayout heading="Reset access">
+          <AuthLayout heading="Forgot Password" subheading="Enter your account email to receive reset instructions.">
             <ForgotPasswordPage />
           </AuthLayout>
         }
@@ -85,7 +81,7 @@ function App() {
       <Route
         path="/reset"
         element={
-          <AuthLayout heading="Create a new password">
+          <AuthLayout heading="Set a new password" subheading="Enter a strong password for your MediBot account.">
             <ResetPasswordPage />
           </AuthLayout>
         }

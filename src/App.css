@@ -63,7 +63,8 @@
 
 .form-side {
   background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
-  padding: 32px 52px 48px;
+  padding: 24px 40px;
+  /* Reduced padding */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -80,8 +81,8 @@
   border: 1px solid rgba(220, 233, 245, 0.8);
   backdrop-filter: blur(4px);
   color: #0066cc;
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 6px 12px;
+  border-radius: 16px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -98,9 +99,10 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
-  /* Reduced margin */
-  color: var(--neutral-ink);
+  margin-bottom: 12px;
+  /* Compact */
+  color: #0f172a;
+  /* Hardcoded dark color to ensure visibility */
   font-weight: 700;
   font-size: 16px;
 }
@@ -110,24 +112,27 @@
 }
 
 .intro h2 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-size: 24px;
   font-weight: 700;
-  color: var(--neutral-ink);
+  color: #0f172a;
+  /* Hardcoded */
 }
 
 .sub-text {
-  margin: 0 0 20px;
-  /* Reduced margin */
-  color: var(--neutral-muted);
+  margin: 0 0 16px;
+  /* Compact */
+  color: #64748b;
+  /* Hardcoded slate-500 */
   font-size: 14px;
 }
 
 .auth-form {
   background: #ffffff;
   border: none;
-  border-radius: 24px;
-  padding: 36px;
+  border-radius: 20px;
+  padding: 24px 32px;
+  /* Compact padding */
   max-width: 440px;
   width: 100%;
   box-shadow: 0 20px 40px rgba(0, 50, 100, 0.1);

@@ -4,9 +4,16 @@ import './LabAdminDashboard.css';
 import logoImage from '../assets/Logo.png';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area } from 'recharts';
+import { getUserProfile } from '../services/api';
 
 const LabAdminDashboard = () => {
     const navigate = useNavigate();
+    // --- PIN LOCK LOGIC ---
+    const [pinVerified, setPinVerified] = useState(false);
+    const [requiredPin, setRequiredPin] = useState(null);
+    const [enteredPin, setEnteredPin] = useState(['', '', '', '']);
+    const [pinError, setPinError] = useState('');
+    const [loadingPin, setLoadingPin] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [showModal, setShowModal] = useState(null);
@@ -52,6 +59,7 @@ const LabAdminDashboard = () => {
     const [tempLabDetails, setTempLabDetails] = useState(labDetails);
 
     const handleLogout = () => {
+        sessionStorage.removeItem('lab_admin_pin_verified');
         navigate('/');
     };
 
@@ -66,12 +74,74 @@ const LabAdminDashboard = () => {
         { day: 'Sun', bookings: 25, revenue: 750 },
     ];
 
-    const [stats] = useState({
-        todayAppointments: 42,
-        pendingCollections: 15,
-        testsInProgress: 28,
-        reportsRate: 94
-    });
+
+    useEffect(() => {
+        let mounted = true;
+        const checkPinStatus = async () => {
+            const isVerified = sessionStorage.getItem('lab_admin_pin_verified');
+
+            try {
+                const user = await getUserProfile();
+                if (mounted) {
+                    if (user.role === 'LAB_ADMIN') {
+                        setRequiredPin(user.pin_code);
+                        if (isVerified === 'true') {
+                            setPinVerified(true);
+                        }
+                    } else {
+                        // Start verified for non-lab-admins
+                        setPinVerified(true);
+                    }
+                }
+            } catch (err) {
+                console.error("Profile load failed", err);
+            } finally {
+                if (mounted) setLoadingPin(false);
+            }
+        };
+        checkPinStatus();
+
+        // Safety timeout in case API hangs
+        const timer = setTimeout(() => {
+            if (mounted) setLoadingPin(false);
+        }, 5000);
+
+        return () => { mounted = false; clearTimeout(timer); };
+    }, []);
+
+    const handlePinInput = (element, index) => {
+        const val = element.value.toUpperCase();
+        if (val.length > 1) return;
+        const newPin = [...enteredPin];
+        newPin[index] = val;
+        setEnteredPin(newPin);
+        if (val && element.nextSibling) element.nextSibling.focus();
+
+        if (newPin.join('').length === 4) verifyPin(newPin.join(''));
+    };
+
+    const handlePinKeyDown = (e, index) => {
+        if (e.key === 'Backspace' && !enteredPin[index] && e.target.previousSibling) {
+            e.target.previousSibling.focus();
+        }
+    };
+
+    const verifyPin = (pinStr) => {
+        if (pinStr === requiredPin) {
+            setPinVerified(true);
+            sessionStorage.setItem('lab_admin_pin_verified', 'true');
+        } else {
+            setPinError('Incorrect Key');
+            setTimeout(() => {
+                setEnteredPin(['', '', '', '']);
+                setPinError('');
+                document.getElementById('dash-pin-0')?.focus();
+            }, 1000);
+        }
+    };
+    // -----------------------
+
+    // -----------------------
 
     // --- Chart Data ---
     const mostRequestedTests = [
@@ -1515,6 +1585,59 @@ const LabAdminDashboard = () => {
             </div>
         </div>
     );
+
+    // --- PIN LOCK RENDER ---
+    if (loadingPin) {
+        return <div className="loading-screen" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading Secure Profile...</div>;
+    }
+
+    if (!pinVerified) {
+        return (
+            <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(255,255,255,0.95)', zIndex: 9999,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexDirection: 'column', backdropFilter: 'blur(10px)'
+            }}>
+                <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem' }}>🔒</div>
+                    <h2 style={{ color: '#0F172A', marginTop: '10px' }}>Security Check</h2>
+                    <p style={{ color: '#64748B' }}>Enter your 4-letter pass key to unlock dashboard.</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '24px' }}>
+                    {enteredPin.map((digit, index) => (
+                        <input
+                            key={index}
+                            id={`dash-pin-${index}`}
+                            type="text"
+                            maxLength="1"
+                            value={digit}
+                            onChange={(e) => handlePinInput(e.target, index)}
+                            onKeyDown={(e) => handlePinKeyDown(e, index)}
+                            style={{
+                                width: '50px', height: '50px', fontSize: '24px', textAlign: 'center',
+                                borderRadius: '12px', border: '2px solid #E2E8F0', outline: 'none',
+                                fontWeight: 'bold', color: '#0F172A', textTransform: 'uppercase',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = '#4F46E5'}
+                            onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                        />
+                    ))}
+                </div>
+
+                {pinError && <p style={{ color: '#ef4444', fontWeight: 600, marginBottom: '16px' }}>{pinError}</p>}
+
+                <button onClick={handleLogout} style={{
+                    marginTop: '20px', background: 'transparent', border: 'none', color: '#64748b',
+                    fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline'
+                }}>
+                    Cancel & Logout
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="lad-container">

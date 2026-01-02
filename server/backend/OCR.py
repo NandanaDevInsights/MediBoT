@@ -1,6 +1,7 @@
-
 import os
 import requests
+import io
+from google.cloud import vision
 from flask import request
 from twilio.twiml.messaging_response import MessagingResponse
 from app import app  # Import the main app to avoid port conflicts
@@ -41,9 +42,6 @@ def init_db():
                 cursor.fetchall()
             except Exception:
                 print(f"⚠️ Adding missing column: {col}")
-                # Reset cursor or use a clean one if the previous execute failed transactionally?
-                # In loose MySQL drivers this is fine, but rigorous ones might need a commit/rollback.
-                # However, for this simplified script:
                 try:
                     cursor.execute(f"ALTER TABLE prescriptions ADD COLUMN {col} {dtype}")
                 except Exception as alter_err:
@@ -85,11 +83,11 @@ def whatsapp_webhook():
         image_path = "prescription.jpg"
         
         # Twilio User-Agent / Auth handling
-        print(f"🔑 Downloading image from: {media_url}")
+        # Load from environment variables for security, fallback to hardcoded
+        TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "AC87e1526e841d05fd5e26640ea549c0eb")
+        TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "f57aac68b4ae52c9b92787830f5570e3")
         
-        # Credentials (hardcoded here for reliability)
-        TWILIO_ACCOUNT_SID = "AC87e1526e841d05fd5e26640ea549c0eb"
-        TWILIO_AUTH_TOKEN = "8d0b8724ceb55227907f08ce64c7c860"
+        print(f"🔑 Downloading image from: {media_url}")
         
         headers = {'User-Agent': 'TwilioBot'}
         download_resp = requests.get(
@@ -98,8 +96,9 @@ def whatsapp_webhook():
             headers=headers
         )
         
-        if download_resp.status_code in [401, 403]:
-            # Fallback for protected content
+        # Retry logic: If 400 (Bad Request), 401 (Unauthorized), or 403 (Forbidden) occurs
+        if download_resp.status_code in [400, 401, 403]:
+            print(f"⚠️ Initial download failed with {download_resp.status_code}. Retrying without auth signatures...")
             download_resp = requests.get(media_url, headers=headers)
         
         if download_resp.status_code == 200:
@@ -108,30 +107,110 @@ def whatsapp_webhook():
             print("✅ Image downloaded successfully.")
         else:
             print(f"❌ Failed to download. Status: {download_resp.status_code}")
-            resp.message("❌ Could not download image. Please check settings.")
+            if download_resp.status_code == 401:
+                print("💡 HINT: Your Twilio Auth Token in .env is incorrect or expired.")
+            
+            resp.message("❌ Could not download image. Please check Twilio settings.")
             return str(resp)
 
-        # 4️⃣ OCR.Space API (Free, No Billing)
-        print("🤖 Sending to OCR.Space...")
-        
-        ocr_response = requests.post(
-            'https://api.ocr.space/parse/image',
-            files={image_path: open(image_path, 'rb')},
-            data={'apikey': 'helloworld', 'language': 'eng', 'OCREngine': 2}
-        )
-        
-        result_json = ocr_response.json()
-        
-        if result_json.get('IsErroredOnProcessing'):
-            resp.message("❌ Could not read text (OCR Error).")
+        # 4️⃣ DUAL OCR STRATEGY: Google Vision -> Fallback to OCR.Space
+        extracted_text = None
+        current_ocr_service = "None"
+
+        # --- ATTEMPT 1: Google Cloud Vision ---
+        print("🤖 Attempting Google Cloud Vision...")
+        try:
+            basedir = os.path.dirname(os.path.abspath(__file__))
+            key_path = os.path.join(basedir, "google_key.json")
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
+            
+            client = vision.ImageAnnotatorClient()
+            with io.open(image_path, 'rb') as image_file:
+                content = image_file.read()
+            image = vision.Image(content=content)
+            
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
+            
+            if response.error.message:
+                raise Exception(f"Google API Error: {response.error.message}")
+                
+            if texts:
+                extracted_text = texts[0].description
+                current_ocr_service = "Google Vision"
+            
+        except Exception as google_err:
+            print(f"⚠️ Google Vision Failed ({google_err}). Switching to Fallback...")
+            
+            # --- ATTEMPT 2: OCR.Space (Fallback) ---
+            print("🔄 Fallback: Sending to OCR.Space...")
+            try:
+                API_KEY = os.environ.get("OCR_SPACE_API_KEY", "helloworld")
+                ocr_resp = requests.post(
+                    'https://api.ocr.space/parse/image',
+                    files={image_path: open(image_path, 'rb')},
+                    data={'apikey': API_KEY, 'language': 'eng', 'OCREngine': 2},
+                    timeout=20
+                )
+                
+                if ocr_resp.status_code == 200:
+                    res_json = ocr_resp.json()
+                    if not res_json.get('IsErroredOnProcessing') and res_json.get('ParsedResults'):
+                         extracted_text = res_json['ParsedResults'][0]['ParsedText']
+                         current_ocr_service = "OCR.Space (Fallback)"
+                    else:
+                        print(f"❌ OCR.Space Error: {res_json.get('ErrorMessage')}")
+                
+            except Exception as space_err:
+                print(f"❌ OCR.Space Failed: {space_err}")
+
+        # 5️⃣ Validate Results
+        if not extracted_text:
+            resp.message("❌ Failed to read text from image (Both OCR engines failed).")
             return str(resp)
             
-        parsed_results = result_json.get('ParsedResults')
-        if not parsed_results or not parsed_results[0].get('ParsedText'):
-             resp.message("❌ No legible text found in image.")
-             return str(resp)
+        print(f"✅ Success! Text extracted via {current_ocr_service}")
+        
+        # Clean up text
+        raw_text = extracted_text
+        cleaned_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+        cleaned_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+        
+        # Filter for lines that look like tests (keyword matching)
+        # We removed generic words like "blood", "test", "urine" to avoid matching labels/instructions.
+        test_keywords = [
+            "cbc", "count", "platelet", "hemoglobin", "hct", "mcv", "mch",
+            "cmp", "metabolic", "panel", "glucose", "calcium", "electrolyte", "sodium", "potassium",
+            "lipid", "cholesterol", "hdl", "ldl", "triglyceride",
+            "thyroid", "tsh", "t3", "t4",
+            "urinalysis", "culture",
+            "vitamin", "iron", "ferritin",
+            "liver", "renal", "kidney", "function", "profile",
+            "sugar", "hba1c", "insulin",
+            "analysis", "screen"
+        ]
+        
+        # Aggressive exclusion of non-test lines
+        exclude_keywords = [
+            "sample", "specimen", "physician", "ordered", "forward", "indicated", 
+            "required", "signature", "date", "instructions", "collect", "patient"
+        ]
+        
+        filtered_lines = []
+        for line in cleaned_lines:
+            line_lower = line.lower()
+            # Must match a test keyword AND NOT match an exclusion keyword
+            if any(kw in line_lower for kw in test_keywords) and not any(bad in line_lower for bad in exclude_keywords):
+                filtered_lines.append(line)
+        
+        # Fallback: If no keywords found, show top few lines
+        if not filtered_lines and cleaned_lines:
+             start_idx = 0 if len(cleaned_lines) < 5 else 2
+             filtered_lines = cleaned_lines[start_idx:start_idx+5] 
 
-        extracted_text = parsed_results[0]['ParsedText'].lower()
+        extracted_text_display = "\n".join(filtered_lines)
+        
+        extracted_text = raw_text.lower()
         print("📝 OCR Text Snippet:", extracted_text[:50].replace('\n', ' '))
 
         # 5️⃣ Detect test type
@@ -160,13 +239,14 @@ def whatsapp_webhook():
             print(f"⚠️ DB Save Failed: {db_err}")
 
         # 7️⃣ Return Login Link
-        # Responding with the exact requested URL
         website_link = "http://127.0.0.1:5173/login"
         resp.message(
-            f"✅ *Prescription Processed!*\n"
-            f"🔬 *Test:* {test_type}\n"
-            f"💾 *Saved to Records*\n\n"
-            f"Login here:\n"
+            f"✅ Prescription Processed!\n"
+            f"🔬 Identified Category: {test_type}\n\n"
+            f"TESTS ORDERED:\n"
+            f"{extracted_text_display}\n\n"
+            f"💾 Saved to Records\n"
+            f"Login here to view full report:\n"
             f"{website_link}"
         )
 
@@ -188,4 +268,3 @@ if __name__ == "__main__":
     # Run the IMPORTED app (which contains auth + OCR)
     print("🚀 Starting Combined Server (Auth + OCR) on port 5000...")
     app.run(host="0.0.0.0", port=5000, debug=True)
-

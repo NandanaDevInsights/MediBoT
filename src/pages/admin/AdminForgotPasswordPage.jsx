@@ -1,14 +1,27 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { requestPasswordReset } from '../../services/api'
 import '../LoginPage.css'
 
 const AdminForgotPasswordPage = () => {
     const [email, setEmail] = useState('')
     const [submitted, setSubmitted] = useState(false)
+    const [status, setStatus] = useState(null)
+    const [submitting, setSubmitting] = useState(false)
 
-    const onSubmit = (e) => {
+    const onSubmit = async (e) => {
         e.preventDefault()
-        setSubmitted(true)
+        setStatus(null)
+        setSubmitting(true)
+
+        try {
+            await requestPasswordReset(email)
+            setSubmitted(true)
+        } catch (err) {
+            setStatus({ type: 'error', message: err.message || 'Unable to process request right now.' })
+        } finally {
+            setSubmitting(false)
+        }
     }
 
     return (
@@ -26,12 +39,19 @@ const AdminForgotPasswordPage = () => {
                             type="email"
                             placeholder="admin@organization.com"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value)
+                                setStatus(null)
+                            }}
                             required
                         />
                     </div>
 
-                    <button className="primary-btn" type="submit">Send Reset Link</button>
+                    {status && <p className="status-text status-error">{status.message}</p>}
+
+                    <button className="primary-btn" type="submit" disabled={submitting}>
+                        {submitting ? 'Sending...' : 'Send Reset Link'}
+                    </button>
 
                     <div style={{ textAlign: 'center', marginTop: '24px' }}>
                         <Link to="/admin/login" style={{ color: '#64748B', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>← Back to Login</Link>
@@ -48,10 +68,17 @@ const AdminForgotPasswordPage = () => {
                         type="button"
                         className="ghost-btn"
                         style={{ marginTop: '24px' }}
-                        onClick={() => setSubmitted(false)}
+                        onClick={() => {
+                            setSubmitted(false)
+                            setEmail('')
+                            setStatus(null)
+                        }}
                     >
                         Try another email
                     </button>
+                    <div style={{ marginTop: '16px' }}>
+                        <Link to="/admin/login" style={{ fontSize: '14px' }}>Back to Login</Link>
+                    </div>
                 </div>
             )}
         </form>

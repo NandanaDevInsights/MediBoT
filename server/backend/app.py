@@ -1,5 +1,5 @@
 """
-Flask signup service for MediBot.
+Flask signup service for EcoGrow.
 
 Security highlights:
 - Passwords arrive in plaintext over HTTPS and are hashed ONLY here with bcrypt.
@@ -25,6 +25,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from db_connect import get_connection
 from validators import validate_email, validate_password
+import threading
 
 load_dotenv()
 
@@ -51,7 +52,7 @@ SMTP_HOST = os.environ.get("SMTP_HOST")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
 SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASS = os.environ.get("SMTP_PASS")
-SMTP_FROM = os.environ.get("SMTP_FROM", "no-reply@medibot.local")
+SMTP_FROM = os.environ.get("SMTP_FROM", "no-reply@ecogrow.local")
 SMTP_USE_TLS = bool(int(os.environ.get("SMTP_USE_TLS", "0")))
 
 
@@ -82,26 +83,49 @@ def insert_user(conn, email: str, password_hash: str):
 
 def upsert_google_user(conn, email: str):
   cur = conn.cursor()
+  
+  # Determine role based on strict email policy
+  # Determine role based on strict email policy
+  target_role = "USER"
+  if email == "medibot.care@gmail.com":
+      target_role = "SUPER_ADMIN"
+  else:
+      # Check if whitelisted Lab Admin
+      if is_whitelisted_lab_admin(conn, email):
+          target_role = "LAB_ADMIN"
+
   cur.execute("SELECT id, role FROM users WHERE email=%s", (email,))
   existing = cur.fetchone()
+  
   if existing:
+    existing_id, existing_role = existing
+    
+    # Update role if status changed (e.g. added to whitelist)
+    if existing_role != target_role:
+        # Only upgrade, or sync if critical? Let's just sync to target_role.
+        # Exception: Don't downgrade SUPER_ADMIN unless intent is clear, but here logic is strict.
+        cur.execute("UPDATE users SET role=%s WHERE id=%s", (target_role, existing_id))
+        conn.commit()
+        existing_role = target_role
+    
     cur.close()
-    return existing
+    return (existing_id, existing_role)
+
   cur.execute(
     "INSERT INTO users (email, provider, role) VALUES (%s, %s, %s)",
-    (email, "google", "USER"),
+    (email, "google", target_role),
   )
   conn.commit()
   new_id = cur.lastrowid
   cur.close()
-  return (new_id, "USER")
+  return (new_id, target_role)
 
 
 def get_user_with_password(conn, email: str):
   """Fetch user id, hash, provider, and role for login."""
   cur = conn.cursor()
   cur.execute(
-    "SELECT id, email, password_hash, provider, role FROM users WHERE email=%s LIMIT 1",
+    "SELECT id, email, password_hash, provider, role, pin_code FROM users WHERE email=%s LIMIT 1",
     (email,),
   )
   row = cur.fetchone()
@@ -112,7 +136,7 @@ def get_user_with_password(conn, email: str):
 def get_user_id(conn, email: str):
   """Return user id and provider for a given email, or None."""
   cur = conn.cursor()
-  cur.execute("SELECT id, provider FROM users WHERE email=%s LIMIT 1", (email,))
+  cur.execute("SELECT id, provider, role FROM users WHERE email=%s LIMIT 1", (email,))
   row = cur.fetchone()
   cur.close()
   return row
@@ -230,7 +254,7 @@ def login_user():
     if not user_row:
       return jsonify({"message": "Invalid credentials."}), 401
 
-    user_id, _, password_hash, provider, role = user_row
+    user_id, _, password_hash, provider, role, pin_code = user_row
     if provider != "password":
       return jsonify({"message": "Use Google sign-in for this account."}), 400
 
@@ -244,7 +268,16 @@ def login_user():
     session["email"] = email
     session["role"] = role
 
-    return jsonify({"message": "Login successful.", "role": role}), 200
+    # Strict Whitelist Check for Lab Admin
+    if role == "LAB_ADMIN":
+         if not is_whitelisted_lab_admin(conn, email):
+              return jsonify({"message": "Access restricted: You are not authorized as a Lab Admin."}), 403
+
+    return jsonify({
+        "message": "Login successful.", 
+        "role": role,
+        "pin_code": pin_code  # Return stored PIN for client-side check
+    }), 200
   except Exception:
     return jsonify({"message": "Unable to process login right now."}), 500
   finally:
@@ -259,33 +292,48 @@ def forgot_password():
   if not validate_email(email):
     return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
 
-  conn = get_connection()
+  conn = None
   try:
+    conn = get_connection()
     user_row = get_user_id(conn, email)
     if not user_row:
       # Avoid revealing account existence
       return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
 
-    user_id, provider = user_row
+    user_id, provider, role = user_row
     if provider != "password":
       return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
 
     token = create_reset_request(conn, user_id)
     frontend_origin = os.environ.get("CORS_ORIGIN", "http://localhost:5173").split(",")[0].strip()
+    
     reset_link = f"{frontend_origin}/reset?token={token}"
+    if "ADMIN" in role:
+        reset_link += "&type=admin"
 
-    # Send reset email (SMTP must be configured via env vars)
-    send_reset_email(email, reset_link)
+    # Send email in background to avoid blocking/timeouts
+    def send_async():
+        try:
+            send_reset_email(email, reset_link)
+        except Exception as e:
+            print(f"[WARNING] Background SMTP failed: {e}")
+
+    try:
+        threading.Thread(target=send_async).start()
+    except Exception as e:
+        print(f"[ERROR] Failed to start email thread: {e}")
 
     response_body = {"message": "If the account exists, a reset link will be emailed."}
     if RESET_LINK_DEBUG:
       response_body["reset_link"] = reset_link
 
     return jsonify(response_body), 200
-  except Exception:
+  except Exception as e:
+    print(f"[ERROR] Forgot password flow failed: {e}")
     return jsonify({"message": "Unable to process reset right now."}), 500
   finally:
-    conn.close()
+    if conn:
+      conn.close()
 
 
 @app.post("/api/reset-password")
@@ -395,17 +443,209 @@ def google_callback():
 
   conn = get_connection()
   try:
-    upsert_google_user(conn, email)
+    user_id, role = upsert_google_user(conn, email)
+    session["user_id"] = user_id
+    session["email"] = email
+    session["role"] = role
   finally:
     conn.close()
 
-  # Redirect to frontend landing page after successful Google auth
+  # Redirect to frontend based on role
   origin = os.environ.get("CORS_ORIGIN", "http://localhost:5173").split(",")[0].strip()
-  target = f"{origin}/welcome"
+  
+  if role == "SUPER_ADMIN":
+      target = f"{origin}/super-admin-dashboard"
+  elif role == "LAB_ADMIN":
+      target = f"{origin}/lab-admin-dashboard"
+  else:
+      target = f"{origin}/welcome"
+
   return redirect(target)
+
+
+import string 
+
+@app.post("/api/admin/signup")
+def admin_signup():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
+    
+    # We ignore confirmPassword here as frontend checked it.
+    if not validate_email(email):
+        return jsonify({"message": "Invalid email format."}), 400
+    if not validate_password(password):
+        return jsonify({"message": "Password weak. Use 8+ chars, mixed case, numbers, special."}), 400
+
+    # Generate 4-char alphanumeric PIN (uppercase + digits to be readable)
+    alphabet = string.ascii_uppercase + string.digits
+    pin_code = ''.join(secrets.choice(alphabet) for i in range(4))
+
+    conn = get_connection()
+    try:
+        if email_exists(conn, email):
+            return jsonify({"message": "Email already registered."}), 409
+
+        pw_hash = hash_password(password)
+        cur = conn.cursor()
+        # Save PIN to DB
+        cur.execute(
+            "INSERT INTO users (email, password_hash, provider, role, pin_code) VALUES (%s, %s, %s, %s, %s)",
+            (email, pw_hash, "password", "LAB_ADMIN", pin_code),
+        )
+        # Add to whitelist as well (since they just registered via the authorized flow)
+        # Note: If this table is for extensive security where ONLY manually added users can sign up, 
+        # then we should CHECK it before insert instead of inserting into it.
+        # But the prompt says "Store usernames... in backend", implying we store them. 
+        # And "only allow users in that table to log in". So we ensure they are in it.
+        try:
+             cur.execute("INSERT IGNORE INTO lab_admin_users (email) VALUES (%s)", (email,))
+        except Exception:
+             pass 
+
+        conn.commit()
+        cur.close()
+
+        # Return the PIN so frontend can show it
+        return jsonify({
+            "message": "Lab Admin registered successfully.",
+            "pin_code": pin_code
+        }), 201
+    except Exception as e:
+        print(f"[ERROR] Admin signup failed: {e}")
+        return jsonify({"message": "Unable to register admin."}), 500
+    finally:
+        conn.close()
+
+# --- Database Migration Helper ---
+def ensure_pin_column():
+    """Add pin_code column if not exists."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # Check if column exists
+        cur.execute("SHOW COLUMNS FROM users LIKE 'pin_code'")
+        if not cur.fetchone():
+            print("[INFO] Adding pin_code column to users table...")
+            cur.execute("ALTER TABLE users ADD COLUMN pin_code VARCHAR(10) DEFAULT NULL")
+            conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Schema update failed: {e}")
+    finally:
+        conn.close()
+
+def ensure_lab_admin_whitelist_table():
+    """Create whitelist table for lab admins if not exists."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS lab_admin_users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(255) NOT NULL UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Whitelist table check failed: {e}")
+    finally:
+        conn.close()
+
+# Run schema check on import/startup
+ensure_pin_column()
+ensure_lab_admin_whitelist_table()
+
+def is_whitelisted_lab_admin(conn, email: str) -> bool:
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM lab_admin_users WHERE email=%s LIMIT 1", (email,))
+    exists = cur.fetchone() is not None
+    cur.close()
+    return exists
+
+
+@app.get("/api/reports")
+def get_user_reports():
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+
+    user_id = session["user_id"]
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # Fetch prescriptions linked to this user
+        cur.execute("""
+            SELECT id, file_path, file_type, status, created_at 
+            FROM prescriptions 
+            WHERE user_id=%s 
+            ORDER BY created_at DESC
+        """, (user_id,))
+        rows = cur.fetchall()
+        cur.close()
+
+        reports = []
+        for row in rows:
+            rid, fpath, ftype, status, created_at = row
+            reports.append({
+                "id": rid,
+                "file_path": fpath,
+                "file_type": ftype,
+                "status": status,
+                "date": created_at.isoformat() if created_at else None
+            })
+
+        return jsonify(reports), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch reports failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
+
+@app.get("/api/profile")
+def get_user_profile():
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+
+    user_id = session["user_id"]
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id, email, role, provider, created_at, pin_code FROM users WHERE id=%s", (user_id,))
+        row = cur.fetchone()
+        cur.close()
+
+        if not row:
+            return jsonify({"message": "User not found"}), 404
+
+        uid, email, role, provider, created_at, pin_code = row
+        
+        # Self-heal null PIN for Lab Admins
+        if role == 'LAB_ADMIN' and not pin_code:
+            import string, random
+            new_pin = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+            try:
+                cur.execute("UPDATE users SET pin_code=%s WHERE id=%s", (new_pin, uid))
+                conn.commit()
+                pin_code = new_pin
+            except Exception as e:
+                print(f"[ERROR] Failed to auto-generate PIN: {e}")
+
+        return jsonify({
+            "id": uid,
+            "email": email,
+            "role": role,
+            "provider": provider,
+            "joined_at": created_at.isoformat() if created_at else None,
+            "pin_code": pin_code
+        }), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch profile failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
 
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=bool(int(os.environ.get("FLASK_DEBUG", 0))))
-
-

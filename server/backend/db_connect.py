@@ -29,10 +29,12 @@ def get_pool():
 	)
 
 
-pool = get_pool()
-
+pool = None
 
 def get_connection():
 	"""Get a pooled connection for request-scoped use."""
+	global pool
+	if pool is None:
+		pool = get_pool()
 	return pool.get_connection()
 
