@@ -1,10 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import heroBg from '../assets/Bg.jpg';
+import heroBg from '../assets/LabHero.jpg';
+import logoImage from '../assets/Logo.png';
 import './LandingPage.css';
 import { getUserProfile, getUserReports } from '../services/api';
 
 // --- Icon Components ---
+const IconHome = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+  </svg>
+);
+const IconActivity = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+  </svg>
+);
+
 const IconSearch = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8"></circle>
@@ -23,6 +36,13 @@ const IconArrowRight = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="5" y1="12" x2="19" y2="12"></line>
     <polyline points="12 5 19 12 12 19"></polyline>
+  </svg>
+);
+
+const IconArrowLeft = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
   </svg>
 );
 
@@ -80,7 +100,75 @@ const IconDownload = () => (
   </svg>
 );
 
+const IconBell = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+  </svg>
+);
 
+const IconClock = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <polyline points="12 6 12 12 16 14"></polyline>
+  </svg>
+);
+
+const IconShield = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+  </svg>
+);
+
+const IconStar = ({ size = 20, fill = "none" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+  </svg>
+);
+
+const IconCheckCircle = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+  </svg>
+);
+
+const IconUploadCloud = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="16 16 12 12 8 16"></polyline>
+    <line x1="12" y1="12" x2="12" y2="21"></line>
+    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+    <polyline points="16 16 12 12 8 16"></polyline>
+  </svg>
+);
+
+const IconChevronDown = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9"></polyline>
+  </svg>
+);
+
+
+
+
+const ALL_TESTS = [
+  "Complete Blood Count (CBC)",
+  "Lipid Profile",
+  "Liver Function Test (LFT)",
+  "Kidney Function Test (KFT)",
+  "Thyroid Profile (T3, T4, TSH)",
+  "Blood Glucose (Fasting/PP)",
+  "HbA1c",
+  "Urine Routine",
+  "Vitamin D Total",
+  "Vitamin B12",
+  "Iron Profile",
+  "Dengue NS1 Antigen",
+  "Malaria Parasite",
+  "Stool Routine",
+  "ECG",
+  "X-Ray Chest"
+];
 
 const LABS_DATA = [
   {
@@ -129,17 +217,60 @@ const LABS_DATA = [
   }
 ];
 
+const TEST_CATEGORIES = {
+  "Blood Tests": [
+    "Complete Blood Count (CBC)", "Hemoglobin (Hb)", "Blood Group & Rh Factor", "ESR (Erythrocyte Sedimentation Rate)",
+    "Peripheral Smear", "Fasting Blood Sugar (FBS)", "Postprandial Blood Sugar (PPBS)", "Random Blood Sugar (RBS)",
+    "HbA1c", "Lipid Profile", "Liver Function Test (LFT)", "Kidney Function Test (KFT)", "Thyroid Profile (T3, T4, TSH)",
+    "C-Reactive Protein (CRP)", "Widal Test", "VDRL", "HIV", "HBsAg", "Anti-HCV", "Dengue (NS1, IgG, IgM)",
+    "Malaria (Antigen / Smear)", "PT / INR"
+  ],
+  "Urine Tests": [
+    "Urine Routine Examination", "Urine Microscopy", "Urine Sugar", "Urine Protein / Albumin", "Ketone Bodies",
+    "Bile Salts & Bile Pigments", "Urine Culture & Sensitivity", "Pregnancy Test (hCG)", "Microalbuminuria",
+    "24-Hour Urine Protein", "Creatinine Clearance"
+  ],
+  "Sputum Tests": [
+    "Sputum AFB (ZN Stain)", "Sputum AFB (Fluorescent)", "CBNAAT / GeneXpert", "Sputum Culture & Sensitivity",
+    "Gram Stain", "Fungal Culture", "Sputum Cytology"
+  ],
+  "Stool Tests": [
+    "Stool Routine Examination", "Stool Microscopy", "Ova & Cyst", "Stool Culture", "Occult Blood Test",
+    "H. pylori Antigen (Stool)", "Fecal Fat", "Calprotectin", "Reducing Substances"
+  ]
+};
+
 const LandingPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const profilePicInputRef = useRef(null);
   const labsSectionRef = useRef(null);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [profilePic, setProfilePic] = useState(null);
   const [activeFilter, setActiveFilter] = useState('All Labs');
   const [filteredLabs, setFilteredLabs] = useState([]);
   const [visibleLimit, setVisibleLimit] = useState(8);
   const [userProfile, setUserProfile] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // New State for Features
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showReminders, setShowReminders] = useState(false);
+  const [patientDetails, setPatientDetails] = useState({ age: '', gender: '', savedLocation: '' });
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  // Mock Notifications
+  const notifications = [
+    { id: 1, text: "Your report for CBC is ready.", time: "2 hrs ago" },
+    { id: 2, text: "Appointment confirmed at City Care.", time: "5 hrs ago" }
+  ];
+
+  // Mock Reminders
+  const reminders = [
+    { id: 1, text: "Fasting required for Thyroid test tomorrow.", time: "Tomorrow, 8 AM" },
+    { id: 2, text: "Follow-up checkup pending.", time: "Next Week" }
+  ];
 
 
 
@@ -161,6 +292,35 @@ const LandingPage = () => {
   const [bookingTime, setBookingTime] = useState('');
   const [selectedTests, setSelectedTests] = useState([]);
 
+  // Advanced Features State
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showLabDetailsModal, setShowLabDetailsModal] = useState(false);
+  const [activeLabTab, setActiveLabTab] = useState('Overview'); // Overview, Tests, Reviews
+  const [activeTestCategory, setActiveTestCategory] = useState('Blood Tests');
+
+  // Scroll Listener for Navbar
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Lock Body Scroll when Booking Modal is open
+  useEffect(() => {
+    if (showBookingModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showBookingModal]);
+
   // ... (existing useEffects)
 
   // Booking Actions
@@ -171,6 +331,13 @@ const LandingPage = () => {
     // Default select all tags as suggested tests or let user pick. Let's select first one.
     setSelectedTests(lab.tags && lab.tags.length > 0 ? [lab.tags[0]] : []);
     setShowBookingModal(true);
+    setShowLabDetailsModal(false); // Close details if open
+  };
+
+  const handleViewDetails = (lab) => {
+    setSelectedLab(lab);
+    setActiveLabTab('Overview');
+    setShowLabDetailsModal(true);
   };
 
   const handleConfirmBooking = () => {
@@ -210,6 +377,18 @@ const LandingPage = () => {
   const [reports, setReports] = useState([]);
   const [showReportsModal, setShowReportsModal] = useState(false);
 
+  const isAnyModalOpen = showNotifications || showReminders || showMyBookingsModal || showReportsModal || showProfileModal || showBookingModal;
+
+  const handleHomeClick = () => {
+    setShowNotifications(false);
+    setShowReminders(false);
+    setShowMyBookingsModal(false);
+    setShowReportsModal(false);
+    setShowProfileModal(false);
+    setShowBookingModal(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Initial Load - Check Location
   useEffect(() => {
     // Strictly show location modal on every entry to Landing Page as requested
@@ -232,12 +411,15 @@ const LandingPage = () => {
         setUserProfile(data);
 
         // Auto-redirect admins who land here (e.g. after Google Login or direct link)
+        // Commented out to allow access to Landing Page for testing/viewing
+        /*
         if (data.role === 'LAB_ADMIN') {
           // Redirect directly to dashboard; Dashboard handles the secure PIN overlay
           navigate('/lab-admin-dashboard', { replace: true });
         } else if (data.role === 'SUPER_ADMIN') {
           navigate('/super-admin-dashboard', { replace: true });
         }
+        */
 
       } catch (e) {
         console.error("Failed to fetch profile", e);
@@ -304,6 +486,50 @@ const LandingPage = () => {
     }
   };
 
+
+  // Handle Main Search Bar Enter Key
+  const handleSearchSubmit = async (e) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      // Check if the search term is a location
+      const query = searchTerm.trim();
+
+      try {
+        // optimistically try to find it as a location
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+          const { lat, lon } = data[0];
+          const coords = { lat: parseFloat(lat), lon: parseFloat(lon) };
+
+          // Update Location
+          setUserCoords(coords);
+          setUserLocationInput(query); // Update the "current location" name
+          sessionStorage.setItem('user_location_coords', JSON.stringify({ ...coords, name: query }));
+
+          // Clear filtered text so we see all labs in this new location
+          // Or keep it? User might be searching "Xray in Mumbai".
+          // If we update location to Mumbai, and keep "Xray in Mumbai" as filter, it might match nothing if "Mumbai" is not in lab name/tags.
+          // Better logic: If we successfully switched location, maybe clear the search term OR strip the location part.
+          // For now, let's just switch location and let the user refine if needed, or keep the search term.
+          // If I type "Mumbai", and location switches to Mumbai, the labs at Mumbai will appear. Then we filter by "Mumbai".
+          // The labs generated at Mumbai will likely have "Mumbai" in their address, so it should be fine.
+
+        } else {
+          // If not a location, just strict filter existing labs (already happens via useEffect)
+          // If not a location, just strict filter existing labs (already happens via useEffect)
+          console.log("Not a location or not found, filtering list...");
+
+          // Optionally: Explicitly tell the user we couldn't find that location?
+          // For now, silently failing to update location is safer, leaving the keyword search active.
+          // But if userCoords was null, we rely on the keyword fallback we added to filterLabs.
+        }
+      } catch (err) {
+        console.error("Search error", err);
+      }
+    }
+  };
+
   // Fetch Reports
   const fetchReports = async () => {
     try {
@@ -316,7 +542,7 @@ const LandingPage = () => {
   };
 
   // Derive Display Name
-  const displayName = userProfile?.email ? userProfile.email.split('@')[0] : 'Guest';
+  const displayName = userProfile?.email ? userProfile.email.split('@')[0] : (patientDetails.displayName || userProfile?.displayName || 'Guest');
 
   // Core Filter Logic
   const filterLabs = (filter, search, coords) => {
@@ -345,16 +571,16 @@ const LandingPage = () => {
       if (isKanjirapally) {
         // Specific data provided for Kanjirapally
         const kLabs = [
-          { name: "Scanron Diagnostics", location: "Kanjirappally, Kottayam", tags: ["Medical Lab", "ECG", "Scanning"], rate: 4.5, time: "09:00 AM" },
-          { name: "Sri Diagnostics Pvt (Ltd)", location: "Kanjirappally, Kottayam", tags: ["Pathology", "Clinical Lab"], rate: 4.2, time: "09:00 AM" },
-          { name: "DDRC SRLl Diagnostic Center", location: "Kanjirappally, Kottayam", tags: ["Diagnostic Center", "Lab"], rate: 5.0, time: "24 Hours" },
-          { name: "Amala Laboratary", location: "Kanjirappally, Kottayam", tags: ["Urine", "Sputum", "Clinical"], rate: 4.0, time: "09:00 AM" },
-          { name: "Dianova", location: "Kanjirappally, Kottayam", tags: ["Clinical", "Medical Lab"], rate: 4.3, time: "09:00 AM" },
-          { name: "Royal Clinical Laboratory", location: "Kanjirappally, Kottayam", tags: ["Clinical Tests"], rate: 4.1, time: "09:00 AM" },
-          { name: "Marymatha Clinical Laboratory", location: "Kanjirappally, Kottayam", tags: ["Blood", "Body Fluids"], rate: 4.4, time: "Close 05:30 PM" },
-          { name: "Dianova Clinical Laboratory", location: "Kanjirappally, Kottayam", tags: ["Clinical Lab"], rate: 4.3, time: "09:00 AM" },
-          { name: "ClinoTech Laboratories", location: "Kanjirappally, Kottayam", tags: ["Diagnostic Lab"], rate: 5.0, time: "09:00 AM" },
-          { name: "Usha Clinic", location: "Kanjirappally, Kottayam", tags: ["Medical Lab", "Clinic"], rate: 4.0, time: "09:00 AM" }
+          { name: "Scanron Diagnostics", location: "Kanjirappally, Kottayam", tags: ["Medical Lab", "ECG", "Scanning"], rate: "New", time: "08:30 PM", price: 500 },
+          { name: "Sri Diagnostics Pvt (Ltd)", location: "Kanjirappally, Kottayam", tags: ["Pathology", "Blood", "Urine", "Sputum"], rate: "New", time: "06:30 PM", price: 450 },
+          { name: "DDRC SRLl Diagnostic Center", location: "Kanjirappally, Kottayam", tags: ["Diagnostic Center", "Lab"], rate: 5.0, time: "24 Hours", price: 600 },
+          { name: "Amala Laboratary", location: "Kanjirappally, Kottayam", tags: ["Blood", "Urine", "Sputum", "Stool"], rate: "New", time: "04:30 PM", price: 400 },
+          { name: "Dianova", location: "Kanjirappally, Kottayam", tags: ["Clinical", "Medical Lab", "Blood", "Sputum"], rate: "New", time: "06:30 PM", price: 550 },
+          { name: "Royal Clinical Laboratory", location: "Kanjirappally, Kottayam", tags: ["Clinical Tests"], rate: "New", time: "07:00 PM", price: 480 },
+          { name: "Marymatha Clinical Laboratory", location: "Kanjirappally, Kottayam", tags: ["Blood", "Urine", "Stool", "Body Fluids"], rate: "New", time: "05:30 PM", price: 420 },
+          { name: "Dianova Clinical Laboratory", location: "Kanjirappally, Kottayam", tags: ["Clinical Laboratory"], rate: "New", time: "06:00 PM", price: 500 },
+          { name: "ClinoTech Laboratories", location: "Kanjirappally, Kottayam", tags: ["Diagnostic Laboratory"], rate: 5.0, time: "08:00 PM", price: 650 },
+          { name: "Usha Clinic", location: "Kanjirappally, Kottayam", tags: ["Medical Lab", "Clinic"], rate: 4.0, time: "07:00 PM", price: 350 }
         ];
 
         dynamicLabs = kLabs.map((l, i) => ({
@@ -363,7 +589,8 @@ const LandingPage = () => {
           rating: l.rate,
           location: l.location,
           tags: l.tags,
-          price: 400 + Math.floor(Math.random() * 300),
+          price: l.price,
+          openTime: l.time,
           image: labImages[i % labImages.length],
           lat: coords.lat + (Math.random() - 0.5) * 0.015,
           lon: coords.lon + (Math.random() - 0.5) * 0.015
@@ -414,8 +641,34 @@ const LandingPage = () => {
       });
 
     } else {
-      // Fallback: Show nothing until location is entered, strictly following "after entering... show labs"
-      processingLabs = [];
+      // Fallback: Show Generic Labs for filtering if no location is selected but search term exists
+      if (search && search.length > 2) {
+        // Use the imported LABS_DATA as a base, simulating a "global search"
+        const labImages = [
+          'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=600',
+          'https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?auto=format&fit=crop&q=80&w=600',
+          'https://images.unsplash.com/photo-1516549655169-df83a092fc96?auto=format&fit=crop&q=80&w=600'
+        ];
+
+        // Mock some extra global labs
+        const extraLabs = [
+          { id: 101, name: "Metropolis Healthcare", location: "Global Network", tags: ["Full Body", "Thyroid"], rating: 4.5, price: 800 },
+          { id: 102, name: "Dr. Lal PathLabs", location: "Nationwide", tags: ["CBC", "Diabetes"], rating: 4.7, price: 550 },
+          { id: 103, name: "SRL Diagnostics", location: "Multiple Cities", tags: ["KFT", "LFT"], rating: 4.4, price: 600 },
+          { id: 104, name: "Thyrocare Technologies", location: "Pan India", tags: ["Thyroid", "Vitamins"], rating: 4.6, price: 400 }
+        ];
+
+        const allMock = [...LABS_DATA, ...extraLabs];
+
+        processingLabs = allMock.map((lab, i) => ({
+          ...lab,
+          image: labImages[i % labImages.length],
+          distance: 'N/A', // Distance unknown
+          distanceVal: 9999
+        }));
+      } else {
+        processingLabs = [];
+      }
     }
 
     // Apply Search
@@ -471,6 +724,17 @@ const LandingPage = () => {
       alert(`Prescription "${file.name}" uploaded successfully! Our team will analyze it and contact you.`);
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleProfileImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePic(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleLogout = () => {
@@ -537,126 +801,342 @@ const LandingPage = () => {
 
       {/* Booking Modal (New) */}
       {showBookingModal && selectedLab && (
-        <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className="modal-header">
-              <h3>Book Appointment</h3>
-              <button className="close-btn" onClick={() => setShowBookingModal(false)}>
-                <IconX />
-              </button>
+        <div style={{ position: 'fixed', top: '73px', left: 0, right: 0, bottom: 0, zIndex: 900, background: '#f8fafc', overflowY: 'auto', padding: '2rem' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '320px 1fr', gap: '2rem', minHeight: 'calc(100vh - 120px)' }}>
+
+            {/* Sidebar Card - Floating Style */}
+            <div className="fs-sidebar-card" style={{
+              background: 'white',
+              borderRadius: '24px',
+              padding: '2rem 1.5rem',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+              height: 'fit-content',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              position: 'sticky',
+              top: '2rem',
+              border: '1px solid white'
+            }}>
+
+              <div className="sidebar-avatar" style={{
+                backgroundImage: `url(${selectedLab.image})`,
+                backgroundSize: 'cover',
+                width: 100,
+                height: 100,
+                marginBottom: '1rem',
+                borderRadius: '50%',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                marginTop: '1rem'
+              }}>
+                {!selectedLab.image && <IconMapPin size={50} />}
+              </div>
+
+              <div className="sidebar-info" style={{ width: '100%' }}>
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#1e293b', fontWeight: 700 }}>{selectedLab.name}</h3>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', marginBottom: '0.8rem', color: '#f59e0b', fontWeight: 700, fontSize: '1rem' }}>
+                  <span>{selectedLab.rating}</span> <IconStar fill="currentColor" size={18} />
+                  <span style={{ color: '#94a3b8', fontWeight: 500, fontSize: '0.9rem' }}>({selectedLab.rating > 4.5 ? 'Excellent' : 'Good'})</span>
+                </div>
+                <p style={{ fontSize: '0.9rem', marginBottom: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                  <IconMapPin size={14} /> {selectedLab.location}
+                </p>
+
+                {selectedLab.distance && (
+                  <p style={{ fontSize: '1rem', marginBottom: '1.2rem', color: '#2563eb', fontWeight: 600 }}>
+                    Distance: {selectedLab.distance}
+                  </p>
+                )}
+
+                <div style={{ marginTop: '1.2rem', paddingTop: '1.2rem', borderTop: '1px solid #f1f5f9', width: '100%' }}>
+                  <p style={{ margin: '0 0 0.2rem 0', fontSize: '0.85rem', color: '#64748b' }}>Consultation Starts</p>
+                  <p style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#1d4ed8' }}>₹{selectedLab.price}</p>
+                </div>
+
+                <div style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
+                  {selectedLab.tags && selectedLab.tags.map((t, i) => (
+                    <span key={i} style={{ fontSize: '0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.5rem 1rem', borderRadius: '20px', color: '#475569', fontWeight: 500 }}>{t}</span>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div className="booking-details">
-              <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #eee' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-dark)' }}>{selectedLab.name}</h4>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b' }}>{selectedLab.location}</p>
-              </div>
+            {/* Main Content Card - Floating Style */}
+            <div style={{
+              background: 'white',
+              borderRadius: '24px',
+              padding: '3rem',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+              height: 'fit-content',
+              minHeight: '100%',
+              border: '1px solid white'
+            }}>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '2rem', color: '#1e293b', fontWeight: 700 }}>Patient Details</h3>
+              <div className="fs-form-grid" style={{ gap: '2rem' }}>
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={{ display: 'block', marginBottom: '1rem', fontWeight: 600, color: '#334155', fontSize: '1.1rem' }}>Select Tests</label>
 
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>Select Tests</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {selectedLab.tags ? selectedLab.tags.map(test => (
-                    <span
-                      key={test}
-                      onClick={() => toggleTestSelection(test)}
-                      style={{
-                        padding: '0.4rem 0.8rem',
-                        borderRadius: '20px',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        background: selectedTests.includes(test) ? 'var(--primary)' : '#f1f5f9',
-                        color: selectedTests.includes(test) ? 'white' : '#475569',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {test}
-                    </span>
-                  )) : (<span>No tests listed</span>)}
+                  {/* Category Tabs */}
+                  <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                    {Object.keys(TEST_CATEGORIES).map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveTestCategory(cat)}
+                        style={{
+                          padding: '0.6rem 1.25rem',
+                          borderRadius: '30px',
+                          border: 'none',
+                          background: activeTestCategory === cat ? '#2563eb' : 'white',
+                          color: activeTestCategory === cat ? 'white' : '#64748b',
+                          fontSize: '0.95rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          display: 'flex', alignItems: 'center', gap: '0.5rem',
+                          boxShadow: activeTestCategory === cat ? '0 4px 12px rgba(37, 99, 235, 0.3)' : '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        <span>{cat === "Urine Tests" ? "🚽" : cat === "Sputum Tests" ? "🫁" : cat === "Stool Tests" ? "💩" : "🩸"}</span>
+                        <span>{cat}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                    {TEST_CATEGORIES[activeTestCategory].map(test => (
+                      <div
+                        key={test}
+                        onClick={() => toggleTestSelection(test)}
+                        style={{
+                          padding: '1.25rem',
+                          border: `1.5px solid ${selectedTests.includes(test) ? '#2563eb' : '#e2e8f0'}`,
+                          borderRadius: '16px',
+                          cursor: 'pointer',
+                          background: selectedTests.includes(test) ? '#eff6ff' : 'white',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.75rem',
+                          minHeight: '80px',
+                          position: 'relative'
+                        }}
+                      >
+                        <div style={{
+                          minWidth: 20, width: 20, height: 20, borderRadius: '6px',
+                          border: `1.5px solid ${selectedTests.includes(test) ? '#2563eb' : '#cbd5e1'}`,
+                          background: selectedTests.includes(test) ? '#2563eb' : 'white',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          marginTop: '2px'
+                        }}>
+                          {selectedTests.includes(test) && <IconCheckCircle size={14} color="white" />}
+                        </div>
+                        <span style={{ fontWeight: 600, color: '#334155', lineHeight: 1.4, fontSize: '0.95rem' }}>{test}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#334155' }}>Preferred Date</label>
+                    <input className="fs-input" type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} style={{ padding: '0.8rem', width: '100%', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#334155' }}>Preferred Time</label>
+                    <input className="fs-input" type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} style={{ padding: '0.8rem', width: '100%', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }} />
+                  </div>
+                </div>
+
+                <div style={{ gridColumn: '1/-1', borderTop: '1px solid #f1f5f9', paddingTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b' }}>Total Estimated Cost</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>₹{selectedLab.price + (selectedTests.length * 150)}</p>
+                  </div>
+                  <button className="location-submit-btn" style={{ padding: '0 3rem', height: '56px', fontSize: '1.1rem', borderRadius: '16px', background: '#2563eb', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }} onClick={handleConfirmBooking}>
+                    Confirm Appointment
+                  </button>
                 </div>
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>Date</label>
-                  <input
-                    type="date"
-                    value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>Time</label>
-                  <input
-                    type="time"
-                    value={bookingTime}
-                    onChange={(e) => setBookingTime(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                  />
-                </div>
-              </div>
-
-              <button className="location-submit-btn" style={{ width: '100%', justifyContent: 'center' }} onClick={handleConfirmBooking}>
-                Confirm Booking
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* My Bookings Modal (New) */}
-      {showMyBookingsModal && (
-        <div className="modal-overlay" onClick={() => setShowMyBookingsModal(false)}>
-          <div className="modal-content reports-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>My Bookings</h3>
-              <button className="close-btn" onClick={() => setShowMyBookingsModal(false)}>
-                <IconX />
-              </button>
+      {/* Lab Details Modal (New Tab-Based) */}
+      {showLabDetailsModal && selectedLab && (
+        <div className="modal-overlay" onClick={() => setShowLabDetailsModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px', height: '80vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
+            {/* Header */}
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', color: 'var(--text-main)' }}>{selectedLab.name}</h2>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <span className="rating-badge" style={{ fontSize: '0.9rem' }}>{selectedLab.rating} <IconStar size={14} fill="currentColor" /></span>
+                  <span style={{ color: 'var(--text-body)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <IconMapPin size={14} /> {selectedLab.location}
+                  </span>
+                </div>
+              </div>
+              <button className="close-btn" onClick={() => setShowLabDetailsModal(false)}><IconX /></button>
             </div>
 
-            <div className="reports-list">
-              {bookings.length > 0 ? (
-                bookings.map(booking => (
-                  <div className="report-item" key={booking.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                      <span className="report-name" style={{ fontWeight: 700 }}>{booking.labName}</span>
-                      <span className="status-badge" style={{ background: '#dcfce7', color: '#166534' }}>{booking.status}</span>
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                      <IconCalendar style={{ width: 14, marginRight: 4, display: 'inline' }} /> {booking.date} at {booking.time}
-                    </div>
-                    <div className="tags" style={{ marginTop: 0 }}>
-                      {booking.tests.map(t => <span key={t} style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>{t}</span>)}
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 1.5rem' }}>
+              {['Overview', 'Tests & Pricing', 'Reviews'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveLabTab(tab)}
+                  style={{
+                    padding: '1rem 1.5rem',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: activeLabTab === tab ? '3px solid var(--primary)' : '3px solid transparent',
+                    color: activeLabTab === tab ? 'var(--primary)' : 'var(--text-body)',
+                    fontWeight: activeLabTab === tab ? 700 : 500,
+                    cursor: 'pointer',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+              {activeLabTab === 'Overview' && (
+                <div style={{ ani: 'fadeIn 0.3s' }}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>About Laboratory</h4>
+                  <p style={{ lineHeight: 1.6, color: '#475569', marginBottom: '1.5rem' }}>
+                    {selectedLab.name} is a state-of-the-art diagnostic center providing comprehensive services.
+                    Known for accurate reports and quick turnaround time. Verified by MediBot for quality assurance.
+                  </p>
+
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Available Amenities</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                    {['Home Collection', 'Digital Reports', '24/7 Support', 'Wheelchair Access'].map(item => (
+                      <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.9rem' }}>
+                        <IconCheckCircle size={16} style={{ color: 'var(--secondary)' }} />
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeLabTab === 'Tests & Pricing' && (
+                <div>
+                  <h4 style={{ marginBottom: '1rem' }}>Available Tests</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {selectedLab.tags.map((test, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                        <div>
+                          <span style={{ display: 'block', fontWeight: 600, color: 'var(--text-main)' }}>{test}</span>
+                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Report in 24 hrs</span>
+                        </div>
+                        <div style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
+                          ₹{selectedLab.price + (idx * 150)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeLabTab === 'Reviews' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', padding: '1.5rem', background: '#fffbeb', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#d97706' }}>{selectedLab.rating}</div>
+                    <div>
+                      <div style={{ display: 'flex', color: '#f59e0b', marginBottom: '0.25rem' }}>
+                        {[...Array(5)].map((_, i) => <IconStar key={i} fill={i < Math.floor(selectedLab.rating) ? "currentColor" : "none"} size={18} />)}
+                      </div>
+                      <span style={{ fontSize: '0.9rem', color: '#92400e' }}>Based on 124 Verified Reviews</span>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="empty-state">No active bookings found.</div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {[1, 2].map(r => (
+                      <div key={r} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                          <span style={{ fontWeight: 600 }}>Ramesh K.</span>
+                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>2 days ago</span>
+                        </div>
+                        <p style={{ color: '#475569', fontSize: '0.9rem', margin: 0 }}>Excellent service. The phlebotomist was very professional and hygienic.</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748b' }}>Consultation Fee</span>
+                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary-dark)' }}>₹{selectedLab.price}</span>
+              </div>
+              <button
+                className="location-submit-btn"
+                style={{ width: 'auto', padding: '0.8rem 2rem' }}
+                onClick={() => handleBookNow(selectedLab)}
+              >
+                Book Appointment
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* 1. Navbar */}
-      <nav className="glass-navbar">
+      <nav className={`glass-navbar ${isScrolled || isAnyModalOpen ? 'scrolled' : ''}`}>
         <div className="nav-content">
-          <div className="logo-section">
+          <div className="logo-section" onClick={handleHomeClick}>
+            <div className="logo-icon-wrapper" style={{ background: 'transparent', width: 'auto', height: 'auto', padding: 0 }}>
+              <img src={logoImage} alt="MediBot Logo" style={{ width: 40, height: 'auto' }} />
+            </div>
             <span className="brand-logo">MediBot</span>
           </div>
 
-          <div className="search-bar-nav">
-            <IconSearch />
-            <input
-              type="text"
-              placeholder="Search tests, labs..."
-              value={searchTerm}
-              onChange={handleSearch}
-            />
-          </div>
+          <div className="search-bar-nav" style={{ display: 'none' }}></div>
 
           <div className="nav-links">
+            <button className="nav-item-btn" onClick={handleHomeClick}>
+              <IconHome />
+              <span>Home</span>
+            </button>
+            {/* Notifications & Reminders - Only visible if location entered */}
+            {userCoords && (
+              <>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className="nav-item-btn"
+                    onClick={() => { setShowNotifications(!showNotifications); setShowReminders(false); }}
+                  >
+                    <IconBell />
+                    <span>Notifications</span>
+                    <span style={{
+                      position: 'absolute', top: -2, right: -2,
+                      background: '#ef4444', color: 'white',
+                      fontSize: '0.6rem', padding: '2px 5px', borderRadius: '50%',
+                      fontWeight: 'bold'
+                    }}>2</span>
+                  </button>
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className="nav-item-btn"
+                    onClick={() => { setShowReminders(!showReminders); setShowNotifications(false); }}
+                  >
+                    <IconClock />
+                    <span>Reminders</span>
+                  </button>
+                </div>
+              </>
+            )}
+
             <button className="nav-item-btn" onClick={() => setShowMyBookingsModal(true)}>
               <IconCalendar />
               <span>Bookings {bookings.length > 0 && `(${bookings.length})`}</span>
@@ -671,48 +1151,58 @@ const LandingPage = () => {
               onClick={() => setShowProfileModal(true)}
               title="View Profile"
             >
-              <span className="profile-name">{displayName}</span>
-              <div className="avatar-circle">
-                <IconUser />
+              <span className="profile-name" style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {displayName}
+              </span>
+              <div className="avatar-circle" style={{
+                backgroundImage: profilePic ? `url(${profilePic})` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}>
+                {!profilePic && <IconUser />}
               </div>
             </button>
           </div>
         </div>
-      </nav>
+      </nav >
 
       {/* Reports Modal */}
-      {showReportsModal && (
-        <div className="modal-overlay" onClick={() => setShowReportsModal(false)}>
-          <div className="modal-content reports-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>My Reports & Prescriptions</h3>
-              <button className="close-btn" onClick={() => setShowReportsModal(false)}>
-                <IconX />
-              </button>
-            </div>
 
-            <div className="reports-list">
+      {/* Full Screen Reports Section */}
+      {/* Full Screen Reports Section */}
+      {showReportsModal && (
+        <div className="fullscreen-section">
+          {/* Header Removed */}
+          <div className="fullscreen-content">
+            <div className="fs-card">
+              <h3>Uploaded Prescriptions</h3>
               {reports.length > 0 ? (
-                reports.map((report) => (
-                  <div className="report-item" key={report.id}>
-                    <div className="report-info">
-                      <span className="report-name">Prescription #{report.id}</span>
-                      <span className="report-date">{new Date(report.date).toLocaleDateString()}</span>
-                      <span className={`status-badge ${report.status}`}>{report.status}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                  {reports.map((report) => (
+                    <div key={report.id} className="notification-item" style={{ flexDirection: 'column', gap: '1rem', alignItems: 'flex-start', borderLeft: '4px solid var(--primary)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>Prescription #{report.id}</span>
+                        <span className={`status-badge ${report.status}`} style={{ textTransform: 'capitalize' }}>{report.status}</span>
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                        <IconCalendar size={14} style={{ marginRight: 4 }} />
+                        {new Date(report.date).toLocaleDateString()}
+                      </div>
+                      <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', width: '100%' }}>
+                        <a href={report.file_path} target="_blank" rel="noopener noreferrer" className="book-btn" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', flex: 1, textAlign: 'center' }}>
+                          <IconEye size={16} style={{ marginRight: 6 }} /> View
+                        </a>
+                        <a href={report.file_path} download className="book-btn" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', flex: 1, textAlign: 'center', background: 'white', color: 'var(--primary)', border: '1px solid var(--primary)' }}>
+                          <IconDownload size={16} style={{ marginRight: 6 }} /> Download
+                        </a>
+                      </div>
                     </div>
-                    <div className="report-actions">
-                      <a href={report.file_path} target="_blank" rel="noopener noreferrer" className="action-btn view" title="View">
-                        <IconEye />
-                      </a>
-                      <a href={report.file_path} download className="action-btn download" title="Download">
-                        <IconDownload />
-                      </a>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
-                <div className="empty-state">
-                  <p>No prescriptions or reports uploaded yet.</p>
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+                  <IconFileText size={48} style={{ opacity: 0.5, marginBottom: '1rem' }} />
+                  <p>No prescriptions uploaded yet.</p>
                 </div>
               )}
             </div>
@@ -722,90 +1212,304 @@ const LandingPage = () => {
 
 
 
-      {/* Profile Modal */}
+
+      {/* Full Screen Profile Section */}
+      {/* Full Screen Profile Section */}
       {showProfileModal && (
-        <div className="modal-overlay" onClick={() => setShowProfileModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Patient Details</h3>
-              <button className="close-btn" onClick={() => setShowProfileModal(false)}>
-                <IconX />
-              </button>
-            </div>
-
-            {userProfile ? (
-              <div className="profile-details">
-                <div className="detail-row">
-                  <span className="label">Name:</span>
-                  <span className="value" style={{ textTransform: 'capitalize' }}>{displayName}</span>
+        <div className="fullscreen-section">
+          {/* Header Removed */}
+          <div className="fullscreen-content">
+            <div className="fs-split-layout">
+              <div className="fs-sidebar-card">
+                <input
+                  type="file"
+                  ref={profilePicInputRef}
+                  style={{ display: 'none' }}
+                  accept="image/*"
+                  onChange={handleProfileImageUpload}
+                />
+                <div
+                  className="sidebar-avatar"
+                  onClick={() => profilePicInputRef.current.click()}
+                  style={{
+                    backgroundImage: profilePic ? `url(${profilePic})` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}
+                  title="Click to upload profile picture"
+                >
+                  {!profilePic && <IconUser />}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    background: 'var(--primary)',
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    border: '2px solid white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <IconUploadCloud size={12} color="white" />
+                  </div>
                 </div>
-                <div className="detail-row">
-                  <span className="label">Email:</span>
-                  <span className="value">{userProfile.email}</span>
+                <div className="sidebar-info">
+                  <h3>{displayName}</h3>
+                  <p>{userProfile?.email || 'No Email'}</p>
+                  <button className="book-btn" style={{ marginTop: '2rem', width: '100%', borderColor: '#ef4444', color: '#ef4444', background: 'transparent' }} onClick={handleLogout}>
+                    Logout
+                  </button>
                 </div>
-                <div className="detail-row">
-                  <span className="label">Patient ID:</span>
-                  <span className="value">#{userProfile.id}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Role:</span>
-                  <span className="value">{userProfile.role}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Member Since:</span>
-                  <span className="value">{userProfile.joined_at ? new Date(userProfile.joined_at).toLocaleDateString() : 'N/A'}</span>
-                </div>
-
-                <div className="detail-row">
-                  <span className="label">Current Location:</span>
-                  <span className="value">{userLocationInput || 'Not Set'}</span>
-                </div>
-
-                <button className="logout-btn-full" onClick={handleLogout}>
-                  Logout
-                </button>
               </div>
-            ) : (
-              <div className="api-loading">Loading profile...</div>
-            )}
+
+              <div className="fs-main-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                  <h3 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--text-main)' }}>My Profile</h3>
+                  {!isEditingProfile && (
+                    <button className="book-btn" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsEditingProfile(true)}>
+                      <IconUser size={16} /> Edit Profile
+                    </button>
+                  )}
+                </div>
+
+                <div className="fs-form-grid">
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Full Name</label>
+                    {isEditingProfile ? (
+                      <input
+                        className="fs-input"
+                        value={patientDetails.displayName !== undefined ? patientDetails.displayName : (userProfile?.displayName || (userProfile?.email ? userProfile.email.split('@')[0] : ''))}
+                        onChange={e => setPatientDetails({ ...patientDetails, displayName: e.target.value })}
+                      />
+                    ) : (
+                      <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{displayName}</div>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#64748b' }}>Email Address</label>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{userProfile?.email || 'No Email'}</div>
+                  </div>
+
+                  {/* Editable Fields */}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Age</label>
+                    {isEditingProfile ? (
+                      <input className="fs-input" type="number" placeholder="Eg. 28" value={patientDetails.age} onChange={e => setPatientDetails({ ...patientDetails, age: e.target.value })} />
+                    ) : (
+                      <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.age || '--'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Gender</label>
+                    {isEditingProfile ? (
+                      <select className="fs-input" value={patientDetails.gender} onChange={e => setPatientDetails({ ...patientDetails, gender: e.target.value })}>
+                        <option value="">Select Gender</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                      </select>
+                    ) : (
+                      <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.gender || '--'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Blood Group</label>
+                    {isEditingProfile ? (
+                      <select className="fs-input" value={patientDetails.bloodGroup} onChange={e => setPatientDetails({ ...patientDetails, bloodGroup: e.target.value })}>
+                        <option>Select</option>
+                        <option>A+</option>
+                        <option>O+</option>
+                        <option>B+</option>
+                        <option>AB+</option>
+                        <option>A-</option>
+                        <option>O-</option>
+                        <option>B-</option>
+                        <option>AB-</option>
+                      </select>
+                    ) : (
+                      <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.bloodGroup || '--'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Contact Number</label>
+                    {isEditingProfile ? (
+                      <input className="fs-input" type="tel" placeholder="+91 9876543210" value={patientDetails.contact} onChange={e => setPatientDetails({ ...patientDetails, contact: e.target.value })} />
+                    ) : (
+                      <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.contact || '--'}</div>
+                    )}
+                  </div>
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Home Address</label>
+                    {isEditingProfile ? (
+                      <textarea className="fs-input" rows="3" placeholder="Enter full address for home collection..." value={patientDetails.savedLocation} onChange={e => setPatientDetails({ ...patientDetails, savedLocation: e.target.value })}></textarea>
+                    ) : (
+                      <div style={{ fontSize: '1.1rem', fontWeight: 500, lineHeight: 1.6 }}>{patientDetails.savedLocation || '--'}</div>
+                    )}
+                  </div>
+                </div>
+
+                {isEditingProfile && (
+                  <div style={{ marginTop: '2rem', textAlign: 'right', borderTop: '1px solid #f1f5f9', paddingTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                    <button className="book-btn" style={{ borderColor: '#cbd5e1', color: '#64748b' }} onClick={() => setIsEditingProfile(false)}>Cancel</button>
+                    <button className="location-submit-btn" style={{ width: 'auto', padding: '0.8rem 2rem' }} onClick={() => {
+                      // Mock Save
+                      setIsEditingProfile(false);
+                      alert('Profile Updated Successfully!');
+                    }}>
+                      Save Changes
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Full Screen Notifications Section */}
+      {showNotifications && (
+        <div className="fullscreen-section">
+          {/* Header Removed */}
+          <div className="fullscreen-content">
+            {notifications.map(n => (
+              <div key={n.id} className="notification-item">
+                <div style={{ background: '#e0f2fe', padding: '0.8rem', borderRadius: '50%', height: 'fit-content' }}>
+                  <IconBell size={20} color="var(--primary)" />
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '1.1rem' }}>{n.text}</p>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{n.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Full Screen Reminders Section */}
+      {showReminders && (
+        <div className="fullscreen-section">
+          {/* Header Removed */}
+          <div className="fullscreen-content">
+            {reminders.map(r => (
+              <div key={r.id} className="notification-item" style={{ borderLeftColor: '#f59e0b' }}>
+                <div style={{ background: '#fffbeb', padding: '0.8rem', borderRadius: '50%', height: 'fit-content' }}>
+                  <IconClock size={20} color="#d97706" />
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '1.1rem' }}>{r.text}</p>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{r.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Full Screen My Bookings Section */}
+      {showMyBookingsModal && (
+        <div className="fullscreen-section">
+          {/* Header Removed */}
+          <div className="fullscreen-content">
+            {bookings.length > 0 ? (
+              <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
+                {bookings.map(b => (
+                  <div key={b.id} className="booking-ticket">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                      <h3 style={{ margin: 0, color: 'var(--primary-dark)' }}>{b.labName}</h3>
+                      <span className="status-badge Completed" style={{ background: '#dcfce7', color: '#166534' }}>{b.status}</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.95rem' }}>
+                      <div>
+                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem' }}>Date</span>
+                        <strong>{b.date}</strong>
+                      </div>
+                      <div>
+                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem' }}>Time</span>
+                        <strong>{b.time}</strong>
+                      </div>
+                      <div style={{ gridColumn: '1/-1' }}>
+                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem' }}>Tests</span>
+                        <strong>{b.tests.join(', ')}</strong>
+                      </div>
+                      <div style={{ gridColumn: '1/-1' }}>
+                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem' }}>Location</span>
+                        {b.location}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+                <IconCalendar size={48} style={{ opacity: 0.5, marginBottom: '1rem' }} />
+                <p>No confirmed bookings yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )
+      }
 
       {/* 2. Hero Section */}
       <section className="hero-section" style={{
         backgroundImage: `url(${heroBg})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
+        backgroundPosition: 'center'
       }}>
         <div className="hero-content">
           <h1>Find Best Laboratories Near You</h1>
-          <p>Book tests, get reports online, and manage your health seamlessly. Trusted by thousands of patients worldwide.</p>
+          <p>Don't wait in lines. Book your tests now and get results faster than ever.</p>
         </div>
       </section>
 
       {/* 3. Filters & Labs List */}
       <main className="main-content" ref={labsSectionRef}>
-        <div className="section-header">
+        <div className="section-header-card">
           <h2>Featured Laboratories</h2>
-          <div className="filter-bar">
-            {['All Labs', 'Nearby', 'Top Rated', 'Low Cost'].map(filter => (
-              <button
-                key={filter}
-                className={`chip ${activeFilter === filter ? 'active' : ''}`}
-                onClick={() => handleFilter(filter)}
-              >
-                {filter}
-              </button>
-            ))}
+          <div className="header-actions">
+            <div className="section-search-bar">
+              <IconSearch size={18} color="#94a3b8" />
+              <input
+                type="text"
+                placeholder="Search labs, tests or location..."
+                value={searchTerm}
+                onChange={handleSearch}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    // If the current search term DOES match existing labs in the view, 
+                    // we might NOT want to re-trigger a location search if the user is just filtering.
+                    // However, if the list is empty, or they explicitly want to switch location, they hit Enter.
+                    // We will attempt location search.
+                    handleSearchSubmit(e);
+                  }
+                }}
+              />
+            </div>
+
+            <div className="filter-chips">
+              {['All Labs', 'Nearby', 'Top Rated', 'Low Cost'].map(filter => (
+                <button
+                  key={filter}
+                  className={`chip ${activeFilter === filter ? 'active' : ''}`}
+                  onClick={() => handleFilter(filter)}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+
 
         <div className="labs-grid">
           {filteredLabs.length > 0 ? (
             filteredLabs.slice(0, visibleLimit).map((lab) => (
-              <div className="lab-card" key={lab.id}>
+              <div className="lab-card" key={lab.id} onClick={() => handleViewDetails(lab)} style={{ cursor: 'pointer' }}>
                 <div className="lab-image-placeholder" style={{
                   backgroundImage: `url(${lab.image})`,
                   backgroundSize: 'cover',
@@ -816,7 +1520,7 @@ const LandingPage = () => {
                 <div className="lab-details">
                   <div className="lab-header">
                     <h3>{lab.name}</h3>
-                    <span className="rating-badge">{lab.rating} ⭐</span>
+                    <span className="rating-badge">{lab.rating} <IconStar size={12} fill="currentColor" /></span>
                   </div>
                   <p className="lab-location"><IconMapPin /> {lab.distance} • {lab.location}</p>
                   <div className="tags">
@@ -824,75 +1528,148 @@ const LandingPage = () => {
                   </div>
                   <div className="price-row">
                     <span className="price">Starts ₹{lab.price}</span>
-                    <button className="book-btn" onClick={() => handleBookNow(lab)}>Book Now</button>
+                    <button className="book-btn" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }} onClick={(e) => { e.stopPropagation(); handleBookNow(lab); }}>Book Now</button>
                   </div>
                 </div>
               </div>
             ))
           ) : (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b', gridColumn: '1/-1', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              {!userCoords ? (
+              {!userCoords && (!searchTerm || searchTerm.length < 3) ? (
                 <>
                   <IconMapPin size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
                   <p style={{ fontSize: '1.2rem', fontWeight: 500 }}>Please enter your location to view available laboratories.</p>
                   <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>We need your location to find the best diagnostic centers near you.</p>
                 </>
               ) : (
-                `No laboratories found near ${userLocationInput} (within 50km). Try a different location.`
+                <div>
+                  <IconSearch size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                  <p style={{ fontSize: '1.2rem', fontWeight: 500 }}>
+                    {userCoords ? `No laboratories found matching "${searchTerm}" near ${userLocationInput || 'your location'}.` : `No laboratories found for "${searchTerm}".`}
+                  </p>
+                  <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Try checking your spelling or search for a specific location (e.g. "Kochi").</p>
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {filteredLabs.length > visibleLimit && (
-          <div className="load-more-container" style={{ textAlign: 'center', marginTop: '3rem' }}>
-            <button className="book-btn" style={{ background: 'white', color: '#0f172a', border: '1px solid #cbd5e1' }} onClick={handleLoadMore}>
-              Load More Laboratories
-            </button>
-          </div>
-        )}
-      </main>
+        {
+          filteredLabs.length > visibleLimit && (
+            <div className="load-more-container" style={{ textAlign: 'center', marginTop: '3rem' }}>
+              <button className="book-btn" style={{ background: 'white', color: '#0f172a', border: '1px solid #cbd5e1' }} onClick={handleLoadMore}>
+                Load More Laboratories
+              </button>
+            </div>
+          )
+        }
+      </main >
 
-      {/* 4. Contact Section */}
-      <section className="contact-section">
-        <div className="contact-container">
-          <h2>Contact MediBot</h2>
-          <p>We are here to help you 24/7. Reach out to us for any queries.</p>
-          <div className="contact-grid">
-            <div className="contact-item">
-              <h3>📍 Visit Us</h3>
-              <p>123 Health Avenue, Tech Park<br />Bangalore, India 560103</p>
+      {/* 6. Why Choose MediBot Section */}
+      < section className="why-choose-section" >
+        <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 className="section-title">Why Choose MediBot?</h2>
+          <p className="section-subtitle">We ensure the best healthcare experience with speed, accuracy, and trust.</p>
+
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="icon-box"><IconCheckCircle size={32} /></div>
+              <h3>Verified Labs</h3>
+              <p>100% verified NABL certified laboratories.</p>
             </div>
-            <div className="contact-item">
-              <h3>📞 Call Us</h3>
-              <p>+91 98765 43210<br />080 1234 5678</p>
+            <div className="feature-card">
+              <div className="icon-box"><IconFileText size={32} /></div>
+              <h3>Digital Reports</h3>
+              <p>Access your reports instantly on your phone.</p>
             </div>
-            <div className="contact-item">
-              <h3>📧 Email Us</h3>
-              <p>support@medibot.com<br />careers@medibot.com</p>
+            <div className="feature-card">
+              <div className="icon-box"><IconClock size={32} /></div>
+              <h3>Home Collection</h3>
+              <p>Sample collection from the comfort of your home.</p>
+            </div>
+            <div className="feature-card">
+              <div className="icon-box" style={{ color: '#25D366' }}><IconBell size={32} /></div>
+              <h3>Updates on WhatsApp</h3>
+              <p>Get real-time updates and reports on WhatsApp.</p>
             </div>
           </div>
         </div>
-      </section>
+      </section >
+
+
+
+      {/* 8. Verified Reviews Section */}
+      < section className="reviews-section" >
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <h2 className="section-title" style={{ textAlign: 'center' }}>Patient Stories</h2>
+          <div className="reviews-slider">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="review-card">
+                <div style={{ display: 'flex', gap: '4px', color: '#f59e0b', marginBottom: '1rem' }}>
+                  {[1, 2, 3, 4, 5].map(s => <IconStar key={s} fill="currentColor" size={16} />)}
+                </div>
+                <p className="review-text">"MediBot made it so easy to book my tests. The home collection was on time and the reports were delivered directly to my WhatsApp!"</p>
+                <div className="review-author">
+                  <div className="avatar-small">S</div>
+                  <div>
+                    <strong>Sneha P.</strong>
+                    <span>Verified Patient</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section >
+
+
+      {/* Contact Section Removed in favor of CTA and Footer specifics */}
+
 
       {/* 5. Footer */}
+      {/* 10. Footer */}
       <footer className="main-footer">
         <div className="footer-content">
           <div className="footer-brand">
             <span className="brand-logo">MediBot</span>
-            <p>Advanced healthcare management at your fingertips.</p>
+            <p>Smart healthcare for modern lives.</p>
+            <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+              {/* Social Placeholders */}
+              <div style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+              <div style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+              <div style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+            </div>
           </div>
-          <div className="footer-links">
-            <a href="#" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
-            <a href="#" onClick={(e) => e.preventDefault()}>Terms of Service</a>
-            <a href="#" onClick={(e) => e.preventDefault()}>Partner with us</a>
+
+          <div className="footer-links-group">
+            <h4>Company</h4>
+            <a href="#">About MediBot</a>
+            <a href="#">Partner Labs</a>
+            <a href="#">Careers</a>
+            <a href="#">Contact</a>
+          </div>
+
+          <div className="footer-links-group">
+            <h4>Services</h4>
+            <a href="#">Book Tests</a>
+            <a href="#">Health Checkups</a>
+            <a href="#">Home Collection</a>
+            <a href="#">Corporate Health</a>
+          </div>
+
+          <div className="footer-links-group">
+            <h4>Support</h4>
+            <a href="#">Help Center</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Report Issue</a>
           </div>
         </div>
         <div className="footer-bottom">
           <p>© 2026 MediBot Healthcare Inc. All rights reserved.</p>
         </div>
       </footer>
-    </div>
+    </div >
   );
 };
 

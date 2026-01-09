@@ -42,8 +42,10 @@ const LabAdminDashboard = () => {
 
     const [currentUser] = useState({
         name: 'Dr. A. Smith',
+        username: 'admin_asmith',
         role: 'Chief Administrator',
         email: 'asmith@medibot-lab.com',
+        password: '••••••••', // Masked for security in UI
         license: 'MD-445210-NY',
         department: 'Pathology & Diagnostics'
     });
@@ -64,6 +66,13 @@ const LabAdminDashboard = () => {
     };
 
     // Mock Data
+    const [stats] = useState({
+        todayAppointments: 24,
+        pendingCollections: 12,
+        testsInProgress: 45,
+        reportsRate: 94
+    });
+
     const activityData = [
         { day: 'Mon', bookings: 45, revenue: 1200 },
         { day: 'Tue', bookings: 52, revenue: 1450 },
@@ -208,6 +217,24 @@ const LabAdminDashboard = () => {
         { id: 3, fileName: 'Thyroid_Test_C15.pdf', patient: 'Emma Watson', test: 'Thyroid Panel', date: '2024-03-14', size: '3.1 MB', status: 'Pending Review' },
     ]);
     const [reportForm, setReportForm] = useState({ patientName: '', testType: '', file: null });
+
+    // --- NEW: Patient Management Data ---
+    const [patients, setPatients] = useState([
+        { id: 'P1001', name: 'Sarah Jennings', age: 34, gender: 'Female', email: 'sarah.j@example.com', phone: '+1 555-0123', lastVisit: '2025-05-12', totalVisits: 5, status: 'Active' },
+        { id: 'P1002', name: 'Michael Chen', age: 45, gender: 'Male', email: 'm.chen@example.com', phone: '+1 555-0187', lastVisit: '2025-05-12', totalVisits: 2, status: 'Active' },
+        { id: 'P1003', name: 'Emma Watson', age: 29, gender: 'Female', email: 'emma.w@example.com', phone: '+1 555-0199', lastVisit: '2025-05-11', totalVisits: 8, status: 'Active' },
+        { id: 'P1004', name: 'John Doe', age: 50, gender: 'Male', email: 'j.doe@example.com', phone: '+1 555-0144', lastVisit: '2025-05-13', totalVisits: 1, status: 'New' },
+    ]);
+    const [patientSearch, setPatientSearch] = useState('');
+
+    // --- NEW: Billing & Payments Data ---
+    const [invoices, setInvoices] = useState([
+        { id: 'INV-2024-001', patient: 'Sarah Jennings', date: '2025-05-12', amount: 120.00, status: 'Paid', method: 'Insurance' },
+        { id: 'INV-2024-002', patient: 'Michael Chen', date: '2025-05-12', amount: 85.50, status: 'Pending', method: 'Credit Card' },
+        { id: 'INV-2024-003', patient: 'Emma Watson', date: '2025-05-11', amount: 200.00, status: 'Overdue', method: 'Cash' },
+        { id: 'INV-2024-004', patient: 'John Doe', date: '2025-05-13', amount: 45.00, status: 'Paid', method: 'Cash' },
+    ]);
+
 
     // Slot Logic
     const [slotCapacity, setSlotCapacity] = useState(5);
@@ -1338,6 +1365,166 @@ const LabAdminDashboard = () => {
         </div>
     );
 
+    const renderPatients = () => {
+        const filteredPatients = patients.filter(p =>
+            p.name.toLowerCase().includes(patientSearch.toLowerCase()) ||
+            p.id.toLowerCase().includes(patientSearch.toLowerCase())
+        );
+
+        return (
+            <div className="lad-content" style={{ padding: '0', background: 'transparent', boxShadow: 'none', border: 'none' }}>
+                <div className="lad-section-header" style={{ marginBottom: '24px' }}>
+                    <div>
+                        <h3 className="lad-section-title" style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Patient Records</h3>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Securely manage patient demographics and history.</p>
+                    </div>
+                    <button className="lad-btn-primary" onClick={() => showToast('Feature: Add Patient Modal would open here')}>+ Register Patient</button>
+                </div>
+
+                <div style={{ background: 'white', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' }}>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem' }}>🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Search by Name or Patient ID..."
+                            value={patientSearch}
+                            onChange={(e) => setPatientSearch(e.target.value)}
+                            className="lad-search-input"
+                            style={{ width: '100%', paddingLeft: '40px', height: '42px' }}
+                        />
+                    </div>
+                </div>
+
+                <div className="lad-table-container" style={{ background: 'white', borderRadius: '12px', padding: '0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                    <table className="lad-table">
+                        <thead>
+                            <tr style={{ background: '#f8fafc' }}>
+                                <th style={{ padding: '16px' }}>Patient ID</th>
+                                <th>Name / Age / Gender</th>
+                                <th>Contact Info</th>
+                                <th>Last Visit</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: 'center' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredPatients.map(p => (
+                                <tr key={p.id}>
+                                    <td><span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#64748b' }}>#{p.id}</span></td>
+                                    <td>
+                                        <div style={{ fontWeight: 600, color: '#1e293b' }}>{p.name}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{p.age} Yrs • {p.gender}</div>
+                                    </td>
+                                    <td>
+                                        <div>{p.email}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{p.phone}</div>
+                                    </td>
+                                    <td>{p.lastVisit}</td>
+                                    <td>
+                                        <span style={{
+                                            padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                                            background: p.status === 'Active' ? '#dcfce7' : '#dbeafe',
+                                            color: p.status === 'Active' ? '#166534' : '#1e40af'
+                                        }}>
+                                            {p.status}
+                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <button className="lad-btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>View History</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    };
+
+    const renderBilling = () => {
+        const totalRevenue = invoices.reduce((acc, curr) => acc + (curr.status === 'Paid' ? curr.amount : 0), 0);
+        const pendingAmount = invoices.reduce((acc, curr) => acc + (curr.status !== 'Paid' ? curr.amount : 0), 0);
+
+        return (
+            <div className="lad-content" style={{ padding: '0', background: 'transparent', boxShadow: 'none', border: 'none' }}>
+                <div className="lad-section-header" style={{ marginBottom: '24px' }}>
+                    <div>
+                        <h3 className="lad-section-title" style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Billing & Financials</h3>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Track revenue, invoices, and payment statuses.</p>
+                    </div>
+                    <button className="lad-btn-outline">Download Report</button>
+                </div>
+
+                <div className="lad-stats-grid">
+                    <div className="lad-stat-card">
+                        <div className="lad-stat-header">
+                            <span className="lad-stat-title">Total Revenue</span>
+                            <div className="lad-stat-icon-bg" style={{ background: '#dcfce7', color: '#166534' }}>💲</div>
+                        </div>
+                        <h2 className="lad-stat-value">${totalRevenue.toFixed(2)}</h2>
+                        <div className="lad-stat-trend lad-trend-up"><span>+12% this week</span></div>
+                    </div>
+                    <div className="lad-stat-card">
+                        <div className="lad-stat-header">
+                            <span className="lad-stat-title">Pending Payment</span>
+                            <div className="lad-stat-icon-bg" style={{ background: '#ffedd5', color: '#c2410c' }}>⏳</div>
+                        </div>
+                        <h2 className="lad-stat-value">${pendingAmount.toFixed(2)}</h2>
+                        <div className="lad-stat-trend" style={{ color: '#f59e0b' }}><span>Action required</span></div>
+                    </div>
+                    <div className="lad-stat-card">
+                        <div className="lad-stat-header">
+                            <span className="lad-stat-title">Invoices Generated</span>
+                            <div className="lad-stat-icon-bg" style={{ background: '#e0f2fe', color: '#0369a1' }}>🧾</div>
+                        </div>
+                        <h2 className="lad-stat-value">{invoices.length}</h2>
+                        <div className="lad-stat-trend"><span>Today</span></div>
+                    </div>
+                </div>
+
+                <div className="lad-table-container" style={{ background: 'white', borderRadius: '12px', padding: '0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                    <table className="lad-table">
+                        <thead>
+                            <tr style={{ background: '#f8fafc' }}>
+                                <th style={{ padding: '16px' }}>Invoice #</th>
+                                <th>Patient Name</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Payment Method</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: 'center' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {invoices.map(inv => (
+                                <tr key={inv.id}>
+                                    <td><span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#64748b' }}>{inv.id}</span></td>
+                                    <td style={{ fontWeight: 600, color: '#1e293b' }}>{inv.patient}</td>
+                                    <td>{inv.date}</td>
+                                    <td style={{ fontWeight: 700 }}>${inv.amount.toFixed(2)}</td>
+                                    <td>{inv.method}</td>
+                                    <td>
+                                        <span style={{
+                                            padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                                            background: inv.status === 'Paid' ? '#dcfce7' : inv.status === 'Overdue' ? '#fee2e2' : '#ffedd5',
+                                            color: inv.status === 'Paid' ? '#166534' : inv.status === 'Overdue' ? '#b91c1c' : '#c2410c'
+                                        }}>
+                                            {inv.status}
+                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <button className="lad-btn-ghost" style={{ padding: '6px' }} title="Print">🖨️</button>
+                                        <button className="lad-btn-ghost" style={{ padding: '6px' }} title="Download">⬇️</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    };
+
     const renderProfile = () => (
         <div className="lad-content">
             <div className="lad-section-header">
@@ -1380,8 +1567,16 @@ const LabAdminDashboard = () => {
                             <input type="text" defaultValue={currentUser.name} className="lad-search-input" style={{ width: '100%' }} />
                         </div>
                         <div className="lad-form-group">
+                            <label>Login Username</label>
+                            <input type="text" defaultValue={currentUser.username} className="lad-search-input" style={{ width: '100%' }} />
+                        </div>
+                        <div className="lad-form-group">
                             <label>Official Email</label>
                             <input type="email" defaultValue={currentUser.email} className="lad-search-input" style={{ width: '100%' }} />
+                        </div>
+                        <div className="lad-form-group">
+                            <label>Current Password</label>
+                            <input type="text" defaultValue={currentUser.password} className="lad-search-input" style={{ width: '100%' }} readOnly />
                         </div>
                         <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '20px', marginTop: '10px' }}>
                             <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#334155', marginBottom: '16px' }}>Security</h4>
@@ -1652,9 +1847,11 @@ const LabAdminDashboard = () => {
                     {[
                         { id: 'overview', icon: '📊', label: 'Dashboard' },
                         { id: 'bookings', icon: '📅', label: 'Appointments' },
+                        { id: 'patients', icon: '👥', label: 'Patients' },
                         { id: 'tests', icon: '🧪', label: 'Inventory' },
                         { id: 'reports', icon: '📄', label: 'Reports' },
-                        { id: 'schedule', icon: '👥', label: 'Staff' },
+                        { id: 'billing', icon: '💳', label: 'Billing' },
+                        { id: 'schedule', icon: '⏰', label: 'Staff' },
                         { id: 'settings', icon: '⚙️', label: 'Settings' }
                     ].map(item => (
                         <li key={item.id}>
@@ -1745,8 +1942,10 @@ const LabAdminDashboard = () => {
                 <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'bookings' && renderBookings()}
+                    {activeTab === 'patients' && renderPatients()}
                     {activeTab === 'tests' && renderTests()}
                     {activeTab === 'reports' && renderReports()}
+                    {activeTab === 'billing' && renderBilling()}
                     {activeTab === 'schedule' && renderSchedule()}
                     {activeTab === 'settings' && renderSettings()}
                     {activeTab === 'profile' && renderProfile()}

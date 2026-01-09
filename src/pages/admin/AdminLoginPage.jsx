@@ -45,15 +45,16 @@ const AdminLoginPage = () => {
             const result = await handleLogin(form)
             setSubmitting(false)
 
-            if (result.role === 'LAB_ADMIN') {
-                // Navigate directly to dashboard.
-                // The Dashboard component will handle the PIN Security Overlay.
-                sessionStorage.removeItem('lab_admin_pin_verified')
-                navigate('/lab-admin-dashboard')
-            } else if (result.role === 'SUPER_ADMIN') {
-                navigate('/super-admin-dashboard')
+            // Direct redirection based on the selected tab as per user requirement.
+            // "When i select lab admin ... i must enter into lab admin dashboard"
+            if (role === 'LAB_ADMIN') {
+                sessionStorage.removeItem('lab_admin_pin_verified');
+                navigate('/lab-admin-dashboard', { replace: true });
+            } else if (role === 'SUPER_ADMIN') {
+                navigate('/super-admin-dashboard', { replace: true });
             } else {
-                navigate('/welcome')
+                // Fallback (should not happen given the UI only has two tabs)
+                navigate('/welcome', { replace: true });
             }
         } catch (err) {
             setSubmitting(false)

@@ -83,7 +83,15 @@ const LoginPage = () => {
     try {
       const result = await handleLogin(form)
       setStatus({ type: 'success', message: result?.message || 'Login successful.' })
-      navigate('/welcome', { replace: true })
+
+      // Role-based redirection
+      if (result.role === 'LAB_ADMIN') {
+        navigate('/lab-admin-dashboard', { replace: true })
+      } else if (result.role === 'SUPER_ADMIN') {
+        navigate('/super-admin-dashboard', { replace: true })
+      } else {
+        navigate('/welcome', { replace: true })
+      }
     } catch (err) {
       setStatus({ type: 'error', message: err.message || 'Unable to login right now.' })
     } finally {
