@@ -32,12 +32,12 @@ const AuthLayout = ({ children, heading, subheading }) => {
         <div className="admin-chip">
           <Link to="/admin/login">Admin panel</Link>
         </div>
-        <div className="brand-row">
-          <img src={logoImage} alt="MediBot Logo" style={{ width: 40, height: 'auto' }} />
-          <span className="brand-name">MediBot</span>
+        <div className="brand-row" style={{ flexDirection: 'column', marginBottom: '16px' }}>
+          <img src={logoImage} alt="MediBot Logo" style={{ width: 56, height: 'auto', marginBottom: '12px' }} />
+          <h2 style={{ fontSize: '26px', fontWeight: '800', color: '#0F172A', margin: 0 }}>MediBot</h2>
         </div>
         <div className="intro">
-          <h2>{heading || (isLogin ? 'Welcome back' : 'Join MediBot')}</h2>
+          {/* Main heading now integrated into brand-row */}
           <p className="sub-text">{subheading || 'Please enter your details to continue.'}</p>
         </div>
         {children}

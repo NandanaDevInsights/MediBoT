@@ -20,6 +20,16 @@ export const handleLogin = async (payload) => {
   return parseResponse(res)
 }
 
+export const verifyOtp = async (payload) => {
+  const res = await fetch(`${API_BASE}/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  })
+  return parseResponse(res)
+}
+
 export const handleSignup = async (payload) => {
   const res = await fetch(`${API_BASE}/signup`, {
     method: 'POST',

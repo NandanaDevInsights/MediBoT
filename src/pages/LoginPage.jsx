@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { handleLogin, startGoogleOAuth } from '../services/api'
+import { handleLogin, verifyOtp, startGoogleOAuth } from '../services/api'
 import { validateUserInput } from '../utils/validation'
 import './LoginPage.css' // Import the new stylesheet for updated colors
 
@@ -54,6 +54,8 @@ const LoginPage = () => {
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showOtp, setShowOtp] = useState(false)
+  const [otp, setOtp] = useState('')
 
   const adminMode = useMemo(
     () => search.get('role')?.toUpperCase() === 'ADMIN',
@@ -70,9 +72,38 @@ const LoginPage = () => {
     setErrors((prev) => ({ ...prev, [name]: undefined }))
   }
 
+  const processLoginSuccess = (result) => {
+    if (result.role === 'LAB_ADMIN') {
+      navigate('/lab-admin-dashboard', { replace: true })
+    } else if (result.role === 'SUPER_ADMIN') {
+      navigate('/super-admin-dashboard', { replace: true })
+    } else {
+      navigate('/welcome', { replace: true })
+    }
+  }
+
   const onSubmit = async (e) => {
     e.preventDefault()
     setStatus(null)
+
+    if (showOtp) {
+      if (!otp) {
+        setErrors({ otp: 'Please enter the OTP.' })
+        return
+      }
+      setSubmitting(true)
+      try {
+        const result = await verifyOtp({ email: form.email, otp })
+        setStatus({ type: 'success', message: 'Verification successful.' })
+        processLoginSuccess(result)
+      } catch (err) {
+        setStatus({ type: 'error', message: err.message || 'Invalid OTP.' })
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
+
     const validation = validateUserInput({ email: form.email, password: form.password })
     if (Object.keys(validation).length) {
       setErrors(validation)
@@ -82,15 +113,13 @@ const LoginPage = () => {
     setSubmitting(true)
     try {
       const result = await handleLogin(form)
-      setStatus({ type: 'success', message: result?.message || 'Login successful.' })
 
-      // Role-based redirection
-      if (result.role === 'LAB_ADMIN') {
-        navigate('/lab-admin-dashboard', { replace: true })
-      } else if (result.role === 'SUPER_ADMIN') {
-        navigate('/super-admin-dashboard', { replace: true })
+      if (result.require_otp) {
+        setShowOtp(true)
+        setStatus({ type: 'success', message: result.message })
       } else {
-        navigate('/welcome', { replace: true })
+        setStatus({ type: 'success', message: result?.message || 'Login successful.' })
+        processLoginSuccess(result)
       }
     } catch (err) {
       setStatus({ type: 'error', message: err.message || 'Unable to login right now.' })
@@ -103,57 +132,81 @@ const LoginPage = () => {
     <form className="auth-form" onSubmit={onSubmit} noValidate>
 
 
-      <InputField
-        label="Email Address"
-        name="email"
-        type="email"
-        placeholder="labuser@medibot.com"
-        value={form.email}
-        onChange={onInput}
-        error={errors.email}
-        icon={
-          <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M1 3.22222L8.25 7.83333L15.5 3.22222M2.8 1H14.2C15.1941 1 16 1.79218 16 2.76471V11.2353C16 12.2078 15.1941 13 14.2 13H2.8C1.80589 13 1 12.2078 1 11.2353V2.76471C1 1.79218 1.80589 1 2.8 1Z"
-              stroke="#4da3ff"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        }
-      />
+      {!showOtp ? (
+        <>
+          <InputField
+            label="Email Address"
+            name="email"
+            type="email"
+            placeholder="labuser@medibot.com"
+            value={form.email}
+            onChange={onInput}
+            error={errors.email}
+            icon={
+              <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M1 3.22222L8.25 7.83333L15.5 3.22222M2.8 1H14.2C15.1941 1 16 1.79218 16 2.76471V11.2353C16 12.2078 15.1941 13 14.2 13H2.8C1.80589 13 1 12.2078 1 11.2353V2.76471C1 1.79218 1.80589 1 2.8 1Z"
+                  stroke="#4da3ff"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            }
+          />
 
-      <div className="field-with-link">
+          <div className="field-with-link">
+            <InputField
+              label="Password"
+              name="password"
+              type="password"
+              placeholder="Enter your password"
+              value={form.password}
+              onChange={onInput}
+              error={errors.password}
+              icon={
+                <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="7" width="12" height="8" rx="1.6" stroke="#4da3ff" strokeWidth="1.2" />
+                  <path
+                    d="M6 7V5C6 2.79086 7.79086 1 10 1C12.2091 1 14 2.79086 14 5V7"
+                    stroke="#4da3ff"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              }
+            />
+            <Link className="inline-link" to="/forgot">
+              Forgot Password?
+            </Link>
+          </div>
+        </>
+      ) : (
         <InputField
-          label="Password"
-          name="password"
-          type="password"
-          placeholder="Enter your password"
-          value={form.password}
-          onChange={onInput}
-          error={errors.password}
+          label="Enter Verification Code"
+          name="otp"
+          type="text"
+          placeholder="• • • • • •"
+          value={otp}
+          onChange={(e) => {
+            setOtp(e.target.value)
+            setErrors((prev) => ({ ...prev, otp: undefined }))
+          }}
+          error={errors.otp}
           icon={
-            <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="7" width="12" height="8" rx="1.6" stroke="#4da3ff" strokeWidth="1.2" />
-              <path
-                d="M6 7V5C6 2.79086 7.79086 1 10 1C12.2091 1 14 2.79086 14 5V7"
-                stroke="#4da3ff"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-              />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#4da3ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M9 12L11 14L15 10" stroke="#4da3ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           }
         />
-        <Link className="inline-link" to="/forgot">
-          Forgot Password?
-        </Link>
-      </div>
+      )}
 
       <StatusText status={status} />
 
       <button className="primary-btn" type="submit" disabled={submitting}>
-        {submitting ? 'Signing in…' : 'Sign In'}
+        {submitting ? (showOtp ? 'Verifying…' : 'Sending OTP…') : (showOtp ? 'Verify OTP' : 'Sign In')}
       </button>
 
       <div className="divider" role="separator" aria-hidden />

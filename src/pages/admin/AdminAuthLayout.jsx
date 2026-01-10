@@ -18,12 +18,13 @@ const AdminAuthLayout = ({ children, heading, subheading }) => {
                 <div className="admin-chip">
                     <Link to="/login">Patient Portal</Link>
                 </div>
-                <div className="brand-row">
-                    <img src={logoImage} alt="MediBot Logo" style={{ width: 40, height: 'auto' }} />
-                    <span className="brand-name">MediBot Admin</span>
+
+                <div className="brand-row" style={{ flexDirection: 'column', marginBottom: '16px' }}>
+                    <img src={logoImage} alt="MediBot Logo" style={{ width: 56, height: 'auto', marginBottom: '12px' }} />
+                    <h2 style={{ fontSize: '26px', fontWeight: '800', color: '#0F172A', margin: 0 }}>MediBot Admin</h2>
                 </div>
+
                 <div className="intro">
-                    <h2>{heading}</h2>
                     <p className="sub-text">{subheading || 'Please enter your credentials to access the dashboard.'}</p>
                 </div>
                 {children}

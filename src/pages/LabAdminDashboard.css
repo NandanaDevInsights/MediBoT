@@ -1,582 +1,800 @@
-/* LabAdminDashboard.css - Clinical Professional Design */
+/* LabAdminDashboard.css - Professional Clean Theme */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root {
-    /* Blue & White Palette */
-    --lad-primary: #2563eb;
-    /* Blue 600 */
-    --lad-primary-dark: #1d4ed8;
-    /* Blue 700 */
-    --lad-primary-light: #eff6ff;
-    /* Blue 50 */
+/* ... (previous CSS content) ... */
 
-    --lad-sidebar-bg: linear-gradient(160deg, #1e40af 0%, #172554 100%);
-    --lad-sidebar-text: #bfdbfe;
-    /* Blue 200 */
-    --lad-sidebar-icon: #60a5fa;
-    /* Blue 400 */
-    --lad-sidebar-active-bg: rgba(255, 255, 255, 0.15);
-    --lad-sidebar-active-text: #ffffff;
-
-    --lad-surface: #ffffff;
-    --lad-bg: #f0f4f8;
-    /* Cool Gray/Blueish */
-    --lad-border: #e2e8f0;
-
-    --lad-text-head: #0f172a;
-    /* Slate 900 */
-    --lad-text-body: #334155;
-    /* Slate 700 */
-    --lad-text-muted: #64748b;
-    /* Slate 500 */
-
-    --lad-success: #10b981;
-    --lad-warning: #f59e0b;
-    --lad-danger: #ef4444;
-
-    /* Crisp Radii */
-    --lad-radius: 8px;
-    --lad-radius-lg: 16px;
-    /* Softer corners */
-
-    /* Subtle Shadows */
-    --lad-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    --lad-shadow-hover: 0 10px 15px -3px rgba(37, 99, 235, 0.1), 0 4px 6px -2px rgba(37, 99, 235, 0.05);
-    /* Blue-tinted shadow */
+/* Update or add this class for the logo */
+.med-sidebar-logo {
+    width: 32px;
+    /* Adjust size as needed */
+    height: auto;
+    margin-right: 12px;
 }
 
-.lad-container {
+/* ... rest of the CSS ... */
+
+:root {
+    /* Professional Medical Palette - Refined */
+    --med-primary: #0f766e;
+    /* Deep Teal - Professional & Trustworthy */
+    --med-primary-hover: #115e59;
+    --med-primary-light: #f0fdfa;
+    /* Very light teal bg */
+
+    --med-accent: #3b82f6;
+    /* Info Blue */
+
+    --med-bg: #f3f4f6;
+    /* Light Gray Page BG */
+    --med-surface: #ffffff;
+    /* White Surface */
+
+    --med-text-main: #111827;
+    /* Almost Black */
+    --med-text-body: #4b5563;
+    /* Gray 600 */
+    --med-text-muted: #9ca3af;
+    /* Gray 400 */
+
+    --med-border: #e5e7eb;
+    --med-border-dark: #d1d5db;
+
+    --med-success: #10b981;
+    --med-warning: #f59e0b;
+    --med-error: #ef4444;
+    --med-info: #3b82f6;
+
+    /* Spacing & Layout */
+    --sidebar-width: 250px;
+    --header-height: 72px;
+    --med-radius: 8px;
+    /* Sharper corners for pro look */
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--med-bg);
+}
+
+.med-dashboard-container {
     display: flex;
     height: 100vh;
     width: 100vw;
-    background-color: var(--lad-bg);
-    font-family: 'Inter', sans-serif;
-    color: var(--lad-text-body);
     overflow: hidden;
+    color: var(--med-text-body);
 }
 
-/* --- Attractive Blue Sidebar --- */
-.lad-sidebar {
-    width: 280px;
-    background: var(--lad-sidebar-bg);
+/* --- Professional Sidebar --- */
+.med-sidebar {
+    width: var(--sidebar-width);
+    background: var(--med-surface);
     display: flex;
     flex-direction: column;
-    padding: 32px 20px;
+    border-right: 1px solid var(--med-border);
     flex-shrink: 0;
-    box-shadow: 4px 0 24px rgba(30, 64, 175, 0.15);
-    z-index: 10;
+    z-index: 20;
 }
 
-.lad-brand {
+.med-sidebar-header {
+    height: var(--header-height);
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 0 12px;
-    margin-bottom: 52px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--med-border);
 }
 
-.lad-brand-logo {
-    width: 40px;
-    height: auto;
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+.med-sidebar-logo {
+    height: 32px;
+    width: auto;
+    margin-right: 12px;
 }
 
-.lad-brand-text {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: white;
-    letter-spacing: -0.5px;
-    line-height: 1;
+.med-logo-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--med-text-main);
+    letter-spacing: -0.02em;
 }
 
-.lad-menu {
+.med-nav-label {
+    padding: 24px 24px 8px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--med-text-muted);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.med-nav-menu {
+    flex: 1;
     list-style: none;
-    padding: 0;
+    padding: 0 12px;
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 2px;
+    overflow-y: auto;
 }
 
-.lad-menu-link {
+.med-nav-item {
     display: flex;
     align-items: center;
-    padding: 14px 18px;
-    border-radius: 12px;
-    color: var(--lad-sidebar-text);
-    font-size: 0.95rem;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
     font-weight: 500;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--med-text-body);
     cursor: pointer;
-    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    text-decoration: none;
 }
 
-.lad-menu-link:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: white;
-    transform: translateX(4px);
+.med-nav-item:hover {
+    background-color: var(--med-bg);
+    color: var(--med-text-main);
 }
 
-.lad-menu-link.active {
-    background-color: var(--lad-sidebar-active-bg);
-    color: var(--lad-sidebar-active-text);
+.med-nav-item.active {
+    background-color: var(--med-primary-light);
+    color: var(--med-primary);
     font-weight: 600;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.lad-menu-icon {
-    margin-right: 14px;
-    font-size: 1.2rem;
-    opacity: 1;
-}
-
-.lad-sidebar-footer {
-    margin-top: auto;
-    padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.lad-logout-btn {
+.med-nav-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    color: white;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    font-weight: 600;
-    cursor: pointer;
-    padding: 14px;
-    width: 100%;
-    border-radius: 12px;
-    transition: all 0.2s;
+    margin-right: 12px;
+    color: inherit;
+    opacity: 0.8;
 }
 
-.lad-logout-btn:hover {
-    background: rgba(239, 68, 68, 0.9);
-    border-color: transparent;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+.med-nav-item.active .med-nav-icon {
+    opacity: 1;
+}
+
+.med-sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--med-border);
+    background: #f9fafb;
+}
+
+.med-user-mini {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.med-avatar-mini {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--med-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.med-user-mini-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.med-user-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--med-text-main);
+}
+
+.med-user-role {
+    font-size: 0.75rem;
+    color: var(--med-text-muted);
 }
 
 /* --- Main Content --- */
-.lad-main {
+.med-main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    padding: 0;
     overflow: hidden;
+    background-color: var(--med-bg);
 }
 
-/* Header */
-.lad-header {
-    height: 72px;
-    background: white;
-    border-bottom: 1px solid var(--lad-border);
+.med-top-header {
+    height: var(--header-height);
+    background: var(--med-surface);
+    border-bottom: 1px solid var(--med-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 32px;
     flex-shrink: 0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+    z-index: 10;
 }
 
-.lad-greeting h1 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--lad-text-head);
-}
-
-.lad-date {
-    color: var(--lad-text-muted);
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-.lad-profile-card {
+.med-header-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 24px;
+    flex: 1;
 }
 
-.lad-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    background: var(--lad-primary);
-    color: white;
+.med-page-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--med-text-main);
+    margin: 0;
+    min-width: 150px;
+}
+
+/* Global Header Search */
+.med-header-search-container {
+    position: relative;
+    max-width: 480px;
+    width: 100%;
+}
+
+.med-header-search-input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border: 1px solid var(--med-border);
+    border-radius: 99px;
+    /* Pill shape */
+    font-size: 0.9rem;
+    background-color: #f9fafb;
+    color: var(--med-text-main);
+    transition: all 0.2s ease;
+}
+
+.med-header-search-input:focus {
+    outline: none;
+    background-color: white;
+    border-color: var(--med-primary);
+    box-shadow: 0 0 0 4px var(--med-primary-light);
+}
+
+.med-header-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--med-text-muted);
+    display: flex;
+    /* Fix alignment */
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+/* Header Right Actions */
+.med-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-left: 24px;
+}
+
+.med-date-display {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--med-text-muted);
+    background: #f3f4f6;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.med-divider-v {
+    width: 1px;
+    height: 24px;
+    background: var(--med-border);
+}
+
+.med-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--med-text-body);
+    cursor: pointer;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 1rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    transition: all 0.2s;
 }
 
-/* Scroll Area */
-.lad-main>div:last-child {
-    padding: 32px;
+.med-icon-btn:hover {
+    background: var(--med-bg);
+    color: var(--med-primary);
+}
+
+.med-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    background: var(--med-error);
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.med-profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 4px 8px 4px 4px;
+    border-radius: 30px;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+}
+
+.med-profile-trigger:hover {
+    background: var(--med-bg);
+    border-color: var(--med-border);
+}
+
+.med-avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--med-primary);
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+}
+
+.med-profile-arrow {
+    font-size: 0.7rem;
+    color: var(--med-text-muted);
+}
+
+/* --- View Area --- */
+.med-view-container {
+    flex: 1;
     overflow-y: auto;
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
 }
 
-.lad-main>div:last-child::-webkit-scrollbar {
-    width: 8px;
-}
-
-.lad-main>div:last-child::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.lad-main>div:last-child::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 4px;
-}
-
-/* --- Stats Cards --- */
-.lad-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
+/* --- Cards --- */
+.med-card {
+    background: var(--med-surface);
+    border-radius: var(--med-radius);
+    padding: 24px;
+    border: 1px solid var(--med-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    /* Subtle shadow */
     margin-bottom: 24px;
 }
 
-.lad-stat-card {
-    background: white;
-    padding: 16px;
-    border-radius: var(--lad-radius-lg);
-    border: 1px solid var(--lad-border);
-    box-shadow: var(--lad-shadow-card);
-    transition: transform 0.2s, box-shadow 0.2s;
+.med-card.no-pad {
+    padding: 0;
+    overflow: hidden;
 }
 
-.lad-stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--lad-shadow-hover);
-    border-color: var(--lad-primary);
+.med-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
 }
 
-.lad-stat-header {
+.med-stat-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 16px;
 }
 
-.lad-stat-title {
-    font-size: 0.85rem;
-    color: var(--lad-text-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.lad-stat-icon-bg {
+.med-stat-icon-wrapper {
     width: 40px;
     height: 40px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    background-color: var(--lad-primary-light);
-    color: var(--lad-primary);
+    color: white;
 }
 
-.lad-stat-value {
-    font-size: 1.75rem;
+.med-stat-icon-wrapper.blue {
+    background: #3b82f6;
+}
+
+.med-stat-icon-wrapper.orange {
+    background: #f97316;
+}
+
+.med-stat-icon-wrapper.green {
+    background: #10b981;
+}
+
+.med-stat-icon-wrapper.purple {
+    background: #8b5cf6;
+}
+
+.med-stat-trend {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.med-stat-trend.up {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.med-stat-trend.neutral {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.med-stat-value {
+    font-size: 1.8rem;
     font-weight: 700;
-    color: var(--lad-text-head);
+    color: var(--med-text-main);
     margin: 0;
-    line-height: 1.1;
+    line-height: 1;
+    margin-bottom: 4px;
 }
 
-.lad-stat-trend {
+.med-stat-label {
     font-size: 0.85rem;
+    color: var(--med-text-muted);
     font-weight: 500;
-    margin-top: 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
 }
 
-.lad-trend-up {
-    color: var(--lad-success);
-}
-
-.lad-trend-down {
-    color: var(--lad-danger);
-}
-
-/* --- Content Panel --- */
-.lad-content {
-    background: white;
-    border-radius: var(--lad-radius-lg);
-    border: 1px solid var(--lad-border);
-    padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: var(--lad-shadow-card);
-}
-
-.lad-section-header {
+/* --- Tables --- */
+.med-table-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--med-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    background: var(--med-surface);
 }
 
-.lad-section-title {
+.med-table-title {
     font-size: 1rem;
-    font-weight: 700;
-    color: var(--lad-text-head);
+    font-weight: 600;
+    color: var(--med-text-main);
     margin: 0;
 }
 
-.lad-btn-primary {
-    background: var(--lad-primary);
-    color: white;
-    border: 1px solid transparent;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.lad-btn-primary:hover {
-    background: var(--lad-primary-dark);
-}
-
-.lad-btn-outline {
-    background: white;
-    border: 1px solid var(--lad-border);
-    color: var(--lad-text-muted);
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.lad-btn-outline:hover {
-    border-color: var(--lad-text-muted);
-    color: var(--lad-text-head);
-    background: var(--lad-bg);
-}
-
-.lad-btn-ghost {
-    background: transparent;
-    border: none;
-    color: var(--lad-text-muted);
-    font-weight: 500;
-    cursor: pointer;
-    padding: 8px 16px;
-    border-radius: 6px;
-    transition: 0.2s;
-}
-
-.lad-btn-ghost:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: var(--lad-text-head);
-}
-
-/* --- Search & Filters --- */
-.lad-filters {
+.med-header-tools {
     display: flex;
     gap: 12px;
 }
 
-.lad-search-input {
-    padding: 10px 14px;
-    border: 1px solid var(--lad-border);
-    border-radius: 6px;
-    font-size: 0.95rem;
-    color: var(--lad-text-head);
-    width: 280px;
-    background: white;
-    font-family: inherit;
-    transition: 0.2s;
-}
-
-.lad-search-input:focus {
-    outline: none;
-    border-color: var(--lad-primary);
-    box-shadow: 0 0 0 3px var(--lad-primary-light);
-}
-
-/* --- Tables --- */
-.lad-table-container {
+.med-table-wrapper {
     overflow-x: auto;
-    border: 1px solid var(--lad-border);
-    border-radius: 8px;
 }
 
-.lad-table {
+.med-table {
     width: 100%;
     border-collapse: collapse;
 }
 
-.lad-table th {
+.med-table th {
     background: #f9fafb;
     text-align: left;
-    padding: 12px 16px;
-    font-weight: 600;
-    color: var(--lad-text-muted);
+    padding: 12px 24px;
     font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--med-text-muted);
     text-transform: uppercase;
-    border-bottom: 1px solid var(--lad-border);
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--med-border);
 }
 
-.lad-table td {
-    padding: 16px;
-    border-bottom: 1px solid var(--lad-border);
-    color: var(--lad-text-body);
+.med-table td {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--med-border);
     font-size: 0.9rem;
     vertical-align: middle;
 }
 
-.lad-table tr:last-child td {
+.med-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.med-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-.lad-table tr:hover {
-    background-color: #f9fafb;
+.mono-text {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--med-text-muted);
+    font-size: 0.85rem;
 }
 
-/* Status Badges */
-.lad-status-badge {
-    display: inline-flex;
+/* --- Buttons --- */
+.med-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.med-btn-primary {
+    background: var(--med-primary);
+    color: white;
+}
+
+.med-btn-primary:hover {
+    background: var(--med-primary-hover);
+}
+
+.med-btn-danger {
+    background: white;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    width: 100%;
+}
+
+.med-btn-danger:hover {
+    background: #fef2f2;
+}
+
+.med-link-btn {
+    background: none;
+    border: none;
+    color: var(--med-accent);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.med-link-btn:hover {
+    text-decoration: underline;
+}
+
+.med-action-btn {
+    background: white;
+    border: 1px solid var(--med-border);
+    color: var(--med-text-body);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-right: 6px;
+}
+
+.med-action-btn:hover {
+    border-color: var(--med-primary);
+    color: var(--med-primary);
+}
+
+/* --- Search Box (Inside Table) --- */
+.med-search-box {
+    display: flex;
     align-items: center;
+    background: white;
+    border: 1px solid var(--med-border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    width: 250px;
+}
+
+.med-search-box svg {
+    color: var(--med-text-muted);
+    margin-right: 8px;
+}
+
+.med-search-box input {
+    border: none;
+    outline: none;
+    font-size: 0.9rem;
+    width: 100%;
+    color: var(--med-text-main);
+}
+
+/* --- Status Badge --- */
+.med-status {
+    display: inline-flex;
     padding: 4px 10px;
     border-radius: 99px;
     font-size: 0.75rem;
     font-weight: 600;
-    text-transform: capitalize;
 }
 
-.status-confirmed {
-    background-color: #e0f2fe;
-    color: #0369a1;
-}
-
-.status-arrived {
-    background-color: #fef9c3;
-    color: #a16207;
-}
-
-.status-processing {
-    background-color: #f3e8ff;
-    color: #7e22ce;
-}
-
-.status-completed {
-    background-color: #dcfce7;
+.status-success {
+    background: #dcfce7;
     color: #15803d;
 }
 
-.status-pending {
-    background-color: #ffedd5;
+.status-info {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.status-warning {
+    background: #ffedd5;
     color: #c2410c;
 }
 
-.status-blocked {
-    background-color: #fee2e2;
-    color: #b91c1c;
+.status-neutral {
+    background: #f3f4f6;
+    color: #4b5563;
 }
 
-/* --- Calendar --- */
-.lad-calendar-grid {
+/* --- Forms --- */
+.med-form-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
 }
 
-.lad-calendar-day {
+.med-section-card {
     background: white;
-    padding: 12px;
-    border-radius: 8px;
-    min-height: 140px;
-    border: 1px solid var(--lad-border);
-    transition: all 0.2s;
+    padding: 24px;
+    border-radius: var(--med-radius);
+    border: 1px solid var(--med-border);
 }
 
-.lad-calendar-day:hover {
-    border-color: var(--lad-primary);
-    box-shadow: var(--lad-shadow-card);
+.med-form-group {
+    margin-bottom: 20px;
 }
 
-.lad-cal-header {
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 12px;
-    color: var(--lad-text-head);
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--lad-border);
-    font-size: 0.9rem;
-}
-
-.lad-cal-appt {
-    background: var(--lad-primary-light);
-    color: var(--lad-primary-dark);
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-top: 6px;
-    border-left: 3px solid var(--lad-primary);
-}
-
-/* --- Upload Area --- */
-.lad-upload-area {
-    border: 2px dashed var(--lad-border);
-    border-radius: 12px;
-    padding: 4rem 2rem;
-    text-align: center;
-    background: #f9fafb;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.lad-upload-area:hover {
-    border-color: var(--lad-primary);
-    background: #f0fdfa;
-}
-
-/* --- Modals --- */
-.lad-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-}
-
-.lad-modal {
-    background: white;
-    width: 90%;
-    max-width: 500px;
-    border-radius: 12px;
-    padding: 32px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.lad-form-group {
-    margin-bottom: 16px;
-}
-
-.lad-form-group label {
+.med-form-group label {
     display: block;
     margin-bottom: 8px;
     font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--med-text-main);
+}
+
+.med-form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--med-border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: 0.2s;
+}
+
+.med-form-group input:focus {
+    outline: none;
+    border-color: var(--med-primary);
+    box-shadow: 0 0 0 3px var(--med-primary-light);
+}
+
+.med-toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.med-toggle-row:last-child {
+    border-bottom: none;
+}
+
+/* --- Report Card --- */
+.med-report-card {
+    background: white;
+    border: 1px solid var(--med-border);
+    border-radius: var(--med-radius);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: box-shadow 0.2s;
+}
+
+.med-report-card:hover {
+    box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.med-report-icon {
+    width: 48px;
+    height: 48px;
+    background: #f0fdfa;
+    color: var(--med-primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.med-report-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: var(--lad-text-head);
+    color: var(--med-text-main);
+}
+
+.med-report-info p {
+    margin: 0 0 4px 0;
+    font-size: 0.85rem;
+    color: var(--med-text-body);
+}
+
+.med-report-date {
+    font-size: 0.75rem;
+    color: var(--med-text-muted);
+}
+
+.med-report-actions {
+    margin-left: auto;
+}
+
+.med-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: block;
+}
+
+.med-status-dot.success {
+    background: var(--med-success);
+}
+
+.med-status-dot.pending {
+    background: var(--med-warning);
+}
+
+/* --- Toast --- */
+.med-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+/* Empty State */
+.med-empty-state {
+    text-align: center;
+    padding: 48px;
+    background: white;
+    border-radius: var(--med-radius);
+    border: 1px solid var(--med-border);
+}
+
+.med-empty-state .icon-bg {
+    width: 64px;
+    height: 64px;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    color: var(--med-text-muted);
+}
+
+.med-empty-state h3 {
+    margin: 0 0 8px;
+    color: var(--med-text-main);
 }

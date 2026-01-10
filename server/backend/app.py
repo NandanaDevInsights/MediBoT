@@ -183,6 +183,34 @@ def send_reset_email(to_email: str, reset_link: str):
       smtp.send_message(msg)
 
 
+def send_otp_email(to_email: str, otp_code: str):
+  if not SMTP_HOST or not SMTP_USER or not SMTP_PASS:
+    # Fallback for dev if no SMTP
+    print(f"[DEBUG] SMTP not configured. OTP for {to_email}: {otp_code}")
+    return
+
+  msg = EmailMessage()
+  msg["Subject"] = "Your Login OTP - MediBot"
+  msg["From"] = SMTP_FROM
+  msg["To"] = to_email
+  msg.set_content(f"Your One-Time Password (OTP) for login is: {otp_code}\n\nThis code expires in 10 minutes.\nDo not share this code with anyone.")
+
+  try:
+      if SMTP_USE_TLS:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+          smtp.starttls()
+          smtp.login(SMTP_USER, SMTP_PASS)
+          smtp.send_message(msg)
+      else:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as smtp:
+          smtp.login(SMTP_USER, SMTP_PASS)
+          smtp.send_message(msg)
+  except Exception as e:
+      print(f"[ERROR] Failed to send OTP email: {e}")
+      # We don't raise here to allow the flow to continue (frontend might show a "resend" button or dev debug)
+      pass
+
+
 def build_google_flow(state: str | None = None):
   client_id = os.environ.get("GOOGLE_CLIENT_ID")
   client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
@@ -264,24 +292,103 @@ def login_user():
     if not bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8")):
       return jsonify({"message": "Invalid credentials."}), 401
 
-    session["user_id"] = user_id
-    session["email"] = email
-    session["role"] = role
+    # OTP Logic
+    # Generate 6-digit OTP
+    otp_code = ''.join(secrets.choice(string.digits) for i in range(6))
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
 
-    # Strict Whitelist Check for Lab Admin
-    if role == "LAB_ADMIN":
-         if not is_whitelisted_lab_admin(conn, email):
-              return jsonify({"message": "Access restricted: You are not authorized as a Lab Admin."}), 403
+    # Store OTP (Upsert)
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "REPLACE INTO user_otps (email, otp_code, expires_at) VALUES (%s, %s, %s)",
+            (email, otp_code, expires_at)
+        )
+        conn.commit()
+        cur.close()
 
-    return jsonify({
-        "message": "Login successful.", 
-        "role": role,
-        "pin_code": pin_code  # Return stored PIN for client-side check
-    }), 200
+        # Send Email
+        # Send in thread to not block response
+        threading.Thread(target=send_otp_email, args=(email, otp_code)).start()
+
+        return jsonify({
+            "message": "OTP sent to your email.", 
+            "require_otp": True,
+            "email": email
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] OTP generation failed: {e}")
+        return jsonify({"message": "Login failed due to server error."}), 500
+
   except Exception:
     return jsonify({"message": "Unable to process login right now."}), 500
   finally:
     conn.close()
+
+
+@app.post("/api/verify-otp")
+def verify_otp():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    otp = (data.get("otp") or "").strip()
+
+    if not email or not otp:
+        return jsonify({"message": "Email and OTP are required."}), 400
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT otp_code, expires_at FROM user_otps WHERE email=%s", (email,))
+        row = cur.fetchone()
+        cur.close()
+
+        if not row:
+            return jsonify({"message": "Invalid OTP."}), 400
+
+        stored_otp, expires_at = row
+        
+        # Check expiry
+        if datetime.utcnow() > expires_at:
+             return jsonify({"message": "OTP has expired."}), 400
+
+        if stored_otp != otp:
+             return jsonify({"message": "Invalid OTP."}), 400
+
+        # OTP is valid, proceed to log in the user
+        user_row = get_user_with_password(conn, email)
+        if not user_row:
+             return jsonify({"message": "User not found."}), 404
+
+        user_id, _, password_hash, provider, role, pin_code = user_row
+
+        # Set Session
+        session["user_id"] = user_id
+        session["email"] = email
+        session["role"] = role
+
+        # Strict Whitelist Check for Lab Admin
+        if role == "LAB_ADMIN":
+             if not is_whitelisted_lab_admin(conn, email):
+                  return jsonify({"message": "Access restricted: You are not authorized as a Lab Admin."}), 403
+
+        # Clear OTP after successful use
+        cur = conn.cursor()
+        cur.execute("DELETE FROM user_otps WHERE email=%s", (email,))
+        conn.commit()
+        cur.close()
+
+        return jsonify({
+            "message": "Login successful.", 
+            "role": role,
+            "pin_code": pin_code
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] OTP Verification failed: {e}")
+        return jsonify({"message": "Unable to verify OTP."}), 500
+    finally:
+        conn.close()
 
 
 @app.post("/api/forgot-password")
@@ -556,6 +663,26 @@ def ensure_lab_admin_whitelist_table():
 ensure_pin_column()
 ensure_lab_admin_whitelist_table()
 
+def ensure_otp_table():
+    """Create OTP table if not exists."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_otps (
+                email VARCHAR(255) PRIMARY KEY,
+                otp_code VARCHAR(10) NOT NULL,
+                expires_at TIMESTAMP NOT NULL
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] OTP table check failed: {e}")
+    finally:
+        conn.close()
+
+ensure_otp_table()
+
 def is_whitelisted_lab_admin(conn, email: str) -> bool:
     cur = conn.cursor()
     cur.execute("SELECT 1 FROM lab_admin_users WHERE email=%s LIMIT 1", (email,))
@@ -573,11 +700,12 @@ def get_user_reports():
     conn = get_connection()
     try:
         cur = conn.cursor()
-        # Fetch prescriptions linked to this user
+        # Fetch prescriptions linked to this user OR generic ones (uploaded via WhatsApp without user context)
+        # Note: In a production app, we would link mobile numbers to users. For this demo, we show anonymous uploads to logged-in users.
         cur.execute("""
             SELECT id, file_path, file_type, status, created_at 
             FROM prescriptions 
-            WHERE user_id=%s 
+            WHERE user_id=%s OR user_id IS NULL
             ORDER BY created_at DESC
         """, (user_id,))
         rows = cur.fetchall()
@@ -644,8 +772,93 @@ def get_user_profile():
         return jsonify({"message": "Server error"}), 500
     finally:
         conn.close()
+@app.get("/api/admin/patients")
+def get_admin_patients():
+    current_role = session.get("role")
+    if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # Fetch patients with aggregated report data
+        # We join users with prescriptions to find:
+        # 1. Count of uploads (reports_count): Includes linked (user_id=id) AND unlinked (user_id IS NULL) reports
+        #    This matches the logic that logged-in users can see unlinked WhatsApp uploads.
+        # 2. Latest mobile_number used (inferred phone) - Only from linked reports as unlinked ones can't be attributed to a specific user for details.
+        query = """
+            SELECT 
+                u.id, 
+                u.email, 
+                u.created_at,
+                (SELECT COUNT(*) FROM prescriptions p WHERE p.user_id = u.id OR p.user_id IS NULL) as reports_count,
+                (SELECT mobile_number FROM prescriptions p WHERE p.user_id = u.id AND mobile_number IS NOT NULL ORDER BY created_at DESC LIMIT 1) as phone
+            FROM users u 
+            WHERE u.role='USER'
+        """
+        cur.execute(query)
+        rows = cur.fetchall()
+        cur.close()
+
+        patients = []
+        for row in rows:
+            uid, email, created_at, reports_count, phone = row
+            
+            # Format/Mock details
+            patients.append({
+                "id": uid,
+                "name": email.split("@")[0],  # Use email prefix as name
+                "email": email,
+                "age": 25 + (uid % 30),       # Mock age
+                "gender": "Male" if uid % 2 == 0 else "Female", # Mock gender
+                "phone": phone if phone else "N/A",  # Use inferred phone or N/A
+                "joined_at": created_at.isoformat() if created_at else None,
+                "uploaded_data_count": reports_count
+            })
+        return jsonify(patients), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch patients failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
 
 
+@app.get("/api/admin/patient/<int:target_user_id>/reports")
+def get_admin_patient_reports(target_user_id):
+    current_role = session.get("role")
+    if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # Fetch reports for target user + unassigned ones (WhatsApp)
+        cur.execute("""
+            SELECT id, file_path, file_type, status, created_at 
+            FROM prescriptions 
+            WHERE user_id=%s OR user_id IS NULL
+            ORDER BY created_at DESC
+        """, (target_user_id,))
+        rows = cur.fetchall()
+        cur.close()
+
+        reports = []
+        for row in rows:
+            rid, fpath, ftype, status, created_at = row
+            reports.append({
+                "id": rid,
+                "file_path": fpath,
+                "file_type": ftype,
+                "status": status,
+                "date": created_at.isoformat() if created_at else None
+            })
+
+        return jsonify(reports), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch patient reports failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=bool(int(os.environ.get("FLASK_DEBUG", 0))))

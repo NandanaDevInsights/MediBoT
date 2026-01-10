@@ -376,6 +376,7 @@ const LandingPage = () => {
   // Reports State
   const [reports, setReports] = useState([]);
   const [showReportsModal, setShowReportsModal] = useState(false);
+  const [activeReportTab, setActiveReportTab] = useState('Uploaded');
 
   const isAnyModalOpen = showNotifications || showReminders || showMyBookingsModal || showReportsModal || showProfileModal || showBookingModal;
 
@@ -1170,42 +1171,137 @@ const LandingPage = () => {
 
       {/* Full Screen Reports Section */}
       {/* Full Screen Reports Section */}
+      {/* Full Screen Reports Section */}
       {showReportsModal && (
         <div className="fullscreen-section">
-          {/* Header Removed */}
           <div className="fullscreen-content">
-            <div className="fs-card">
-              <h3>Uploaded Prescriptions</h3>
-              {reports.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                  {reports.map((report) => (
-                    <div key={report.id} className="notification-item" style={{ flexDirection: 'column', gap: '1rem', alignItems: 'flex-start', borderLeft: '4px solid var(--primary)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>Prescription #{report.id}</span>
-                        <span className={`status-badge ${report.status}`} style={{ textTransform: 'capitalize' }}>{report.status}</span>
-                      </div>
-                      <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                        <IconCalendar size={14} style={{ marginRight: 4 }} />
-                        {new Date(report.date).toLocaleDateString()}
-                      </div>
-                      <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', width: '100%' }}>
-                        <a href={report.file_path} target="_blank" rel="noopener noreferrer" className="book-btn" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', flex: 1, textAlign: 'center' }}>
-                          <IconEye size={16} style={{ marginRight: 6 }} /> View
-                        </a>
-                        <a href={report.file_path} download className="book-btn" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', flex: 1, textAlign: 'center', background: 'white', color: 'var(--primary)', border: '1px solid var(--primary)' }}>
-                          <IconDownload size={16} style={{ marginRight: 6 }} /> Download
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-                  <IconFileText size={48} style={{ opacity: 0.5, marginBottom: '1rem' }} />
-                  <p>No prescriptions uploaded yet.</p>
-                </div>
-              )}
+
+            {/* Toggle Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem', gap: '1rem' }}>
+              <button
+                onClick={() => setActiveReportTab('Uploaded')}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: activeReportTab === 'Uploaded' ? 'var(--primary)' : '#e2e8f0',
+                  color: activeReportTab === 'Uploaded' ? 'white' : '#64748b',
+                  transition: 'all 0.2s',
+                  boxShadow: activeReportTab === 'Uploaded' ? '0 4px 12px rgba(37, 99, 235, 0.3)' : 'none',
+                  display: 'flex', alignItems: 'center', gap: '0.5rem'
+                }}
+              >
+                <IconUploadCloud size={20} /> Uploaded Reports
+              </button>
+              <button
+                onClick={() => setActiveReportTab('Generated')}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: activeReportTab === 'Generated' ? '#16a34a' : '#e2e8f0',
+                  color: activeReportTab === 'Generated' ? 'white' : '#64748b',
+                  transition: 'all 0.2s',
+                  boxShadow: activeReportTab === 'Generated' ? '0 4px 12px rgba(22, 163, 74, 0.3)' : 'none',
+                  display: 'flex', alignItems: 'center', gap: '0.5rem'
+                }}
+              >
+                <IconFileText size={20} /> Generated Reports
+              </button>
             </div>
+
+            {/* Section 1: Uploaded Reports */}
+            {activeReportTab === 'Uploaded' && (
+              <div className="fs-card">
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                  <IconUploadCloud size={24} color="var(--primary)" style={{ marginRight: '0.75rem' }} />
+                  <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Uploaded Papers</h3>
+                </div>
+
+                {reports.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Showing ALL reports here as "Uploaded" for now since all come from upload */}
+                    {reports.map((report) => (
+                      <div key={report.id} className="notification-item" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--primary)', padding: '1.5rem' }}>
+
+                        {/* Left Side: Info */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>Prescription #{report.id}</span>
+                            <span className={`status-badge ${report.status}`} style={{ textTransform: 'capitalize' }}>{report.status}</span>
+                          </div>
+                          <div style={{ color: '#64748b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <IconCalendar size={14} />
+                            <span>Uploaded on {new Date(report.date).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Buttons */}
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                          <a href={report.file_path} target="_blank" rel="noopener noreferrer" className="book-btn" style={{ padding: '0.6rem 1.2rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                            <IconEye size={16} style={{ marginRight: 6 }} /> View
+                          </a>
+                          <a href={report.file_path} download className="book-btn" style={{ padding: '0.6rem 1.2rem', fontSize: '0.9rem', background: 'white', color: 'var(--primary)', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center' }}>
+                            <IconDownload size={16} style={{ marginRight: 6 }} /> Download
+                          </a>
+                        </div>
+
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', background: '#f8fafc', borderRadius: '12px' }}>
+                    <IconFileText size={32} style={{ opacity: 0.5, marginBottom: '0.5rem' }} />
+                    <p>No prescriptions uploaded yet.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Section 2: Generated Reports */}
+            {activeReportTab === 'Generated' && (
+              <div className="fs-card">
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                  <IconFileText size={24} color="#16a34a" style={{ marginRight: '0.75rem' }} />
+                  <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Generated Results</h3>
+                </div>
+
+                {reports.filter(r => r.status === 'Completed').length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                    {reports.filter(r => r.status === 'Completed').map((report) => (
+                      <div key={`gen-${report.id}`} className="notification-item" style={{ flexDirection: 'column', gap: '1rem', alignItems: 'flex-start', borderLeft: '4px solid #16a34a' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>Lab Result #{report.id}</span>
+                          <span className="status-badge Completed" style={{ background: '#dcfce7', color: '#166534' }}>Ready</span>
+                        </div>
+                        <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                          <IconCalendar size={14} style={{ marginRight: 4 }} />
+                          {new Date(report.date).toLocaleDateString()}
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', width: '100%' }}>
+                          <a href={report.file_path} target="_blank" rel="noopener noreferrer" className="book-btn" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', flex: 1, textAlign: 'center', background: '#16a34a', color: 'white', border: 'none' }}>
+                            <IconDownload size={16} style={{ marginRight: 6 }} /> Download PDF
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', background: '#f8fafc', borderRadius: '12px' }}>
+                    <IconFileText size={32} style={{ opacity: 0.5, marginBottom: '0.5rem' }} />
+                    <p>No generated reports returned yet.</p>
+                    <p style={{ fontSize: '0.85rem' }}>Once your tests are completed by the lab, the results will appear here.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
       )}

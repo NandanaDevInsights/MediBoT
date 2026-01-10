@@ -24,6 +24,9 @@ def init_db():
                 image_url TEXT,
                 extracted_text TEXT,
                 test_type VARCHAR(100),
+                file_path TEXT,
+                status VARCHAR(50) DEFAULT 'Pending',
+                file_type VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -33,7 +36,10 @@ def init_db():
             "mobile_number": "VARCHAR(20)",
             "image_url": "TEXT",
             "extracted_text": "TEXT",
-            "test_type": "VARCHAR(100)"
+            "test_type": "VARCHAR(100)",
+            "file_path": "TEXT",
+            "status": "VARCHAR(50)",
+            "file_type": "VARCHAR(50)"
         }
 
         for col, dtype in expected_columns.items():
@@ -60,6 +66,9 @@ init_db()
 # ----------------------------
 # WEBHOOK ROUTE
 # ----------------------------
+# ----------------------------
+# WEBHOOK ROUTE
+# ----------------------------
 @app.route("/webhook/whatsapp", methods=["POST"])
 def whatsapp_webhook():
     print("✅ Webhook HIT - Processing Prescription")
@@ -80,7 +89,16 @@ def whatsapp_webhook():
 
     try:
         # 3️⃣ Download image
-        image_path = "prescription.jpg"
+        # Create unique filename
+        import uuid
+        import time
+        
+        filename = f"rx_{int(time.time())}_{uuid.uuid4().hex[:8]}.jpg"
+        # Ensure static/prescriptions exists
+        static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "prescriptions")
+        os.makedirs(static_dir, exist_ok=True)
+        
+        image_path = os.path.join(static_dir, filename)
         
         # Twilio User-Agent / Auth handling
         # Load from environment variables for security, fallback to hardcoded
@@ -104,7 +122,7 @@ def whatsapp_webhook():
         if download_resp.status_code == 200:
             with open(image_path, "wb") as f:
                 f.write(download_resp.content)
-            print("✅ Image downloaded successfully.")
+            print(f"✅ Image downloaded successfully to {image_path}")
         else:
             print(f"❌ Failed to download. Status: {download_resp.status_code}")
             if download_resp.status_code == 401:
@@ -227,9 +245,16 @@ def whatsapp_webhook():
         try:
             conn = get_connection()
             cursor = conn.cursor()
+            
+            # Prepare file path relative to server root for frontend
+            # Assuming frontend uses something like http://localhost:5000/static/prescriptions/...
+            relative_file_path = f"http://127.0.0.1:5000/static/prescriptions/{filename}"
+            
             cursor.execute(
-                "INSERT INTO prescriptions (mobile_number, image_url, extracted_text, test_type) VALUES (%s, %s, %s, %s)",
-                (sender_number, media_url, extracted_text, test_type)
+                """INSERT INTO prescriptions 
+                   (mobile_number, image_url, extracted_text, test_type, file_path, status, file_type) 
+                   VALUES (%s, %s, %s, %s, %s, 'Pending', 'image/jpeg')""",
+                (sender_number, media_url, extracted_text, test_type, relative_file_path)
             )
             conn.commit()
             cursor.close()

@@ -59,7 +59,7 @@ const AdminSignupPage = () => {
         <form className="auth-form" onSubmit={onSubmit}>
             {!submitted ? (
                 <>
-                    <p style={{ marginBottom: '20px', color: '#64748B', fontSize: '14px' }}>
+                    <p className="sub-text" style={{ textAlign: 'center', marginBottom: '24px' }}>
                         Register your laboratory to access the Lab Admin Dashboard.
                     </p>
 
@@ -105,10 +105,10 @@ const AdminSignupPage = () => {
                     </p>
                 </>
             ) : (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ textAlign: 'center', padding: '10px 0' }}>
                     <div style={{ fontSize: '3rem', marginBottom: '16px' }}>✅</div>
                     <h3 style={{ margin: '0 0 8px 0', color: '#0F172A' }}>Registration Successful</h3>
-                    <p style={{ color: '#64748B', lineHeight: '1.5', marginBottom: '24px' }}>
+                    <p className="sub-text">
                         Your Lab Admin account has been created.
                     </p>
 
@@ -117,7 +117,7 @@ const AdminSignupPage = () => {
                             <p style={{ color: '#92400E', fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
                                 Your Access Pass Key
                             </p>
-                            <div style={{ fontSize: '32px', fontWeight: '800', fontFamily: 'monospace', letterSpacing: '4px', color: '#B45309' }}>
+                            <div style={{ fontSize: '32px', fontWeight: '800', fontFamily: 'monospace', letterSpacing: '4px', color: '#B45309', wordBreak: 'break-all' }}>
                                 {generatedPin}
                             </div>
                             <p style={{ fontSize: '12px', color: '#92400E', marginTop: '8px' }}>
@@ -126,7 +126,7 @@ const AdminSignupPage = () => {
                         </div>
                     )}
 
-                    <Link to="/admin/login" className="ghost-btn" style={{ marginTop: '0' }}>Proceed to Login</Link>
+                    <Link to="/admin/login" className="ghost-btn" style={{ marginTop: '0', width: '100%', boxSizing: 'border-box' }}>Proceed to Login</Link>
                 </div>
             )}
         </form>

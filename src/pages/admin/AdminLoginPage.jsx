@@ -3,6 +3,27 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { handleLogin, startGoogleOAuth, getUserProfile } from '../../services/api'
 import '../LoginPage.css'
 
+const InputField = ({ label, type = 'text', name, placeholder, value, onChange, error, icon }) => {
+    return (
+        <div className="form-field">
+            <label htmlFor={name}>{label}</label>
+            <div className={`input-shell ${error ? 'has-error' : ''}`}>
+                <input
+                    id={name}
+                    name={name}
+                    type={type}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={onChange}
+                />
+                <span className="input-icon" aria-hidden>
+                    {icon}
+                </span>
+            </div>
+        </div>
+    )
+}
+
 const AdminLoginPage = () => {
     const navigate = useNavigate()
     const location = useLocation()
@@ -148,73 +169,78 @@ const AdminLoginPage = () => {
     }
 
     return (
-        <form className="auth-form" onSubmit={onSubmit} style={{ marginTop: 0 }}>
+        <form className="auth-form" onSubmit={onSubmit}>
             {/* Role Selection */}
-            <div style={{ marginBottom: '24px', background: '#F1F5F9', padding: '4px', borderRadius: '12px', display: 'flex' }}>
+            <div className="role-switcher">
                 <button
                     type="button"
                     onClick={() => setRole('LAB_ADMIN')}
-                    style={{
-                        flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600,
-                        background: role === 'LAB_ADMIN' ? 'white' : 'transparent',
-                        boxShadow: role === 'LAB_ADMIN' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                        color: role === 'LAB_ADMIN' ? '#0F172A' : '#64748B',
-                        transition: 'all 0.2s'
-                    }}
+                    className={`role-btn ${role === 'LAB_ADMIN' ? 'active' : ''}`}
                 >
                     Lab Admin
                 </button>
                 <button
                     type="button"
                     onClick={() => setRole('SUPER_ADMIN')}
-                    style={{
-                        flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600,
-                        background: role === 'SUPER_ADMIN' ? 'white' : 'transparent',
-                        boxShadow: role === 'SUPER_ADMIN' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                        color: role === 'SUPER_ADMIN' ? '#0F172A' : '#64748B',
-                        transition: 'all 0.2s'
-                    }}
+                    className={`role-btn ${role === 'SUPER_ADMIN' ? 'active' : ''}`}
                 >
                     Super Admin
                 </button>
             </div>
 
-            <div className="form-field">
-                <label>Work Email</label>
-                <div className="input-shell">
-                    <input
-                        name="email"
-                        type="email"
-                        placeholder={role === 'LAB_ADMIN' ? "admin@lab.com" : "sysadmin@medibot.com"}
-                        value={form.email}
-                        onChange={onInput}
-                    />
-                </div>
+            <InputField
+                label="Work Email"
+                name="email"
+                type="email"
+                placeholder={role === 'LAB_ADMIN' ? "admin@lab.com" : "sysadmin@medibot.com"}
+                value={form.email}
+                onChange={onInput}
+                icon={
+                    <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M1 3.22222L8.25 7.83333L15.5 3.22222M2.8 1H14.2C15.1941 1 16 1.79218 16 2.76471V11.2353C16 12.2078 15.1941 13 14.2 13H2.8C1.80589 13 1 12.2078 1 11.2353V2.76471C1 1.79218 1.80589 1 2.8 1Z"
+                            stroke="#4da3ff"
+                            strokeWidth="1.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+                }
+            />
+
+            <div className="field-with-link">
+                <InputField
+                    label="Password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={onInput}
+                    icon={
+                        <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="7" width="12" height="8" rx="1.6" stroke="#4da3ff" strokeWidth="1.2" />
+                            <path
+                                d="M6 7V5C6 2.79086 7.79086 1 10 1C12.2091 1 14 2.79086 14 5V7"
+                                stroke="#4da3ff"
+                                strokeWidth="1.2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    }
+                />
+                <Link className="inline-link" to="/admin/forgot">
+                    Forgot Password?
+                </Link>
             </div>
 
-            <div className="form-field">
-                <label>Password</label>
-                <div className="input-shell">
-                    <input
-                        name="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={form.password}
-                        onChange={onInput}
-                    />
-                </div>
-                <div style={{ textAlign: 'right', marginTop: '8px' }}>
-                    <Link to="/admin/forgot" style={{ fontSize: '13px', color: '#64748B', textDecoration: 'none' }}>Forgot password?</Link>
-                </div>
-            </div>
-
-            {error && <p className="status-text status-error">{error}</p>}
+            <p className={`status-text ${error ? 'status-error' : ''}`}>{error}</p>
 
             <button className="primary-btn" type="submit" disabled={submitting}>
                 {submitting ? 'Authenticating...' : `Login as ${role === 'LAB_ADMIN' ? 'Lab Admin' : 'Super Admin'} `}
             </button>
 
-            <div className="divider">{role === 'SUPER_ADMIN' ? 'Secure Login' : 'or'}</div>
+            <div className="divider" role="separator" aria-hidden />
 
             <button className="ghost-btn" type="button" onClick={startGoogleOAuth}>
                 <span className="google-icon" aria-hidden>
