@@ -211,7 +211,12 @@ def whatsapp_webhook():
         # Aggressive exclusion of non-test lines
         exclude_keywords = [
             "sample", "specimen", "physician", "ordered", "forward", "indicated", 
-            "required", "signature", "date", "instructions", "collect", "patient"
+            "required", "signature", "date", "instructions", "collect", "patient",
+            "metro", "city", "india", "phone", "fax", "requisition", "form", "information", 
+            "ordering", "sex", "age", "referred", "client",
+            "lab", "laboratory", "hospital", "clinic", "diagnostic", "centre", "center",
+            "pathology", "scans", "medical", "health", "services", "ltd", "pvt", "dr.", "doctor",
+            "floor", "suite", "road", "street", "lane", "avenue", "opp", "near"
         ]
         
         filtered_lines = []
@@ -221,10 +226,18 @@ def whatsapp_webhook():
             if any(kw in line_lower for kw in test_keywords) and not any(bad in line_lower for bad in exclude_keywords):
                 filtered_lines.append(line)
         
-        # Fallback: If no keywords found, show top few lines
+        # Fallback: If no keywords found, try to get lines that aren't excluded
         if not filtered_lines and cleaned_lines:
-             start_idx = 0 if len(cleaned_lines) < 5 else 2
-             filtered_lines = cleaned_lines[start_idx:start_idx+5] 
+             # Filter out garbage lines first
+             clean_fallback = [line for line in cleaned_lines if not any(bad in line.lower() for bad in exclude_keywords)]
+             
+             # If we have lines left, use them
+             if clean_fallback:
+                 # Skip the first few lines as they are often still headers if they survived exclusion
+                 start_idx = 2 if len(clean_fallback) > 4 else 0
+                 filtered_lines = clean_fallback[start_idx:start_idx+6]
+             else:
+                 filtered_lines = ["Could not identify specific tests. View full report online."] 
 
         extracted_text_display = "\n".join(filtered_lines)
         

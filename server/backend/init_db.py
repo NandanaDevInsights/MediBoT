@@ -78,6 +78,65 @@ def init_db():
                     print(f"Could not add column {col}: {e}")
 
         print("Tables validated/created successfully.")
+        # Create appointments table
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS appointments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT,
+            patient_name VARCHAR(255),
+            doctor_name VARCHAR(255),
+            test_type VARCHAR(255),
+            appointment_date DATE,
+            appointment_time TIME,
+            status VARCHAR(50) DEFAULT 'Pending',
+            location VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+
+        # Create lab_staff table
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS lab_staff (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            role VARCHAR(100),
+            status VARCHAR(50) DEFAULT 'Available',
+            image_url TEXT,
+            qualification TEXT,
+            certificate_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+
+        # Create reports table
+        # Linking to prescriptions (test orders) or users directly
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS reports (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            patient_id INT,
+            test_name VARCHAR(255),
+            file_path TEXT NOT NULL,
+            status VARCHAR(50) DEFAULT 'Uploaded',
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+
+        # Create lab_admin_profile table
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS lab_admin_profile (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT UNIQUE,
+            lab_name VARCHAR(255),
+            address TEXT,
+            contact_number VARCHAR(50),
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+
+        print("Extended Tables validated/created successfully.")
         conn.commit()
         cur.close()
         conn.close()

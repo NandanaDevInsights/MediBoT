@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { handleLogin, startGoogleOAuth, getUserProfile } from '../../services/api'
+import { handleLogin, verifyOtp, startGoogleOAuth, getUserProfile } from '../../services/api'
 import '../LoginPage.css'
 
 const InputField = ({ label, type = 'text', name, placeholder, value, onChange, error, icon }) => {
@@ -20,6 +20,7 @@ const InputField = ({ label, type = 'text', name, placeholder, value, onChange, 
                     {icon}
                 </span>
             </div>
+            {error ? <p className="input-error">{error}</p> : null}
         </div>
     )
 }
@@ -33,6 +34,10 @@ const AdminLoginPage = () => {
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState(null)
 
+    // OTP State
+    const [showOtp, setShowOtp] = useState(false)
+    const [otp, setOtp] = useState('')
+
     // PIN Lock State
     const [showPinScreen, setShowPinScreen] = useState(false)
     const [pin, setPin] = useState(['', '', '', ''])
@@ -40,9 +45,6 @@ const AdminLoginPage = () => {
 
     // Handle Google Login Redirect (PIN Check - Fallback or Direct)
     useEffect(() => {
-        // Only trigger if state explicitly asks for PIN verify (Manual Logic or specialized redirect)
-        // Note: Google redirects now go straight to dashboard, so this handles
-        // manual flows or legacy redirects if any.
         if (location.state?.verifyPin && location.state?.pinCode) {
             setExpectedPin(location.state.pinCode)
             setShowPinScreen(true)
@@ -54,8 +56,39 @@ const AdminLoginPage = () => {
         setError(null)
     }
 
+    const processLoginSuccess = (result) => {
+        if (role === 'LAB_ADMIN') {
+            sessionStorage.removeItem('lab_admin_pin_verified');
+            navigate('/lab-admin-dashboard', { replace: true });
+        } else if (role === 'SUPER_ADMIN') {
+            navigate('/super-admin-dashboard', { replace: true });
+        } else {
+            navigate('/welcome', { replace: true });
+        }
+    }
+
     const onSubmit = async (e) => {
         e.preventDefault()
+        setError(null)
+
+        if (showOtp) {
+            if (!otp) {
+                setError('Please enter the OTP.')
+                return
+            }
+            setSubmitting(true)
+            try {
+                // Verify OTP
+                const result = await verifyOtp({ email: form.email, otp })
+                // Success
+                processLoginSuccess(result)
+            } catch (err) {
+                setSubmitting(false)
+                setError(err.message || 'Invalid OTP.')
+            }
+            return
+        }
+
         if (!form.email || !form.password) {
             setError('Please fill in all fields.')
             return
@@ -66,16 +99,11 @@ const AdminLoginPage = () => {
             const result = await handleLogin(form)
             setSubmitting(false)
 
-            // Direct redirection based on the selected tab as per user requirement.
-            // "When i select lab admin ... i must enter into lab admin dashboard"
-            if (role === 'LAB_ADMIN') {
-                sessionStorage.removeItem('lab_admin_pin_verified');
-                navigate('/lab-admin-dashboard', { replace: true });
-            } else if (role === 'SUPER_ADMIN') {
-                navigate('/super-admin-dashboard', { replace: true });
+            if (result.require_otp) {
+                setShowOtp(true)
+                // Optionally show a message that OTP was sent
             } else {
-                // Fallback (should not happen given the UI only has two tabs)
-                navigate('/welcome', { replace: true });
+                processLoginSuccess(result)
             }
         } catch (err) {
             setSubmitting(false)
@@ -84,9 +112,6 @@ const AdminLoginPage = () => {
     }
 
     const handlePinChange = (element, index) => {
-        // User asked for "4 letter lock", so allow alphanumeric
-        // Remove isNaN check to allow letters
-
         const value = element.value.toUpperCase() // Normalize case
         if (value.length > 1) return
 
@@ -141,7 +166,7 @@ const AdminLoginPage = () => {
                     {pin.map((digit, index) => (
                         <input
                             key={index}
-                            id={`pin - ${index} `}
+                            id={`pin-${index}`}
                             type="text"
                             maxLength="1"
                             value={digit}
@@ -159,11 +184,6 @@ const AdminLoginPage = () => {
                 </div>
 
                 {error && <p className="status-text status-error" style={{ marginBottom: '16px' }}>{error}</p>}
-
-                {/* 
-                   Hidden "Default" hint since it is now unique per user.
-                   Only show hint if it's the fallback? No, simpler to hide to be "secure".
-                */}
             </div>
         )
     }
@@ -171,73 +191,95 @@ const AdminLoginPage = () => {
     return (
         <form className="auth-form" onSubmit={onSubmit}>
             {/* Role Selection */}
-            <div className="role-switcher">
-                <button
-                    type="button"
-                    onClick={() => setRole('LAB_ADMIN')}
-                    className={`role-btn ${role === 'LAB_ADMIN' ? 'active' : ''}`}
-                >
-                    Lab Admin
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setRole('SUPER_ADMIN')}
-                    className={`role-btn ${role === 'SUPER_ADMIN' ? 'active' : ''}`}
-                >
-                    Super Admin
-                </button>
-            </div>
+            {!showOtp && (
+                <div className="role-switcher">
+                    <button
+                        type="button"
+                        onClick={() => setRole('LAB_ADMIN')}
+                        className={`role-btn ${role === 'LAB_ADMIN' ? 'active' : ''}`}
+                    >
+                        Lab Admin
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRole('SUPER_ADMIN')}
+                        className={`role-btn ${role === 'SUPER_ADMIN' ? 'active' : ''}`}
+                    >
+                        Super Admin
+                    </button>
+                </div>
+            )}
 
-            <InputField
-                label="Work Email"
-                name="email"
-                type="email"
-                placeholder={role === 'LAB_ADMIN' ? "admin@lab.com" : "sysadmin@medibot.com"}
-                value={form.email}
-                onChange={onInput}
-                icon={
-                    <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M1 3.22222L8.25 7.83333L15.5 3.22222M2.8 1H14.2C15.1941 1 16 1.79218 16 2.76471V11.2353C16 12.2078 15.1941 13 14.2 13H2.8C1.80589 13 1 12.2078 1 11.2353V2.76471C1 1.79218 1.80589 1 2.8 1Z"
-                            stroke="#4da3ff"
-                            strokeWidth="1.2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+            {!showOtp ? (
+                <>
+                    <InputField
+                        label="Work Email"
+                        name="email"
+                        type="email"
+                        placeholder={role === 'LAB_ADMIN' ? "admin@lab.com" : "sysadmin@medibot.com"}
+                        value={form.email}
+                        onChange={onInput}
+                        icon={
+                            <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M1 3.22222L8.25 7.83333L15.5 3.22222M2.8 1H14.2C15.1941 1 16 1.79218 16 2.76471V11.2353C16 12.2078 15.1941 13 14.2 13H2.8C1.80589 13 1 12.2078 1 11.2353V2.76471C1 1.79218 1.80589 1 2.8 1Z"
+                                    stroke="#4da3ff"
+                                    strokeWidth="1.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        }
+                    />
+
+                    <div className="field-with-link">
+                        <InputField
+                            label="Password"
+                            name="password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={form.password}
+                            onChange={onInput}
+                            icon={
+                                <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="7" width="12" height="8" rx="1.6" stroke="#4da3ff" strokeWidth="1.2" />
+                                    <path
+                                        d="M6 7V5C6 2.79086 7.79086 1 10 1C12.2091 1 14 2.79086 14 5V7"
+                                        stroke="#4da3ff"
+                                        strokeWidth="1.2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                </svg>
+                            }
                         />
-                    </svg>
-                }
-            />
-
-            <div className="field-with-link">
-                <InputField
-                    label="Password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={onInput}
-                    icon={
-                        <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="3" y="7" width="12" height="8" rx="1.6" stroke="#4da3ff" strokeWidth="1.2" />
-                            <path
-                                d="M6 7V5C6 2.79086 7.79086 1 10 1C12.2091 1 14 2.79086 14 5V7"
-                                stroke="#4da3ff"
-                                strokeWidth="1.2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                    }
-                />
-                <Link className="inline-link" to="/admin/forgot">
-                    Forgot Password?
-                </Link>
-            </div>
+                        <Link className="inline-link" to="/admin/forgot">
+                            Forgot Password?
+                        </Link>
+                    </div>
+                </>
+            ) : (
+                <div className="form-field">
+                    <label>Enter Verification Code</label>
+                    <div className="input-shell">
+                        <input
+                            type="text"
+                            placeholder="• • • • • •"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            style={{ textAlign: 'center', letterSpacing: '0.2em', fontSize: '1.2rem' }}
+                        />
+                    </div>
+                    <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.5rem' }}>
+                        Check your email ({form.email}) for the code.
+                    </p>
+                </div>
+            )}
 
             <p className={`status-text ${error ? 'status-error' : ''}`}>{error}</p>
 
             <button className="primary-btn" type="submit" disabled={submitting}>
-                {submitting ? 'Authenticating...' : `Login as ${role === 'LAB_ADMIN' ? 'Lab Admin' : 'Super Admin'} `}
+                {submitting ? 'Processing...' : showOtp ? 'Verify & Login' : `Login as ${role === 'LAB_ADMIN' ? 'Lab Admin' : 'Super Admin'} `}
             </button>
 
             <div className="divider" role="separator" aria-hidden />

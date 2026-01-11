@@ -1561,3 +1561,413 @@ body {
   letter-spacing: 0.05em;
   font-size: 0.95rem;
 }
+
+/* =========================================
+   NEW REDESIGNED MODALS (Image Match)
+   ========================================= */
+
+/* --- Booking Modal Redesign --- */
+.fs-split-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 120px);
+}
+
+.fs-booking-container {
+  background: #f8fafc;
+  /* Light gray bg for modal area */
+  padding: 2rem;
+  position: fixed;
+  top: 73px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  overflow-y: auto;
+}
+
+.fs-sidebar-card {
+  background: white;
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: sticky;
+  top: 2rem;
+  border: 1px solid white;
+}
+
+.sidebar-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  border: 4px solid white;
+}
+
+.sidebar-info h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+  font-weight: 800;
+}
+
+.sidebar-rating {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  color: #f59e0b;
+  font-weight: 700;
+  font-size: 1rem;
+  background: #fffbeb;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sidebar-price-row {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  width: 100%;
+}
+
+.fs-main-card {
+  background: white;
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  height: fit-content;
+  min-height: 100%;
+  border: 1px solid white;
+}
+
+.fs-section-title {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+  font-weight: 800;
+}
+
+.fs-section-subtitle {
+  font-size: 1.1rem;
+  color: #64748b;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.test-category-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.test-cat-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 30px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.test-cat-btn.active {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.test-cat-btn.inactive {
+  background: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.test-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.test-grid-item {
+  padding: 1.25rem;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 80px;
+  position: relative;
+}
+
+.test-grid-item.selected {
+  border: 2px solid #2563eb;
+  background: #eff6ff;
+}
+
+.test-grid-item.unselected {
+  border: 2px solid #e2e8f0;
+  background: white;
+}
+
+.test-grid-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.test-check-circle {
+  min-width: 22px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid #cbd5e1;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.2s;
+}
+
+.test-grid-item.selected .test-check-circle {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.fs-input {
+  padding: 1rem;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  outline: none;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.fs-input:focus {
+  border-color: #2563eb;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.booking-footer {
+  grid-column: 1/-1;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2rem;
+}
+
+.total-est-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 0.2rem;
+}
+
+.total-est-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.confirm-booking-btn {
+  padding: 0 3rem;
+  height: 60px;
+  font-size: 1.1rem;
+  border-radius: 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s;
+}
+
+.confirm-booking-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+}
+
+/* --- Reports Modal Redesign --- */
+.reports-modal-overlay {
+  position: fixed;
+  top: 73px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f1f5f9;
+  /* Light blue-gray bg */
+  z-index: 900;
+  overflow-y: auto;
+  padding: 3rem 2rem;
+}
+
+.reports-wrapper {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.report-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+  gap: 1.5rem;
+  background: white;
+  padding: 0.5rem;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.report-tab-btn {
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 12px;
+  /* Smooth rounded */
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.report-tab-btn.primary {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.report-tab-btn.secondary {
+  background: transparent;
+  color: #64748b;
+}
+
+.report-tab-btn.secondary:hover {
+  background: #f1f5f9;
+}
+
+.report-card-container {
+  background: white;
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  min-height: 500px;
+}
+
+.report-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.report-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-left: 4px solid #2563eb;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.report-list-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  border-color: #e2e8f0;
+}
+
+.report-meta h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.report-pending-text {
+  color: #64748b;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.report-meta p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.report-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.report-btn-outline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border: 1.5px solid #2563eb;
+  background: white;
+  color: #2563eb;
+  font-weight: 700;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.report-btn-outline:hover {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+}

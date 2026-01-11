@@ -1,56 +1,56 @@
+
+import mysql.connector
+import os
 import requests
-import time
-import sys
 
-print("🔍 STARTING SYSTEM DIAGNOSTICS...", flush=True)
+def test_sql():
+    print("Testing SQL...")
+    try:
+        conn = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="",
+            database="medibot"
+        )
+        cur = conn.cursor()
+        query = """
+            SELECT 
+                u.id, 
+                u.email, 
+                u.email, 
+                (SELECT mobile_number FROM prescriptions p WHERE p.user_id = u.id ORDER BY created_at DESC LIMIT 1) as phone,
+                (SELECT COUNT(*) FROM prescriptions p WHERE p.user_id = u.id) as upload_count,
+                (SELECT file_path FROM prescriptions p WHERE p.user_id = u.id ORDER BY created_at DESC LIMIT 1) as latest_rx
+            FROM users u
+            WHERE u.role NOT IN ('LAB_ADMIN', 'SUPER_ADMIN')
+        """
+        cur.execute(query)
+        rows = cur.fetchall()
+        print(f"SQL Success. Rows found: {len(rows)}")
+        for r in rows:
+            print(r)
+        conn.close()
+    except Exception as e:
+        print(f"SQL Failed: {e}")
 
-# 1. Check Localhost Health
-print("\n1️⃣  Checking Local Server connection...", end=" ", flush=True)
-try:
-    r = requests.get("http://localhost:5000/", timeout=5)
-    if r.status_code == 200:
-        print("✅ ONLINE")
-    else:
-        print(f"❌ ERROR (Status {r.status_code})")
-except Exception as e:
-    print(f"❌ FAILED: {e}")
-    print("   -> ACTION: OCR.py is NOT running or crashed. I will restart it.")
+def test_endpoint():
+    print("\nTesting Endpoint...")
+    try:
+        # We need to simulate a login to get a cookie, or we bypass?
+        # The endpoint checks session role.
+        # We can't easily test endpoint without session cookie.
+        # But we can check if it returns 404 (endpoint not found) or 403 (unauthorized) or 500.
+        # If 404, server not reloaded (since we just added it).
+        
+        response = requests.get('http://localhost:5000/api/admin/patients')
+        print(f"Status Code: {response.status_code}")
+        # We expect 403 if it works but we are not logged in.
+        # We expect 404 if the server code is old.
+        # We expect 500 if server code is new but buggy (and fails before role check? Unlikely, role check is first).
+        
+    except Exception as e:
+        print(f"Endpoint Request Failed: {e}")
 
-# 2. Simulate WhatsApp Payload
-print("\n2️⃣  Simulating WhatsApp Message (Internal Test)...", end=" ", flush=True)
-payload = {
-    "NumMedia": "0",
-    "From": "whatsapp:+123456789",
-    "Body": "Hello"
-}
-try:
-    r = requests.post("http://localhost:5000/webhook/whatsapp", data=payload, timeout=10)
-    if r.status_code == 200:
-        print("✅ SUCCESS")
-        print("   -> Server Response: " + r.text[:100] + "...")
-    else:
-        print(f"❌ FAILED (Status {r.status_code})")
-except Exception as e:
-    print(f"❌ FAILED: {e}")
-
-# 3. Check Public Tunnel
-NGROK_URL = "https://environmentally-stringent-shaun.ngrok-free.dev"
-print(f"\n3️⃣  Checking Public Tunnel ({NGROK_URL})...", end=" ", flush=True)
-try:
-    # Use headers to avoid browser warning page from ngrok
-    r = requests.get(f"{NGROK_URL}/", headers={"ngrok-skip-browser-warning": "true"}, timeout=10)
-    if r.status_code == 200 and "OCR Server is RUNNING" in r.text:
-        print("✅ REACHABLE & CORRECT")
-    elif r.status_code == 404:
-        print("❌ 404 NOT FOUND (Tunnel is offline or URL is wrong)")
-    elif r.status_code == 502:
-        print("❌ 502 BAD GATEWAY (Ngrok can't reach port 5000)")
-    else:
-        print(f"⚠️ STATUS {r.status_code} (Might be working, check valid response)")
-except Exception as e:
-    print(f"❌ UNREACHABLE: {e}")
-
-print("\n---------------------------------------------------")
-print("SUMMARY:")
-print("If Steps 1 & 2 passed, your CODE is perfect.")
-print("If Step 3 failed, your NGROK/TWILIO config is the problem.")
+if __name__ == "__main__":
+    test_sql()
+    test_endpoint()
