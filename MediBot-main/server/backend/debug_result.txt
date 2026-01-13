@@ -1,0 +1,8 @@
+--- ENV REPORT ---
+SMTP_HOST=[smtp.gmail.com]
+SMTP_PORT=[587]
+SMTP_USE_TLS=[1]
+SMTP_USER=[nandanapramod2028@mca.ajce.in]
+SMTP_PASS=[SET]
+DB_CONNECTION=[OK]
+DB_CONNECTION=[FAIL] MySQL Connection not available.
