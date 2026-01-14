@@ -142,9 +142,25 @@ const IconUploadCloud = ({ size = 20 }) => (
   </svg>
 );
 
-const IconChevronDown = ({ size = 20 }) => (
+const IconMessageCircle = ({ size = 24, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+  </svg>
+);
+
+const IconSend = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="6 9 12 15 18 9"></polyline>
+    <line x1="22" y1="2" x2="11" y2="13"></line>
+    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+  </svg>
+);
+
+const IconTrash = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    <line x1="10" y1="11" x2="10" y2="17"></line>
+    <line x1="14" y1="11" x2="14" y2="17"></line>
   </svg>
 );
 
@@ -260,17 +276,58 @@ const LandingPage = () => {
   const [patientDetails, setPatientDetails] = useState({ age: '', gender: '', savedLocation: '' });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-  // Mock Notifications
-  const notifications = [
-    { id: 1, text: "Your report for CBC is ready.", time: "2 hrs ago" },
-    { id: 2, text: "Appointment confirmed at City Care.", time: "5 hrs ago" }
-  ];
+  // Chat Widget State
+  const [showChatSidebar, setShowChatSidebar] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([
+    { id: 1, type: "ai", text: "Hello! I'm your MediBot Assistant. How can I help you today?" }
+  ]);
 
-  // Mock Reminders
-  const reminders = [
+  // Feedback Modal State
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackText, setFeedbackText] = useState("");
+
+  // Notifications & Reminders State
+  const [notifications, setNotifications] = useState([
+    { id: 1, text: "Your report for CBC is ready.", time: "2 hrs ago", isRead: false },
+    { id: 2, text: "Appointment confirmed at City Care.", time: "5 hrs ago", isRead: false }
+  ]);
+
+  const [reminders, setReminders] = useState([
     { id: 1, text: "Fasting required for Thyroid test tomorrow.", time: "Tomorrow, 8 AM" },
     { id: 2, text: "Follow-up checkup pending.", time: "Next Week" }
-  ];
+  ]);
+
+  const markNotificationRead = (id) => {
+    setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+  };
+
+  const clearNotification = (id) => {
+    if (window.confirm("Remove this notification?")) {
+      setNotifications(notifications.filter(n => n.id !== id));
+    }
+  };
+
+  const clearAllNotifications = () => {
+    if (notifications.length === 0) return;
+    if (window.confirm("Clear all notifications?")) {
+      setNotifications([]);
+    }
+  };
+
+  const clearReminder = (id) => {
+    if (window.confirm("Remove this reminder?")) {
+      setReminders(reminders.filter(r => r.id !== id));
+    }
+  };
+
+  const clearAllReminders = () => {
+    if (reminders.length === 0) return;
+    if (window.confirm("Clear all reminders?")) {
+      setReminders([]);
+    }
+  };
 
 
 
@@ -288,6 +345,7 @@ const LandingPage = () => {
   const [showMyBookingsModal, setShowMyBookingsModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Pay at Lab');
+  const [paymentStep, setPaymentStep] = useState('select'); // 'select', 'upi_scan', 'card_form'
 
   // Booking Form State
   const [bookingDate, setBookingDate] = useState('');
@@ -314,14 +372,74 @@ const LandingPage = () => {
   };
 
   const handleProceedToPayment = () => {
+    if (selectedTests.length === 0) {
+      alert("Please select at least one test.");
+      return;
+    }
+    if (!bookingDate) {
+      alert("Please select a preferred date for your appointment.");
+      return;
+    }
+    if (!bookingTime) {
+      alert("Please select a preferred time.");
+      return;
+    }
+    setPaymentStep('select');
     setShowPaymentModal(true);
   };
 
+  const handleDeleteBooking = (id) => {
+    if (window.confirm("Are you sure you want to remove this booking from your history?")) {
+      setBookings(prev => prev.filter(b => b.id !== id));
+    }
+  };
+
   const finalizeBooking = async () => {
-    // Close payment modal
+    // Step 1: Routing based on Method
+    if (paymentStep === 'select') {
+      if (paymentMethod === 'UPI') {
+        setPaymentStep('upi_scan');
+        return;
+      }
+      if (paymentMethod === 'Credit/Debit Card') {
+        setPaymentStep('card_form');
+        return;
+      }
+      // If Pay at Lab, fall through to confirm
+    }
+
+    // Step 2: Final Confirmation (called by sub-steps or Pay at Lab)
     setShowPaymentModal(false);
-    // Call existing handleConfirmBooking
     await handleConfirmBooking();
+    setShowFeedbackModal(true);
+  };
+
+  const submitFeedback = () => {
+    // Determine message based on rating
+    let message = "Thank you for your feedback!";
+    if (feedbackRating >= 4) message = "We're glad you had a great experience!";
+    else if (feedbackRating > 0 && feedbackRating < 4) message = "Thanks. We'll try to improve.";
+
+    alert(message);
+    setShowFeedbackModal(false);
+    setFeedbackRating(0);
+    setFeedbackText("");
+  };
+
+  const handleChatSend = () => {
+    if (!chatInput.trim()) return;
+    const newMsg = { id: Date.now(), type: "user", text: chatInput };
+    setChatMessages([...chatMessages, newMsg]);
+    setChatInput("");
+
+    // Simulate AI response
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        type: "ai",
+        text: "I can help you find labs, book appointments, or view your reports. Is there anything specific you need?"
+      }]);
+    }, 1000);
   };
 
   // Advanced Features State
@@ -372,6 +490,54 @@ const LandingPage = () => {
     setShowLabDetailsModal(true);
   };
 
+  // Fetch Bookings from Backend
+  const fetchBookings = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/user/appointments', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBookings(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch bookings:", e);
+    }
+  };
+
+  // Fetch on mount and when modal opens
+  useEffect(() => {
+    fetchBookings();
+  }, [showMyBookingsModal]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const handleCancelBooking = async (bookingId) => {
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/user/appointments/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ appointment_id: bookingId })
+      });
+
+      if (response.ok) {
+        alert("Booking cancelled.");
+        fetchBookings(); // Refresh list
+      } else {
+        alert("Failed to cancel booking.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error cancelling booking.");
+    }
+  };
+
   const handleConfirmBooking = async () => {
     if (!bookingDate || !bookingTime || selectedTests.length === 0) {
       alert("Please select date, time, and at least one test.");
@@ -394,6 +560,7 @@ const LandingPage = () => {
       const response = await fetch('http://localhost:5000/api/admin/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           labName: newBooking.labName,
           doctor: newBooking.doctor,
@@ -404,18 +571,23 @@ const LandingPage = () => {
         })
       });
       if (response.ok) {
-        setBookings([...bookings, newBooking]);
+        // Wait for server to process, then fetch fresh list
+        await fetchBookings();
         setShowBookingModal(false);
+        // Alert removed or kept? User flow might be interrupted. 
+        // Keeping it for now as per previous logic, or maybe the feedbackmodal handles it.
+        // Actually, handleConfirmBooking is called, THEN success triggers confirm.
+        // But let's rely on fetchBookings to update state.
         alert("Booking Confirmed! Check 'Bookings' in the navbar.");
       } else {
         alert("Failed to confirm booking with server.");
       }
     } catch (e) {
       console.error(e);
-      // Fallback or alert
-      setBookings([...bookings, newBooking]);
+      // Fallback
+      alert("Network Error. Booking might not be saved remotely.");
+      setBookings([...bookings, newBooking]); // Optimistic update fallback
       setShowBookingModal(false);
-      alert("Booking Confirmed (Local)! Check 'Bookings' in the navbar.");
     }
   };
 
@@ -867,77 +1039,77 @@ const LandingPage = () => {
       {showBookingModal && selectedLab && (
         <div className="page-container">
           <div className="page-content-wrapper">
-            <div className="page-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <button className="nav-item-btn" onClick={() => setShowBookingModal(false)} style={{ padding: '0.5rem' }}>
-                  <IconArrowLeft size={24} />
-                </button>
-                <h2>Complete Your Booking</h2>
-              </div>
-              <div className="page-actions">
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Step 1 of 2</span>
-              </div>
+            {/* Header Removed as requested */}
+            <div className="page-header" style={{ borderBottom: 'none', padding: '0 0 1rem 0' }}>
+              {/* Empty header or minimal spacer if needed, or fully removed content */}
             </div>
 
             <div className="fs-split-layout">
-              {/* Sidebar Card */}
-              <div className="fs-sidebar-card">
-                <div className="sidebar-avatar" style={{ backgroundImage: `url(${selectedLab.image})` }}>
+              {/* Sidebar Card - Enhanced */}
+              <div className="fs-sidebar-card" style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.05)' }}>
+                <div className="sidebar-avatar" style={{ backgroundImage: `url(${selectedLab.image})`, width: '100px', height: '100px', border: '4px solid white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
                   {!selectedLab.image && <IconMapPin size={40} />}
                 </div>
 
                 <div className="sidebar-info">
-                  <h3>{selectedLab.name}</h3>
+                  <h3 style={{ fontSize: '1.4rem', color: '#1e293b' }}>{selectedLab.name}</h3>
 
-                  <div className="sidebar-rating">
-                    <span>{selectedLab.rating}</span>
-                    <IconStar fill="currentColor" size={16} />
+                  <div className="sidebar-rating" style={{ background: '#fffbeb', border: '1px solid #fcd34d' }}>
+                    <span style={{ color: '#d97706', fontWeight: 800 }}>{selectedLab.rating}</span>
+                    <IconStar fill="#f59e0b" color="#f59e0b" size={16} />
                   </div>
 
-                  <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.5rem', color: '#64748b' }}>
                     <IconMapPin size={14} /> {selectedLab.location}
                   </p>
 
-                  <div className="sidebar-price-row">
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#64748b' }}>Consultation Starts</p>
-                    <p style={{ margin: 0, fontSize: '2.5rem', fontWeight: 800, color: '#1d4ed8', lineHeight: 1 }}>₹{selectedLab.price}</p>
+                  <div className="sidebar-price-row" style={{ marginTop: '2rem' }}>
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Consultation Fee</p>
+                    <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1, textShadow: '0 2px 4px rgba(14, 165, 233, 0.1)' }}>₹{selectedLab.price}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Main Form */}
-              <div className="fs-main-card" style={{ padding: '1.5rem 2rem' }}>
-                <h3 className="fs-section-title" style={{ marginBottom: '0.25rem' }}>Patient Details</h3>
-                <p className="fs-section-subtitle" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Select the tests you want to book</p>
+              {/* Main Form - Enhanced */}
+              <div className="fs-main-card" style={{ padding: '2.5rem', borderRadius: '24px', boxShadow: 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                  <div>
+                    <h3 className="fs-section-title" style={{ marginBottom: '0.5rem', fontSize: '1.5rem', color: '#0f172a' }}>Patient Details</h3>
+                    <p className="fs-section-subtitle" style={{ fontSize: '0.95rem', color: '#64748b' }}>Fill in the details to schedule your appointment.</p>
+                  </div>
+                  <button onClick={() => setShowBookingModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><IconX size={20} /></button>
+                </div>
 
-                <div className="fs-form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="fs-form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   {/* Category & Selection Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1.5rem' }}>
                     {/* Test Category */}
                     <div>
-                      <label className="fs-label"><IconDroplet size={16} style={{ marginBottom: -2, marginRight: 6, color: 'var(--primary)' }} /> Test Category</label>
-                      <select
-                        className="fs-input"
-                        value={activeTestCategory}
-                        onChange={(e) => setActiveTestCategory(e.target.value)}
-                        style={{ marginBottom: 0 }}
-                      >
-                        {Object.keys(TEST_CATEGORIES).map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
+                      <label className="fs-label" style={{ marginBottom: '0.75rem' }}><IconDroplet size={16} style={{ marginBottom: -3, marginRight: 8, color: 'var(--primary)' }} /> Test Category</label>
+                      <div className="select-wrapper">
+                        <select
+                          className="fs-input"
+                          value={activeTestCategory}
+                          onChange={(e) => setActiveTestCategory(e.target.value)}
+                          style={{ marginBottom: 0, height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                        >
+                          {Object.keys(TEST_CATEGORIES).map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     {/* Test Selection */}
                     <div>
-                      <label className="fs-label"><IconActivity size={16} style={{ marginBottom: -2, marginRight: 6, color: 'var(--primary)' }} /> Select Test</label>
+                      <label className="fs-label" style={{ marginBottom: '0.75rem' }}><IconActivity size={16} style={{ marginBottom: -3, marginRight: 8, color: 'var(--primary)' }} /> Select Test</label>
                       <select
                         className="fs-input"
                         onChange={(e) => {
                           if (e.target.value) toggleTestSelection(e.target.value);
                           e.target.value = "";
                         }}
-                        style={{ marginBottom: 0 }}
+                        style={{ marginBottom: 0, height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0' }}
                       >
                         <option value="">-- Choose a test --</option>
                         {TEST_CATEGORIES[activeTestCategory].map(test => (
@@ -950,13 +1122,14 @@ const LandingPage = () => {
                   </div>
 
                   {/* Selected Tests Tags - Full Width */}
-                  <div style={{ minHeight: '34px' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ minHeight: '40px', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                    {selectedTests.length === 0 && <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontStyle: 'italic' }}>No tests selected yet.</span>}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                       {selectedTests.map(test => (
-                        <div key={test} className="selected-test-chip">
-                          {test}
-                          <button onClick={() => toggleTestSelection(test)}>
-                            <IconX size={14} />
+                        <div key={test} className="selected-test-chip" style={{ background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', padding: '0.5rem 1rem' }}>
+                          <span style={{ fontWeight: 600, color: '#334155' }}>{test}</span>
+                          <button onClick={() => toggleTestSelection(test)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '50%', padding: 2, display: 'flex' }}>
+                            <IconX size={12} />
                           </button>
                         </div>
                       ))}
@@ -966,23 +1139,26 @@ const LandingPage = () => {
                   {/* Date & Time */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                     <div>
-                      <label className="fs-label"><IconCalendar size={16} style={{ marginBottom: -2, marginRight: 6, color: 'var(--primary)' }} /> Preferred Date</label>
-                      <input className="fs-input" type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} style={{ marginBottom: 0 }} />
+                      <label className="fs-label" style={{ marginBottom: '0.75rem' }}><IconCalendar size={16} style={{ marginBottom: -3, marginRight: 8, color: 'var(--primary)' }} /> Preferred Date</label>
+                      <input className="fs-input" type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} style={{ marginBottom: 0, height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
                     </div>
                     <div>
-                      <label className="fs-label"><IconClock size={16} style={{ marginBottom: -2, marginRight: 6, color: 'var(--primary)' }} /> Preferred Time</label>
-                      <input className="fs-input" type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} style={{ marginBottom: 0 }} />
+                      <label className="fs-label" style={{ marginBottom: '0.75rem' }}><IconClock size={16} style={{ marginBottom: -3, marginRight: 8, color: 'var(--primary)' }} /> Preferred Time</label>
+                      <input className="fs-input" type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} style={{ marginBottom: 0, height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
                     </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="booking-footer" style={{ marginTop: '1.5rem', paddingTop: '1.5rem' }}>
+                  <div className="booking-footer" style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #f1f5f9' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <p className="total-est-label">Total Estimated Cost</p>
-                      <p className="total-est-amount">₹{selectedLab.price + (selectedTests.length * 150)}</p>
+                      <p className="total-est-label" style={{ color: '#64748b', fontSize: '0.9rem' }}>Total Estimated Cost</p>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '1rem', color: '#cbd5e1', textDecoration: 'line-through' }}>₹{selectedLab.price + (selectedTests.length * 200) + 100}</span>
+                        <p className="total-est-amount" style={{ fontSize: '2rem', color: '#0f172a' }}>₹{selectedLab.price + (selectedTests.length * 150)}</p>
+                      </div>
                     </div>
-                    <button className="confirm-booking-btn" onClick={handleProceedToPayment}>
-                      Proceed to Payment
+                    <button className="confirm-booking-btn" onClick={handleProceedToPayment} style={{ borderRadius: '12px', padding: '1rem 2rem', fontSize: '1.1rem', boxShadow: '0 4px 12px rgba(14, 165, 233, 0.25)' }}>
+                      Proceed to Payment &rarr;
                     </button>
                   </div>
                 </div>
@@ -1198,61 +1374,142 @@ const LandingPage = () => {
       {/* Full Screen Reports Section */}
       {/* Reports Modal (Redesigned) */}
       {/* Reports Page */}
+      {/* Reports Page */}
       {showReportsModal && (
         <div className="page-container">
           <div className="page-content-wrapper">
-            <div className="page-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <h2>My Medical Reports</h2>
-              </div>
+            <div className="page-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+              <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.03em' }}>Medical Reports</h2>
+              <p style={{ margin: 0, color: '#64748b', fontSize: '1.05rem' }}>Access and manage your digital health records securely.</p>
             </div>
 
-            <div className="form-card">
+            <div className="form-card" style={{ maxWidth: '900px', background: 'transparent', boxShadow: 'none', border: 'none', padding: 0 }}>
               {/* Toggle Buttons */}
-              <div className="report-tabs" style={{ background: 'transparent', padding: '0 0 1.5rem 0', border: 'none' }}>
-                <button
-                  className={`report-tab-btn ${activeReportTab === 'Uploaded' ? 'primary' : 'secondary'}`}
-                  onClick={() => setActiveReportTab('Uploaded')}
-                >
-                  <IconUploadCloud size={20} /> Uploaded Prescriptions
-                </button>
-                <button
-                  className={`report-tab-btn ${activeReportTab === 'Generated' ? 'primary' : 'secondary'}`}
-                  onClick={() => setActiveReportTab('Generated')}
-                >
-                  <IconFileText size={20} /> Lab Results
-                </button>
+              <div className="report-tabs-container" style={{
+                background: 'white',
+                padding: '0.5rem',
+                borderRadius: '16px',
+                display: 'inline-flex',
+                gap: '0.5rem',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                marginBottom: '2rem',
+                border: '1px solid #e2e8f0'
+              }}>
+                {['Uploaded', 'Generated'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveReportTab(tab)}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: activeReportTab === tab ? 'var(--primary)' : 'transparent',
+                      color: activeReportTab === tab ? 'white' : '#64748b',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      transition: 'all 0.2s ease',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    {tab === 'Uploaded' ? <IconUploadCloud size={18} /> : <IconFileText size={18} />}
+                    {tab === 'Uploaded' ? 'Prescriptions' : 'Lab Results'}
+                  </button>
+                ))}
               </div>
 
-              <div className="report-card-container" style={{ padding: 0 }}>
+              <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
                 {/* Uploaded Reports */}
                 {activeReportTab === 'Uploaded' && (
                   <>
                     {reports.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {reports.map((report) => (
-                          <div key={report.id} className="list-item-card">
-                            <div className="report-meta">
-                              <h4>Prescription #{report.id} <span className="report-pending-text" style={{ fontSize: '0.8rem', background: '#fef08a', padding: '2px 8px', borderRadius: '4px', color: '#854d0e', marginLeft: '8px' }}>{report.status}</span></h4>
-                              <p><IconCalendar size={14} /> Uploaded on {new Date(report.date).toLocaleDateString()}</p>
+                      reports.map((report) => (
+                        <div key={report.id} className="report-card" style={{
+                          background: 'white',
+                          borderRadius: '16px',
+                          padding: '1.5rem',
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.03)',
+                          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                          cursor: 'default',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between'
+                        }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.03)'; }}
+                        >
+                          <div style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                              <div style={{ background: '#eff6ff', padding: '0.8rem', borderRadius: '12px', color: 'var(--primary)' }}>
+                                <IconFileText size={24} />
+                              </div>
+                              <span style={{
+                                background: report.status === 'Verified' ? '#dcfce7' : '#fef9c3',
+                                color: report.status === 'Verified' ? '#166534' : '#854d0e',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                padding: '0.3rem 0.8rem',
+                                borderRadius: '20px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                              }}>
+                                {report.status || 'Pending'}
+                              </span>
                             </div>
-                            <div className="report-actions">
-                              <a href={report.file_path} target="_blank" rel="noopener noreferrer" className="report-btn-outline">
-                                <IconEye size={16} /> View
-                              </a>
-                              <button
-                                onClick={() => downloadFile(report.file_path, `Prescription_${report.id}.pdf`)}
-                                className="report-btn-outline"
-                              >
-                                <IconDownload size={16} /> Download
-                              </button>
-                            </div>
+                            <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#1e293b' }}>Prescription Upload #{report.id}</h4>
+                            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <IconCalendar size={14} /> {new Date(report.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
                           </div>
-                        ))}
-                      </div>
+
+                          <div style={{ display: 'flex', gap: '0.8rem', paddingTop: '1.5rem', borderTop: '1px solid #f1f5f9' }}>
+                            <a href={report.file_path} target="_blank" rel="noopener noreferrer" style={{
+                              flex: 1,
+                              textAlign: 'center',
+                              padding: '0.7rem',
+                              borderRadius: '8px',
+                              background: '#f8fafc',
+                              color: '#475569',
+                              fontWeight: 600,
+                              fontSize: '0.9rem',
+                              textDecoration: 'none',
+                              transition: 'background 0.2s'
+                            }}>
+                              View
+                            </a>
+                            <button
+                              onClick={() => downloadFile(report.file_path, `Prescription_${report.id}.pdf`)}
+                              style={{
+                                flex: 1,
+                                padding: '0.7rem',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: 'var(--primary-soft)',
+                                color: 'var(--primary-dark)',
+                                fontWeight: 600,
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.4rem'
+                              }}
+                            >
+                              <IconDownload size={16} /> Download
+                            </button>
+                          </div>
+                        </div>
+                      ))
                     ) : (
-                      <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-                        <p>No prescriptions uploaded yet.</p>
+                      <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '6rem 2rem', background: 'white', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ background: '#f1f5f9', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                          <IconUploadCloud size={40} color="#94a3b8" />
+                        </div>
+                        <h3 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>No Prescriptions Yet</h3>
+                        <p style={{ color: '#64748b' }}>Upload your prescription to get started with your order.</p>
                       </div>
                     )}
                   </>
@@ -1262,28 +1519,74 @@ const LandingPage = () => {
                 {activeReportTab === 'Generated' && (
                   <>
                     {reports.filter(r => r.status === 'Completed').length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {reports.filter(r => r.status === 'Completed').map((report) => (
-                          <div key={`gen-${report.id}`} className="list-item-card" style={{ borderLeft: '4px solid #16a34a' }}>
-                            <div className="report-meta">
-                              <h4>Lab Result #{report.id} <span style={{ color: '#16a34a', fontSize: '0.8rem', fontWeight: 600, background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}>Ready</span></h4>
-                              <p><IconCalendar size={14} /> {new Date(report.date).toLocaleDateString()}</p>
+                      reports.filter(r => r.status === 'Completed').map((report) => (
+                        <div key={`gen-${report.id}`} className="report-card" style={{
+                          background: 'white',
+                          borderRadius: '16px',
+                          padding: '1.5rem',
+                          border: '1px solid #e2e8f0', // Green tint border
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.03)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#16a34a' }}></div>
+
+                          <div style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                              <div style={{ background: '#dcfce7', padding: '0.8rem', borderRadius: '12px', color: '#16a34a' }}>
+                                <IconActivity size={24} />
+                              </div>
+                              <span style={{
+                                background: '#16a34a',
+                                color: 'white',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                padding: '0.3rem 0.8rem',
+                                borderRadius: '20px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                display: 'flex', alignItems: 'center', gap: '4px'
+                              }}>
+                                <IconCheckCircle size={12} /> Ready
+                              </span>
                             </div>
-                            <div className="report-actions">
-                              <button
-                                onClick={() => downloadFile(report.file_path, `Lab_Result_${report.id}.pdf`)}
-                                className="report-btn-outline"
-                                style={{ borderColor: '#16a34a', color: '#16a34a' }}
-                              >
-                                <IconDownload size={16} /> Download PDF
-                              </button>
-                            </div>
+                            <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#1e293b' }}>Lab Report #{report.id}</h4>
+                            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <IconCalendar size={14} /> {new Date(report.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
                           </div>
-                        ))}
-                      </div>
+
+                          <button
+                            onClick={() => downloadFile(report.file_path, `Lab_Result_${report.id}.pdf`)}
+                            style={{
+                              width: '100%',
+                              padding: '0.8rem',
+                              borderRadius: '12px',
+                              border: 'none',
+                              background: '#16a34a',
+                              color: 'white',
+                              fontWeight: 600,
+                              fontSize: '0.95rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.5rem',
+                              boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.3)',
+                              marginTop: '1rem'
+                            }}
+                          >
+                            <IconDownload size={18} /> Download Full Report
+                          </button>
+                        </div>
+                      ))
                     ) : (
-                      <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-                        <p>No generated reports returned yet.</p>
+                      <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '6rem 2rem', background: 'white', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ background: '#f1f5f9', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                          <IconActivity size={40} color="#94a3b8" />
+                        </div>
+                        <h3 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>No Lab Results Yet</h3>
+                        <p style={{ color: '#64748b' }}>Once your tests are processed, your digital reports will appear here.</p>
                       </div>
                     )}
                   </>
@@ -1487,26 +1790,101 @@ const LandingPage = () => {
       {showNotifications && (
         <div className="page-container">
           <div className="page-content-wrapper">
-            <div className="page-header">
+            <div className="page-header" style={{ justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <h2>Notifications</h2>
+                <span className="badge-count" style={{ background: 'var(--primary)' }}>{notifications.filter(n => !n.isRead).length} New</span>
               </div>
+              {notifications.length > 0 && (
+                <button onClick={clearAllNotifications} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+                  Clear All
+                </button>
+              )}
             </div>
 
-            <div className="form-card" style={{ maxWidth: '800px' }}>
-              {notifications.map(n => (
-                <div key={n.id} className="list-item-card" style={{ borderLeft: '4px solid var(--primary)' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ background: '#eff6ff', padding: '0.75rem', borderRadius: '50%' }}>
-                      <IconBell size={20} color="var(--primary)" />
+            <div className="form-card" style={{ maxWidth: '800px', background: 'transparent', boxShadow: 'none', border: 'none', padding: 0 }}>
+              {notifications.length > 0 ? (
+                notifications.map(n => (
+                  <div key={n.id} className="list-item-card" style={{
+                    borderLeft: n.isRead ? '4px solid #cbd5e1' : '4px solid var(--primary)',
+                    opacity: n.isRead ? 0.8 : 1,
+                    background: 'white',
+                    marginBottom: '1rem',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
+                      <div style={{
+                        background: n.isRead ? '#f1f5f9' : '#eff6ff',
+                        padding: '0.75rem',
+                        borderRadius: '50%',
+                        transition: 'all 0.3s'
+                      }}>
+                        <IconBell size={20} color={n.isRead ? '#94a3b8' : 'var(--primary)'} />
+                      </div>
+                      <div>
+                        <p style={{
+                          margin: '0 0 0.25rem 0',
+                          fontWeight: n.isRead ? 500 : 700,
+                          fontSize: '1.05rem',
+                          color: n.isRead ? 'var(--text-muted)' : 'var(--text-main)'
+                        }}>
+                          {n.text}
+                        </p>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{n.time}</span>
+                      </div>
                     </div>
-                    <div>
-                      <p style={{ margin: '0 0 0.25rem 0', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-main)' }}>{n.text}</p>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{n.time}</span>
+
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {!n.isRead && (
+                        <button
+                          onClick={() => markNotificationRead(n.id)}
+                          title="Mark as Read"
+                          style={{
+                            border: '1px solid #dcfce7',
+                            background: '#f0fdf4',
+                            color: '#166534',
+                            padding: '0.5rem',
+                            borderRadius: '50%',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <IconCheckCircle size={18} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => clearNotification(n.id)}
+                        title="Clear"
+                        style={{
+                          border: '1px solid #fee2e2',
+                          background: '#fef2f2',
+                          color: '#ef4444',
+                          padding: '0.5rem',
+                          borderRadius: '50%',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <IconX size={18} />
+                      </button>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+                  <div style={{ background: '#f1f5f9', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+                    <IconBell size={24} color="#94a3b8" />
+                  </div>
+                  <p>No new notifications</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -1516,26 +1894,66 @@ const LandingPage = () => {
       {showReminders && (
         <div className="page-container">
           <div className="page-content-wrapper">
-            <div className="page-header">
+            <div className="page-header" style={{ justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <h2>Reminders</h2>
+                <span className="badge-count" style={{ background: 'var(--accent)' }}>{reminders.length} Pending</span>
               </div>
+              {reminders.length > 0 && (
+                <button onClick={clearAllReminders} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+                  Clear All
+                </button>
+              )}
             </div>
 
-            <div className="form-card" style={{ maxWidth: '800px' }}>
-              {reminders.map(r => (
-                <div key={r.id} className="list-item-card" style={{ borderLeft: '4px solid var(--accent)' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ background: '#fffbeb', padding: '0.75rem', borderRadius: '50%' }}>
-                      <IconClock size={20} color="var(--accent)" />
+            <div className="form-card" style={{ maxWidth: '800px', background: 'transparent', boxShadow: 'none', border: 'none', padding: 0 }}>
+              {reminders.length > 0 ? (
+                reminders.map(r => (
+                  <div key={r.id} className="list-item-card" style={{
+                    borderLeft: '4px solid var(--accent)',
+                    background: 'white',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
+                      <div style={{ background: '#fffbeb', padding: '0.75rem', borderRadius: '50%' }}>
+                        <IconClock size={20} color="var(--accent)" />
+                      </div>
+                      <div>
+                        <p style={{ margin: '0 0 0.25rem 0', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-main)' }}>{r.text}</p>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{r.time}</span>
+                      </div>
                     </div>
-                    <div>
-                      <p style={{ margin: '0 0 0.25rem 0', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-main)' }}>{r.text}</p>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{r.time}</span>
-                    </div>
+
+                    <button
+                      onClick={() => clearReminder(r.id)}
+                      title="Dismiss"
+                      style={{
+                        border: '1px solid #fee2e2',
+                        background: '#fef2f2',
+                        color: '#ef4444',
+                        padding: '0.5rem',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <IconX size={18} />
+                    </button>
                   </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+                  <div style={{ background: '#f1f5f9', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+                    <IconClock size={24} color="#94a3b8" />
+                  </div>
+                  <p>No upcoming reminders</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -1554,10 +1972,40 @@ const LandingPage = () => {
             <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
               {bookings.length > 0 ? (
                 bookings.map(b => (
-                  <div key={b.id} className="list-item-card" style={{ display: 'block', padding: '1.5rem', borderTop: '4px solid var(--secondary)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                      <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.2rem' }}>{b.labName}</h3>
-                      <span style={{ background: '#dcfce7', color: '#166534', fontWeight: 700, fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px' }}>{b.status}</span>
+                  <div key={b.id} className="list-item-card" style={{ display: 'block', padding: '1.5rem', borderTop: '4px solid var(--secondary)', position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'flex-start' }}>
+                      <div>
+                        <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.2rem' }}>{b.labName}</h3>
+                        <span style={{
+                          background: b.status === 'Cancelled' ? '#fee2e2' : '#dcfce7',
+                          color: b.status === 'Cancelled' ? '#991b1b' : '#166534',
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '4px',
+                          display: 'inline-block',
+                          marginTop: '0.25rem'
+                        }}>
+                          {b.status}
+                        </span>
+                      </div>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteBooking(b.id); }}
+                        title="Remove from history"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#cbd5e1',
+                          cursor: 'pointer',
+                          padding: '0.25rem'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                        onMouseOut={(e) => e.currentTarget.style.color = '#cbd5e1'}
+                      >
+                        <IconTrash size={18} />
+                      </button>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem' }}>
@@ -1577,6 +2025,31 @@ const LandingPage = () => {
                         <IconMapPin size={14} />
                         {b.location}
                       </div>
+
+                      {/* Cancel Button */}
+                      {b.status !== 'Cancelled' && (
+                        <div style={{ gridColumn: '1/-1', marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                          <button
+                            onClick={() => handleCancelBooking(b.id)}
+                            style={{
+                              width: '100%',
+                              padding: '0.6rem',
+                              borderRadius: '8px',
+                              border: '1px solid #fee2e2',
+                              background: '#fff1f2',
+                              color: '#e11d48',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              fontSize: '0.9rem',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseOver={(e) => e.target.style.background = '#ffe4e6'}
+                            onMouseOut={(e) => e.target.style.background = '#fff1f2'}
+                          >
+                            Cancel Booking
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
@@ -1600,6 +2073,30 @@ const LandingPage = () => {
         <div className="hero-content">
           <h1>Find Best Laboratories Near You</h1>
           <p>Don't wait in lines. Book your tests now and get results faster than ever.</p>
+
+          <div className="hero-search-container">
+            <div className="hero-search-input-wrapper">
+              <IconSearch className="hero-search-icon" size={22} />
+              <input
+                type="text"
+                className="hero-search-input"
+                placeholder="Search for labs, tests, or location..."
+                value={searchTerm}
+                onChange={handleSearch}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearchSubmit(e);
+                  }
+                }}
+              />
+            </div>
+            <button
+              className="hero-search-btn"
+              onClick={() => handleSearchSubmit({ key: 'Enter' })} // Simulate Enter key
+            >
+              Search
+            </button>
+          </div>
         </div>
       </section>
 
@@ -1608,24 +2105,7 @@ const LandingPage = () => {
         <div className="section-header-card">
           <h2>Featured Laboratories</h2>
           <div className="header-actions">
-            <div className="section-search-bar">
-              <IconSearch size={18} color="#94a3b8" />
-              <input
-                type="text"
-                placeholder="Search labs, tests or location..."
-                value={searchTerm}
-                onChange={handleSearch}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    // If the current search term DOES match existing labs in the view, 
-                    // we might NOT want to re-trigger a location search if the user is just filtering.
-                    // However, if the list is empty, or they explicitly want to switch location, they hit Enter.
-                    // We will attempt location search.
-                    handleSearchSubmit(e);
-                  }
-                }}
-              />
-            </div>
+            {/* Search Bar Moved to Hero */}
 
             <div className="filter-chips">
               {['All Labs', 'Nearby', 'Top Rated'].map(filter => (
@@ -1809,58 +2289,349 @@ const LandingPage = () => {
         <div className="payment-modal-overlay">
           <div className="payment-modal-content">
 
-            <div className="payment-header">
-              <span className="payment-subtitle">Total Amount to Pay</span>
-              <h2 className="payment-total">₹{selectedLab.price + (selectedTests.length * 150)}</h2>
-            </div>
+            {/* Payment Content based on Step - Refined Professional UI */}
+            {paymentStep === 'select' && (
+              <div className="payment-step-container">
+                <div className="payment-header" style={{
+                  textAlign: 'center',
+                  marginBottom: '1rem',
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  color: 'white',
+                  boxShadow: '0 10px 20px -5px rgba(37, 99, 235, 0.3)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  {/* Decorative circles - subtle */}
+                  <div style={{ position: 'absolute', top: -30, left: -20, width: 80, height: 80, background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }}></div>
 
-            <div className="payment-divider"></div>
-
-            <h3 className="payment-section-title">Select Payment Method</h3>
-
-            <div className="payment-options">
-              {['Pay at Lab', 'UPI', 'Credit/Debit Card'].map(method => (
-                <button
-                  key={method}
-                  onClick={() => setPaymentMethod(method)}
-                  className={`payment-method-btn ${paymentMethod === method ? 'selected' : ''}`}
-                >
-                  <div className="payment-method-icon">
-                    {method === 'Pay at Lab' && <IconHome size={20} />}
-                    {method === 'UPI' && <span>📱</span>}
-                    {method === 'Credit/Debit Card' && <span>💳</span>}
+                  <div style={{ textAlign: 'left', zIndex: 1 }}>
+                    <span className="payment-subtitle" style={{ display: 'block', fontSize: '0.75rem', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Total Payable</span>
+                    <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Includes all taxes</span>
                   </div>
-                  <span style={{ flex: 1, textAlign: 'left' }}>{method}</span>
-                  <div className={`radio-circle ${paymentMethod === method ? 'checked' : ''}`}>
-                    {paymentMethod === method && <div className="radio-dot"></div>}
+                  <h2 className="payment-total" style={{ margin: 0, fontSize: '1.8rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.1)', zIndex: 1 }}>₹{selectedLab.price + (selectedTests.length * 150)}</h2>
+                </div>
+
+                <h3 className="payment-section-title" style={{ fontSize: '0.75rem', marginBottom: '0.8rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Select Payment Method</h3>
+
+                <div className="payment-options" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '350px', overflowY: 'auto' }}>
+                  {['Pay at Lab', 'UPI', 'Credit/Debit Card'].map(method => (
+                    <button
+                      key={method}
+                      onClick={() => setPaymentMethod(method)}
+                      className={`payment-method-btn ${paymentMethod === method ? 'selected' : ''}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.8rem',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '12px',
+                        border: paymentMethod === method ? '1.5px solid #2563eb' : '1px solid #f1f5f9',
+                        background: paymentMethod === method ? '#eff6ff' : 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        position: 'relative',
+                        boxShadow: paymentMethod === method ? '0 4px 6px -1px rgba(37, 99, 235, 0.1)' : 'none',
+                      }}
+                    >
+                      <div className="payment-method-icon" style={{
+                        width: '36px', height: '36px', borderRadius: '8px',
+                        background: paymentMethod === method ? 'white' : '#f8fafc',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: paymentMethod === method ? '#2563eb' : '#64748b',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        {method === 'Pay at Lab' && <IconHome size={18} />}
+                        {method === 'UPI' && <span style={{ fontSize: '1rem' }}>📱</span>}
+                        {method === 'Credit/Debit Card' && <span style={{ fontSize: '1rem' }}>💳</span>}
+                      </div>
+                      <div style={{ flex: 1, textAlign: 'left' }}>
+                        <span style={{ display: 'block', fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>{method}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {method === 'Pay at Lab' ? 'Pay at counter' : method === 'UPI' ? 'GPay, PhonePe' : 'Cards'}
+                        </span>
+                      </div>
+                      <div className={`radio-circle ${paymentMethod === method ? 'checked' : ''}`} style={{
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        border: paymentMethod === method ? '5px solid #2563eb' : '1.5px solid #cbd5e1',
+                        background: 'white'
+                      }}>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: '2rem' }}>
+                  <button
+                    className="payment-confirm-btn"
+                    onClick={finalizeBooking}
+                    style={{
+                      width: '100%', padding: '1rem', fontSize: '1.1rem', fontWeight: 700,
+                      borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none',
+                      boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                    }}
+                  >
+                    <IconShield size={18} />
+                    {paymentMethod === 'Pay at Lab' ? `Confirm Booking` : `Pay ₹${selectedLab.price + (selectedTests.length * 150)}`}
+                  </button>
+                  <p style={{ textAlign: 'center', marginTop: '1rem' }}>
+                    <button
+                      onClick={() => setShowPaymentModal(false)}
+                      style={{
+                        background: '#fff1f2',
+                        border: '1px solid #fecdd3',
+                        color: '#e11d48',
+                        fontSize: '0.95rem',
+                        cursor: 'pointer',
+                        padding: '0.8rem 1.5rem',
+                        borderRadius: '12px',
+                        fontWeight: 600,
+                        width: '100%',
+                        transition: 'background 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <IconX size={16} /> Cancel Transaction
+                    </button>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {paymentStep === 'upi_scan' && (
+              <div className="payment-step-container">
+                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                  <h3 className="payment-section-title" style={{ fontSize: '1rem', marginBottom: '0.2rem', fontWeight: 700 }}>Scan QR to Pay</h3>
+                  <p style={{ color: '#64748b', fontSize: '0.8rem' }}>Use any UPI app on your phone</p>
+                </div>
+
+                <div className="qr-container" style={{ background: 'white', padding: '1rem', borderRadius: '16px', boxShadow: '0 4px 15px -3px rgba(0,0,0,0.1)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '260px', margin: '0 auto 1.5rem auto' }}>
+                  <div className="qr-code-mock" style={{ width: '140px', height: '140px', padding: '8px', background: 'white', border: '2px solid #0f172a', borderRadius: '12px', position: 'relative' }}>
+                    <div style={{ width: '100%', height: '100%', background: `repeating-linear-gradient(45deg, #0f172a 0, #0f172a 4px, #fff 4px, #fff 8px)` }}></div>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', padding: '4px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>₹</span>
+                    </div>
                   </div>
+
+                  <div className="payment-options" style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '1rem', width: '100%' }}>
+                    {/* App Logos Placeholder */}
+                    {['GPay', 'PhonePe', 'Paytm', 'BHIM'].map(app => (
+                      <div key={app} style={{ width: 32, height: 32, borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#64748b', fontWeight: 700 }}>{app[0]}</div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button className="back-link" onClick={() => setShowPaymentModal(false)} style={{ flex: 1, padding: '0.8rem', borderRadius: '10px', background: '#fff1f2', border: '1px solid #fecdd3', color: '#e11d48', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                    <IconX size={16} /> Cancel
+                  </button>
+                  <button
+                    className="payment-confirm-btn"
+                    onClick={finalizeBooking}
+                    style={{ flex: 2, padding: '0.8rem', fontSize: '0.95rem', fontWeight: 700, borderRadius: '10px', background: '#16a34a', color: 'white', border: 'none', boxShadow: '0 4px 10px rgba(22, 163, 74, 0.2)', cursor: 'pointer' }}
+                  >
+                    Paid ₹{selectedLab.price + (selectedTests.length * 150)}
+                  </button>
+                </div>
+
+                <button className="back-link" onClick={() => setPaymentStep('select')} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: '1rem', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.8rem' }}>
+                  &larr; Choose different method
                 </button>
-              ))}
-            </div>
+              </div>
+            )}
 
-            <button
-              className="payment-confirm-btn"
-              onClick={finalizeBooking}
-              style={{ width: '100%', padding: '1.2rem', fontSize: '1.1rem' }}
-            >
-              Pay ₹{selectedLab.price + (selectedTests.length * 150)} & Confirm
-            </button>
+            {paymentStep === 'card_form' && (
+              <div className="payment-step-container">
+                <h3 className="payment-section-title" style={{ marginBottom: '1rem', textAlign: 'center', fontSize: '1rem', fontWeight: 600 }}>Enter Card Details</h3>
 
-            <button
-              className="payment-cancel-link"
-              onClick={() => setShowPaymentModal(false)}
-            >
-              Cancel Payment
-            </button>
+                {/* Card visual - Compact */}
+                <div className="card-visual" style={{
+                  background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                  borderRadius: '12px',
+                  padding: '1rem 1.25rem',
+                  color: 'white',
+                  marginBottom: '1.5rem',
+                  boxShadow: '0 8px 15px -5px rgba(15, 23, 42, 0.3)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                    <div style={{ width: 32, height: 22, background: 'rgba(255,255,255,0.2)', borderRadius: 4 }}></div>
+                    <span style={{ fontSize: '0.8rem', fontStyle: 'italic', fontWeight: 700, opacity: 0.8 }}>VISA</span>
+                  </div>
+                  <div style={{ fontSize: '1.1rem', letterSpacing: '0.1em', marginBottom: '1rem', fontFamily: 'monospace' }}>•••• •••• •••• 4242</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', opacity: 0.8 }}>
+                    <span>CARD HOLDER</span>
+                    <span>EXPIRES</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600 }}>
+                    <span>NANDANA PRAMOD</span>
+                    <span>12/28</span>
+                  </div>
+                </div>
 
-            <div className="payment-secure-badge">
-              <IconShield size={14} /> 100% Secure & Safe
+                <div className="card-form" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  <div className="card-input-group">
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.3rem', display: 'block' }}>Card Number</label>
+                    <div style={{ position: 'relative' }}>
+                      <input type="text" placeholder="0000 0000 0000 0000" className="card-input" maxLength={19} style={{ width: '100%', padding: '0.6rem 0.8rem 0.6rem 2.2rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                      <span style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem' }}>💳</span>
+                    </div>
+                  </div>
+
+                  <div className="card-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="card-input-group">
+                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.3rem', display: 'block' }}>Expiry Date</label>
+                      <input type="text" placeholder="MM/YY" className="card-input" maxLength={5} style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                    </div>
+                    <div className="card-input-group">
+                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.3rem', display: 'block' }}>CVV</label>
+                      <div style={{ position: 'relative' }}>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                  <button className="back-link" onClick={() => setShowPaymentModal(false)} style={{ flex: 1, padding: '0.8rem', borderRadius: '10px', background: '#fff1f2', border: '1px solid #fecdd3', color: '#e11d48', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                    <IconX size={16} /> Cancel
+                  </button>
+                  <button
+                    className="payment-confirm-btn"
+                    onClick={finalizeBooking}
+                    style={{ flex: 2, padding: '0.8rem', fontSize: '0.95rem', fontWeight: 700, borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)', cursor: 'pointer' }}
+                  >
+                    Pay ₹{selectedLab.price + (selectedTests.length * 150)}
+                  </button>
+                </div>
+                <button className="back-link" onClick={() => setPaymentStep('select')} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: '1rem', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.8rem' }}>
+                  &larr; Choose different method
+                </button>
+              </div>
+            )}
+
+            <div className="payment-secure-badge" style={{ textAlign: 'center', marginTop: '1.5rem', padding: '0.4rem 0.8rem', background: '#f0fdf4', borderRadius: '99px', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#16a34a', border: '1px solid #bbf7d0', width: 'fit-content', margin: '0 auto' }}>
+              <IconShield size={12} /> 100% Secure & Safe
             </div>
           </div>
         </div>
       )}
 
-    </div>
+      {/* Enhanced Feedback & Rating Modal */}
+      {
+        showFeedbackModal && (
+          <div className="payment-modal-overlay">
+            <div className="feedback-modal-content">
+              <div className="feedback-header">
+                {/* Dynamic Emoji based on rating */}
+                <span className="emoji-reaction">
+                  {feedbackRating === 0 ? "🤔" :
+                    feedbackRating <= 2 ? "😔" :
+                      feedbackRating === 3 ? "😐" :
+                        feedbackRating === 4 ? "😊" : "🤩"}
+                </span>
+                <h3>Rate Your Experience</h3>
+                <p>How was your booking process with MediBot?</p>
+              </div>
+
+              <div className="feedback-body">
+                <div className="rating-stars-container">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <div
+                      key={star}
+                      className={`star-item ${star <= feedbackRating ? 'active' : ''}`}
+                      onClick={() => setFeedbackRating(star)}
+                    >
+                      <IconStar size={36} />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="feedback-input-wrapper">
+                  <textarea
+                    className="feedback-textarea-enhanced"
+                    placeholder="Tell us what you liked or how we can improve..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  className="submit-feedback-btn"
+                  onClick={submitFeedback}
+                >
+                  Submit Feedback
+                </button>
+
+                <button
+                  className="skip-btn"
+                  onClick={() => setShowFeedbackModal(false)}
+                >
+                  Skip for now
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Chat Widget */}
+      {/* Floating Action Button */}
+      <div className="chat-fab-container">
+        {!showChatSidebar && (
+          <div className="chat-tooltip">Chat with AI</div>
+        )}
+        <button className="chat-fab" onClick={() => setShowChatSidebar(true)}>
+          <IconMessageCircle size={32} className="chat-icon-svg" />
+        </button>
+      </div>
+
+      {/* Chat Sidebar */}
+      {
+        showChatSidebar && (
+          <div className="chat-sidebar">
+            <div className="chat-header">
+              <span>MediBot AI Support</span>
+              <button
+                onClick={() => setShowChatSidebar(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-dark)' }}
+              >
+                <IconX size={24} />
+              </button>
+            </div>
+
+            <div className="chat-messages">
+              {chatMessages.map(msg => (
+                <div key={msg.id} className={`chat-msg ${msg.type}`}>
+                  {msg.text}
+                </div>
+              ))}
+            </div>
+
+            <div className="chat-input-area">
+              <input
+                className="chat-input"
+                placeholder="Type a message..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+              />
+              <button className="chat-send-btn" onClick={handleChatSend}>
+                <IconSend size={18} />
+              </button>
+            </div>
+          </div>
+        )
+      }
+
+    </div >
   );
 };
 

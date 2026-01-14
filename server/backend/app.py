@@ -686,6 +686,126 @@ def ensure_otp_table():
 
 ensure_otp_table()
 
+def ensure_appointments_table():
+    """Create or update appointments table."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # 1. Create table if not exists (Basic schema)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS appointments (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT,
+                patient_name VARCHAR(255),
+                lab_name VARCHAR(255),
+                doctor_name VARCHAR(255),
+                appointment_date DATE,
+                appointment_time VARCHAR(20),
+                tests TEXT,
+                status VARCHAR(50) DEFAULT 'Confirmed',
+                location VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+        """)
+        
+        # 2. Check and Add Missing Columns (Migration logic)
+        
+        # Check lab_name
+        cur.execute("SHOW COLUMNS FROM appointments LIKE 'lab_name'")
+        if not cur.fetchone():
+            print("[INFO] Adding missing column 'lab_name' to appointments...")
+            cur.execute("ALTER TABLE appointments ADD COLUMN lab_name VARCHAR(255)")
+            
+        # Check tests
+        cur.execute("SHOW COLUMNS FROM appointments LIKE 'tests'")
+        if not cur.fetchone():
+            print("[INFO] Adding missing column 'tests' to appointments...")
+            cur.execute("ALTER TABLE appointments ADD COLUMN tests TEXT")
+            
+        # Check patient_name (if it was created as user_name in previous versions)
+        cur.execute("SHOW COLUMNS FROM appointments LIKE 'patient_name'")
+        if not cur.fetchone():
+             print("[INFO] Adding missing column 'patient_name' to appointments...")
+             cur.execute("ALTER TABLE appointments ADD COLUMN patient_name VARCHAR(255)")
+
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Appointments table check failed: {e}")
+    finally:
+        conn.close()
+
+ensure_appointments_table()
+
+@app.post("/api/admin/appointments")
+def create_appointment():
+    # Check authentication
+    if not session.get("user_id"):
+        return jsonify({"message": "Please log in to book an appointment."}), 401
+
+    user_id = session["user_id"]
+    data = request.get_json(silent=True) or {}
+    
+    # Extract data from frontend
+    lab_name = data.get("labName")
+    doctor = data.get("doctor")
+    date_str = data.get("date")
+    time_str = data.get("time")
+    tests = data.get("tests") # List of strings
+    location = data.get("location")
+    
+    # Validation
+    if not all([lab_name, date_str, time_str, tests]):
+         return jsonify({"message": "Missing required booking details."}), 400
+
+    # Convert tests list to string for DB storage
+    tests_str = ", ".join(tests) if isinstance(tests, list) else str(tests)
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Get User Name
+        cur.execute("""
+            SELECT up.display_name, u.email 
+            FROM users u 
+            LEFT JOIN user_profiles up ON u.id = up.user_id 
+            WHERE u.id=%s
+        """, (user_id,))
+        row = cur.fetchone()
+        patient_name = "Unknown"
+        if row:
+            display_name, email = row
+            patient_name = display_name if display_name else email.split('@')[0]
+
+        # Insert Appointment
+        # We use 'patient_name' as the column based on verify_table output, but allow for 'tests' column too.
+        # We try to use the columns we ensured exist.
+        query = """
+            INSERT INTO appointments 
+            (user_id, patient_name, lab_name, doctor_name, appointment_date, appointment_time, tests, location, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Confirmed')
+        """
+        
+        cur.execute(query, (user_id, patient_name, lab_name, doctor, date_str, time_str, tests_str, location))
+        
+        conn.commit()
+        new_id = cur.lastrowid
+        cur.close()
+        
+        return jsonify({
+            "message": "Booking confirmed successfully!",
+            "bookingId": new_id
+        }), 201
+
+    except Exception as e:
+        print(f"[ERROR] Create appointment failed: {e}")
+        return jsonify({"message": "Failed to create booking."}), 500
+    finally:
+        conn.close()
+
+
 def is_whitelisted_lab_admin(conn, email: str) -> bool:
     cur = conn.cursor()
     cur.execute("SELECT 1 FROM lab_admin_users WHERE email=%s LIMIT 1", (email,))
@@ -856,6 +976,85 @@ def update_user_profile():
         return jsonify({"message": "Update failed"}), 500
     finally:
         conn.close()
+
+
+@app.get("/api/user/appointments")
+def get_user_appointments():
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    user_id = session["user_id"]
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, lab_name, doctor_name, appointment_date, appointment_time, tests, status, location
+            FROM appointments
+            WHERE user_id=%s
+            ORDER BY created_at DESC
+        """, (user_id,))
+        rows = cur.fetchall()
+        cur.close()
+        
+        appointments = []
+        for row in rows:
+            aid, lab, doc, date_obj, time_obj, tests_str, status, loc = row
+            
+            # Helper to safely convert time/timedelta to string
+            time_str = str(time_obj) if time_obj else ""
+            
+            # Convert tests string back to list if needed
+            test_list = [t.strip() for t in tests_str.split(",")] if tests_str else []
+            
+            appointments.append({
+                "id": aid,
+                "labName": lab,
+                "doctor": doc,
+                "date": date_obj.isoformat() if date_obj else "",
+                "time": time_str,
+                "tests": test_list,
+                "status": status,
+                "location": loc
+            })
+            
+        return jsonify(appointments), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch appointments failed: {e}")
+        return jsonify({"message": "Failed to fetch bookings"}), 500
+    finally:
+        conn.close()
+
+@app.post("/api/user/appointments/cancel")
+def cancel_appointment():
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+
+    user_id = session["user_id"]
+    data = request.get_json(silent=True) or {}
+    appt_id = data.get("appointment_id")
+    
+    if not appt_id:
+        return jsonify({"message": "Appointment ID required"}), 400
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # Verify ownership
+        cur.execute("SELECT id FROM appointments WHERE id=%s AND user_id=%s", (appt_id, user_id))
+        if not cur.fetchone():
+            return jsonify({"message": "Appointment not found or access denied"}), 404
+            
+        cur.execute("UPDATE appointments SET status='Cancelled' WHERE id=%s", (appt_id,))
+        conn.commit()
+        cur.close()
+        
+        return jsonify({"message": "Booking cancelled successfully"}), 200
+    except Exception as e:
+        print(f"[ERROR] Cancel appointment failed: {e}")
+        return jsonify({"message": "Cancellation failed"}), 500
+    finally:
+        conn.close()
+
 @app.get("/api/admin/patients")
 def get_admin_patients():
     current_role = session.get("role")
