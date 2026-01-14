@@ -1,4 +1,3 @@
-<<<<<<< HEAD MediBot – Smart Clinical Laboratory Automation System
 
 MediBot is a smart, automated laboratory management system designed to simplify the diagnostic testing process for patients and laboratories. Using WhatsApp, OCR technology, and intelligent scheduling, MediBot allows patients to submit prescriptions digitally, book lab tests seamlessly, and receive reports online. The system improves efficiency, reduces manual workload, and ensures a smooth, user-friendly experience for both patients and lab staff.
 
@@ -22,23 +21,32 @@ Provides a patient portal to access past reports
 
 ⭐ How MediBot Works
 
-Prescription Submission via WhatsApp Patients send their prescription image through WhatsApp.
+Prescription Submission via WhatsApp
+Patients send their prescription image through WhatsApp.
 
-Backend Integration Using Twilio The backend receives prescription images using the Twilio API.
+Backend Integration Using Twilio
+The backend receives prescription images using the Twilio API.
 
-OCR Processing & Test Identification OCR (Tesseract or Google Vision) extracts text and identifies required tests.
+OCR Processing & Test Identification
+OCR (Tesseract or Google Vision) extracts text and identifies required tests.
 
-Booking Link & Frontend Interface A secure booking link is generated and sent to the patient on WhatsApp.
+Booking Link & Frontend Interface
+A secure booking link is generated and sent to the patient on WhatsApp.
 
-Email-Based OTP Verification The patient verifies their email using an OTP for secure access.
+Email-Based OTP Verification
+The patient verifies their email using an OTP for secure access.
 
-Intelligent Slot Recommendation The system analyzes lab capacity, test duration, and peak hours to recommend the best appointment slots.
+Intelligent Slot Recommendation
+The system analyzes lab capacity, test duration, and peak hours to recommend the best appointment slots.
 
-Automated Notifications Appointment confirmations and reminders are sent automatically.
+Automated Notifications
+Appointment confirmations and reminders are sent automatically.
 
-Result Upload & Report Generation Lab staff upload test results, abnormalities are highlighted, and a downloadable report is generated.
+Result Upload & Report Generation
+Lab staff upload test results, abnormalities are highlighted, and a downloadable report is generated.
 
-Patient Report Delivery & Portal Access Final reports are sent via WhatsApp and email, and patients can view or download past reports through the portal.
+Patient Report Delivery & Portal Access
+Final reports are sent via WhatsApp and email, and patients can view or download past reports through the portal.
 
 ⭐ Technologies Used
 
