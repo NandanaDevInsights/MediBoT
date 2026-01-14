@@ -762,17 +762,98 @@ def get_user_profile():
             except Exception as e:
                 print(f"[ERROR] Failed to auto-generate PIN: {e}")
 
+        joined_at_iso = created_at.isoformat() if created_at else None
+        
+        # Fetch Extended Profile from user_profiles
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT display_name, age, gender, blood_group, contact_number, address, profile_pic_url 
+            FROM user_profiles 
+            WHERE user_id=%s
+        """, (uid,))
+        p_row = cur.fetchone()
+        
+        profile_data = {}
+        if p_row:
+             profile_data = {
+                 "displayName": p_row[0],
+                 "age": p_row[1],
+                 "gender": p_row[2],
+                 "bloodGroup": p_row[3],
+                 "contact": p_row[4],
+                 "savedLocation": p_row[5],
+                 "profilePic": p_row[6]
+             }
+
         return jsonify({
             "id": uid,
             "email": email,
             "role": role,
             "provider": provider,
-            "joined_at": created_at.isoformat() if created_at else None,
-            "pin_code": pin_code
+            "joined_at": joined_at_iso,
+            "pin_code": pin_code,
+            **profile_data
         }), 200
+
     except Exception as e:
         print(f"[ERROR] Fetch profile failed: {e}")
         return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
+@app.post("/api/profile")
+def update_user_profile():
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+
+    user_id = session["user_id"]
+    data = request.get_json()
+    
+    # Extract fields
+    profile_pic = data.get("profilePic") # Base64 or URL
+
+    # Sanitize inputs (convert empty strings to None)
+    for key in ["age", "displayName", "gender", "bloodGroup", "contact", "savedLocation", "profilePic"]:
+        if key == "age":
+             # Ensure age is Int or None
+             val = data.get(key)
+             age = int(val) if val and str(val).strip() else None
+        elif key == "displayName":
+             display_name = data.get(key) or None
+        elif key == "gender":
+             gender = data.get(key) or None
+        elif key == "bloodGroup":
+             blood_group = data.get(key) or None
+        elif key == "contact":
+             contact = data.get(key) or None
+        elif key == "savedLocation":
+             address = data.get(key) or None
+        elif key == "profilePic":
+             profile_pic = data.get(key) or None
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # UPSERT logic for MySQL
+        cur.execute("""
+            INSERT INTO user_profiles (user_id, display_name, age, gender, blood_group, contact_number, address, profile_pic_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                display_name = VALUES(display_name),
+                age = VALUES(age),
+                gender = VALUES(gender),
+                blood_group = VALUES(blood_group),
+                contact_number = VALUES(contact_number),
+                address = VALUES(address),
+                profile_pic_url = VALUES(profile_pic_url)
+        """, (user_id, display_name, age, gender, blood_group, contact, address, profile_pic))
+        
+        conn.commit()
+        cur.close()
+        return jsonify({"message": "Profile updated successfully"}), 200
+    except Exception as e:
+        print(f"[ERROR] Update profile failed: {e}")
+        return jsonify({"message": "Update failed"}), 500
     finally:
         conn.close()
 @app.get("/api/admin/patients")
@@ -784,42 +865,138 @@ def get_admin_patients():
     conn = get_connection()
     try:
         cur = conn.cursor()
-        # Fetch patients with aggregated report data
-        # We join users with prescriptions to find:
-        # 1. Count of uploads (reports_count): Includes linked (user_id=id) AND unlinked (user_id IS NULL) reports
-        #    This matches the logic that logged-in users can see unlinked WhatsApp uploads.
-        # 2. Latest mobile_number used (inferred phone) - Only from linked reports as unlinked ones can't be attributed to a specific user for details.
-        query = """
+        
+        # 1. Active Registered Users
+        query_users = """
             SELECT 
                 u.id, 
                 u.email, 
                 u.created_at,
-                (SELECT COUNT(*) FROM prescriptions p WHERE p.user_id = u.id OR p.user_id IS NULL) as reports_count,
-                (SELECT mobile_number FROM prescriptions p WHERE (p.user_id = u.id OR p.user_id IS NULL) AND mobile_number IS NOT NULL ORDER BY created_at DESC LIMIT 1) as phone,
-                (SELECT file_path FROM prescriptions p WHERE (p.user_id = u.id OR p.user_id IS NULL) ORDER BY created_at DESC LIMIT 1) as latest_rx
+                (SELECT COUNT(*) FROM prescriptions p WHERE p.user_id = u.id) as reports_count,
+                (SELECT mobile_number FROM prescriptions p WHERE p.user_id = u.id AND mobile_number IS NOT NULL ORDER BY created_at DESC LIMIT 1) as phone,
+                (SELECT file_path FROM prescriptions p WHERE p.user_id = u.id ORDER BY created_at DESC LIMIT 1) as latest_rx,
+                up.display_name,
+                up.age,
+                up.gender,
+                up.blood_group,
+                up.contact_number,
+                up.address,
+                up.profile_pic_url
             FROM users u 
+            LEFT JOIN user_profiles up ON u.id = up.user_id
             WHERE u.role='USER'
         """
-        cur.execute(query)
-        rows = cur.fetchall()
-        cur.close()
+        cur.execute(query_users)
+        user_rows = cur.fetchall()
 
         patients = []
-        for row in rows:
-            uid, email, created_at, reports_count, phone, latest_rx = row
+        for row in user_rows:
+            uid, email, created_at, reports_count, phone, latest_rx, display_name, age, gender, blood_group, contact_number, address, profile_pic_url = row
             
-            # Format/Mock details
+            # Prioritize Profile Contact over Prescription Phone
+            final_phone = contact_number if contact_number else (phone if phone else "N/A")
+            final_name = display_name if display_name else email.split("@")[0]
+
             patients.append({
                 "id": uid,
-                "name": email.split("@")[0],  # Use email prefix as name
+                "name": final_name,
                 "email": email,
-                "age": 25 + (uid % 30),       # Mock age
-                "gender": "Male" if uid % 2 == 0 else "Female", # Mock gender
-                "phone": phone if phone else "N/A",  # Use inferred phone or N/A
+                "age": str(age) if age else "N/A",
+                "gender": gender if gender else "N/A",
+                "blood_group": blood_group if blood_group else "N/A",
+                "phone": final_phone,
+                "address": address if address else "N/A",
+                "profile_pic": profile_pic_url,
                 "joined_at": created_at.isoformat() if created_at else None,
                 "uploaded_data_count": reports_count,
-                "latest_prescription_url": latest_rx
+                "latest_prescription_url": latest_rx,
+                "source": "Registered"
             })
+
+        # 2. Unregistered / Twilio Users (Grouped by Phone)
+        # Find distinct mobile numbers in prescriptions that are NOT linked to a user_id
+        query_guests = """
+            SELECT 
+                mobile_number,
+                MAX(created_at) as last_seen,
+                COUNT(*) as count,
+                (SELECT file_path FROM prescriptions p2 WHERE p2.mobile_number = p.mobile_number AND p2.user_id IS NULL ORDER BY created_at DESC LIMIT 1) as latest_rx
+            FROM prescriptions p
+            WHERE user_id IS NULL AND mobile_number IS NOT NULL
+            GROUP BY mobile_number
+        """
+        cur.execute(query_guests)
+        guest_rows = cur.fetchall()
+
+        for index, row in enumerate(guest_rows):
+            mobile, last_seen, count, latest_rx = row
+            
+            # Default Guest info
+            patient_data = {
+                "id": mobile, 
+                "name": f"Guest ({mobile[-4:]})",
+                "email": "N/A (WhatsApp)",
+                "age": "N/A",
+                "gender": "N/A",
+                "phone": mobile,
+                "joined_at": last_seen.isoformat() if last_seen else None,
+                "uploaded_data_count": count,
+                "latest_prescription_url": latest_rx,
+                "source": "WhatsApp",
+                "profile_pic": None,
+                "blood_group": "N/A",
+                "address": "N/A"
+            }
+            
+            # Try to resolve to a real user
+            try:
+                # Remove non-digits
+                import re
+                digits_only = re.sub(r'\D', '', mobile)
+                clean_mobile = digits_only[-10:] if len(digits_only) >= 10 else digits_only
+                
+                # Check user_profiles
+                # Join with users table to get account email
+                cur.execute("""
+                    SELECT 
+                        u.email, 
+                        up.display_name,
+                        up.age,
+                        up.gender,
+                        up.profile_pic_url,
+                        up.blood_group,
+                        up.address,
+                        up.contact_number
+                    FROM user_profiles up 
+                    JOIN users u ON up.user_id = u.id 
+                    WHERE up.contact_number LIKE %s
+                """, (f"%{clean_mobile}",))
+                match = cur.fetchone()
+                
+                if match:
+                    found_email, found_name, found_age, found_gender, found_pic, found_bg, found_addr, found_contact = match
+                    
+                    real_name = found_name if found_name else found_email.split("@")[0]
+                    
+                    # Overwrite default data with Profile Data
+                    patient_data["name"] = f"{real_name} (WA)"
+                    patient_data["email"] = found_email
+                    patient_data["age"] = str(found_age) if found_age else "N/A"
+                    patient_data["gender"] = found_gender if found_gender else "N/A"
+                    patient_data["profile_pic"] = found_pic
+                    patient_data["blood_group"] = found_bg if found_bg else "N/A"
+                    patient_data["address"] = found_addr if found_addr else "N/A"
+                    patient_data["phone"] = found_contact if found_contact else mobile
+
+            except Exception as ex:
+                print(f"[WARNING] Guest Lookup Failed for {mobile}: {ex}")
+
+            # Create a pseudo-patient entry for these guests
+            patients.append(patient_data)
+
+        # Sort by latest activity
+        patients.sort(key=lambda x: x['joined_at'] or "", reverse=True)
+        
         return jsonify(patients), 200
     except Exception as e:
         print(f"[ERROR] Fetch patients failed: {e}")
@@ -827,9 +1004,8 @@ def get_admin_patients():
     finally:
         conn.close()
 
-
-@app.get("/api/admin/patient/<int:target_user_id>/reports")
-def get_admin_patient_reports(target_user_id):
+@app.get("/api/admin/patients/<string:user_id>/history")
+def get_patient_history(user_id):
     current_role = session.get("role")
     if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
         return jsonify({"message": "Unauthorized"}), 403
@@ -837,30 +1013,97 @@ def get_admin_patient_reports(target_user_id):
     conn = get_connection()
     try:
         cur = conn.cursor()
-        # Fetch reports for target user + unassigned ones (WhatsApp)
-        cur.execute("""
-            SELECT id, file_path, file_type, status, created_at 
-            FROM prescriptions 
-            WHERE user_id=%s OR user_id IS NULL
-            ORDER BY created_at DESC
-        """, (target_user_id,))
-        rows = cur.fetchall()
-        cur.close()
+        
+        patient_details = {}
+        prescriptions = []
+        appointments = []
+        
+        # Determine if User ID (int) or Guest Phone (string)
+        is_guest = False
+        try:
+            uid = int(user_id)
+        except ValueError:
+            is_guest = True
+            
+        if is_guest:
+            # GUEST LOGIC (By Phone)
+            mobile = user_id
+            patient_details = {
+                "id": mobile,
+                "email": "N/A",
+                "phone": mobile,
+                "name": f"Guest ({mobile[-4:]})"
+            }
+            # Fetch prescriptions by phone where user_id is NULL
+            cur.execute("""
+                SELECT id, file_path, file_type, status, created_at, test_type
+                FROM prescriptions
+                WHERE mobile_number=%s AND user_id IS NULL
+                ORDER BY created_at DESC
+            """, (mobile,))
+            
+        else:
+            # REGISTERED USER LOGIC (By ID)
+            cur.execute("SELECT id, email FROM users WHERE id=%s", (uid,))
+            u_row = cur.fetchone()
+            if not u_row:
+                return jsonify({"message": "User not found"}), 404
+                
+            # Get Phone
+            cur.execute("SELECT mobile_number FROM prescriptions WHERE user_id=%s AND mobile_number IS NOT NULL LIMIT 1", (uid,))
+            p_row = cur.fetchone()
+            
+            patient_details = {
+                "id": u_row[0],
+                "email": u_row[1],
+                "phone": p_row[0] if p_row else "N/A",
+                "name": u_row[1].split('@')[0]
+            }
+            
+            # Fetch prescriptions
+            cur.execute("""
+                SELECT id, file_path, file_type, status, created_at, test_type
+                FROM prescriptions
+                WHERE user_id=%s
+                ORDER BY created_at DESC
+            """, (uid,))
+            
+            # Fetch appointments
+            cur.execute("""
+                SELECT id, appointment_date, appointment_time, test_type, status 
+                FROM appointments 
+                WHERE user_id=%s 
+                ORDER BY created_at DESC
+            """, (uid,))
+            apt_rows = cur.fetchall()
+            for r in apt_rows:
+                appointments.append({
+                    "id": r[0],
+                    "date": str(r[1]),
+                    "time": str(r[2]),
+                    "test": r[3],
+                    "status": r[4]
+                })
 
-        reports = []
-        for row in rows:
-            rid, fpath, ftype, status, created_at = row
-            reports.append({
-                "id": rid,
-                "file_path": fpath,
-                "file_type": ftype,
-                "status": status,
-                "date": created_at.isoformat() if created_at else None
+        # Process Prescriptions (Common for both)
+        rx_rows = cur.fetchall() # From the respective query above
+        for r in rx_rows:
+            prescriptions.append({
+                "id": r[0],
+                "image_url": r[1],
+                "type": r[5] or "Prescription",
+                "status": r[3],
+                "date": r[4].strftime("%Y-%m-%d") if r[4] else ""
             })
 
-        return jsonify(reports), 200
+        return jsonify({
+            "details": patient_details,
+            "prescriptions": prescriptions,
+            "appointments": appointments
+        }), 200
+
     except Exception as e:
-        print(f"[ERROR] Fetch patient reports failed: {e}")
+        print(f"[ERROR] Fetch history failed: {e}")
         return jsonify({"message": "Server error"}), 500
     finally:
         conn.close()
@@ -890,14 +1133,42 @@ def get_admin_stats():
         # Staff
         cur.execute("SELECT COUNT(*) FROM lab_staff WHERE status = 'Available'")
         staff_count = cur.fetchone()[0]
+
+        # Graph Data: Last 7 Days Appointments
+        import datetime
+        today = datetime.date.today()
+        dates = [today - datetime.timedelta(days=i) for i in range(6, -1, -1)]
         
+        # Fetch counts
+        cur.execute("""
+            SELECT DATE(appointment_date), COUNT(*) 
+            FROM appointments 
+            WHERE appointment_date >= %s 
+            GROUP BY DATE(appointment_date)
+        """, (today - datetime.timedelta(days=7),))
+        rows = cur.fetchall()
+        
+        # Map to dict using string key "YYYY-MM-DD"
+        counts_map = {str(r[0]): r[1] for r in rows}
+        
+        daily_stats = []
+        for d in dates:
+            d_str = str(d)
+            # Label format: "Mon" or "Mon 12"
+            label = d.strftime("%a") 
+            daily_stats.append({
+                "name": label,
+                "count": counts_map.get(d_str, 0)
+            })
+
         cur.close()
         return jsonify({
             "appointmentsToday": appointments_today,
             "pendingOrders": pending_orders,
             "reportsGenerated": reports_generated,
             "revenue": "$1,250", # Mock for now
-            "activeStaff": staff_count
+            "activeStaff": staff_count,
+            "dailyStats": daily_stats
         }), 200
     except Exception as e:
         print(f"[ERROR] Stats failed: {e}")
@@ -925,7 +1196,7 @@ def manage_appointments():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, 'Pending')
             """, (
                 user_id, 
-                session.get("email", "Guest"), # Mock name if user not logged in
+                data.get("patientName") or session.get("email", "Guest"), # Use provided name or fallback
                 data.get("doctor", "Self"), 
                 ", ".join(data.get("tests", [])),
                 data.get("date"),
@@ -1203,124 +1474,9 @@ def upload_report():
         finally:
             conn.close()
     return jsonify({"message": "Upload failed"}), 500
-@app.get("/api/admin/patients")
-def get_patients():
-    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
-        return jsonify({"message": "Unauthorized"}), 403
-    
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        # Fetch users who are not admins
-        # Get basic info + count of prescriptions + latest prescription + mobile from prescription
-        # Users table has: id, email, role... (No username/phone)
-        query = """
-            SELECT 
-                u.id, 
-                u.email, 
-                u.email, 
-                (SELECT mobile_number FROM prescriptions p WHERE p.user_id = u.id ORDER BY created_at DESC LIMIT 1) as phone,
-                (SELECT COUNT(*) FROM prescriptions p WHERE p.user_id = u.id) as upload_count,
-                (SELECT file_path FROM prescriptions p WHERE p.user_id = u.id ORDER BY created_at DESC LIMIT 1) as latest_rx
-            FROM users u
-            WHERE u.role NOT IN ('LAB_ADMIN', 'SUPER_ADMIN')
-        """
-        cur.execute(query)
-        rows = cur.fetchall()
-        
-        patients = []
-        for r in rows:
-            patients.append({
-                "id": r[0],
-                "name": r[1].split('@')[0], # Use part of email as name
-                "email": r[2],
-                "phone": r[3] if r[3] else "N/A",
-                "uploaded_data_count": r[4],
-                "latest_prescription_url": r[5]
-            })
-        
-        return jsonify(patients), 200
-    except Exception as e:
-        print(f"Error fetching patients: {e}")
-        return jsonify({"message": str(e)}), 500
-    finally:
-        conn.close()
 
-@app.get("/api/admin/patients/<int:user_id>/history")
-def get_patient_history(user_id):
-    current_role = session.get("role")
-    if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
-        return jsonify({"message": "Unauthorized"}), 403
-        
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        
-        # User Details - Adjusted for real schema
-        cur.execute("SELECT id, email, email FROM users WHERE id = %s", (user_id,))
-        user_row = cur.fetchone()
-        if not user_row:
-            return jsonify({"message": "User not found"}), 404
-            
-        user_details = {
-            "id": user_row[0],
-            "name": user_row[1].split('@')[0],
-            "email": user_row[2],
-            "phone": "N/A" # Default, will be updated if prescription exists
-        }
-        
-        # Prescriptions (WhatsApp Images)
-        cur.execute("""
-            SELECT id, file_path, test_type, created_at, status, mobile_number
-            FROM prescriptions 
-            WHERE user_id = %s 
-            ORDER BY created_at DESC
-        """, (user_id,))
-        
-        prescriptions = []
-        rows = cur.fetchall()
-        for rx in rows:
-            # Update phone if available
-            if rx[5] and user_details["phone"] == "N/A":
-                user_details["phone"] = rx[5]
-                
-            prescriptions.append({
-                "id": rx[0],
-                "image_url": rx[1],
-                "type": rx[2],
-                "date": rx[3].strftime('%Y-%m-%d %H:%M') if rx[3] else "N/A",
-                "status": rx[4]
-            })
-            
-        # Appointments History
-        cur.execute("""
-            SELECT id, test_type, appointment_date, appointment_time, status 
-            FROM appointments 
-            WHERE user_id = %s 
-            ORDER BY appointment_date DESC
-        """, (user_id,))
-        
-        appointments = []
-        for appt in cur.fetchall():
-            appointments.append({
-                "id": appt[0],
-                "test": appt[1],
-                "date": str(appt[2]),
-                "time": str(appt[3]),
-                "status": appt[4]
-            })
-            
-        return jsonify({
-            "details": user_details,
-            "prescriptions": prescriptions,
-            "appointments": appointments
-        }), 200
-        
-    except Exception as e:
-        print(f"Error fetching history: {e}")
-        return jsonify({"message": str(e)}), 500
-    finally:
-        conn.close()
+
+
 
 if __name__ == '__main__':
   print(" * MediBot Python Backend Starting on Port 5000 *")

@@ -12,6 +12,7 @@ import AdminAuthLayout from './pages/admin/AdminAuthLayout'
 import AdminLoginPage from './pages/admin/AdminLoginPage'
 import AdminSignupPage from './pages/admin/AdminSignupPage'
 import AdminForgotPasswordPage from './pages/admin/AdminForgotPasswordPage'
+import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
 
 const AuthLayout = ({ children, heading, subheading }) => {
@@ -51,7 +52,11 @@ function App() {
     <Routes>
       <Route
         path="/"
-        element={<LandingPage />}
+        element={
+          <ProtectedRoute allowedRoles={['USER']}>
+            <LandingPage />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/login"
@@ -77,7 +82,14 @@ function App() {
           </AuthLayout>
         }
       />
-      <Route path="/welcome" element={<LandingPage />} />
+      <Route
+        path="/welcome"
+        element={
+          <ProtectedRoute allowedRoles={['USER']}>
+            <LandingPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/reset"
         element={
@@ -86,8 +98,22 @@ function App() {
           </AuthLayout>
         }
       />
-      <Route path="/lab-admin-dashboard" element={<LabAdminDashboard />} />
-      <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
+      <Route
+        path="/lab-admin-dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['LAB_ADMIN']}>
+            <LabAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin-dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Admin Auth Routes */}
       <Route

@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LabAdminDashboard.css';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import logoImage from '../assets/Logo.png';
-import moleculeBg from '../assets/medibot_3d_molecules.png';
+
 
 // --- Icons (SVGs) for Professional Look ---
 const Icons = {
@@ -56,12 +58,45 @@ const Icons = {
     ),
     Menu: () => (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12" /><line x1="3" x2="21" y1="6" y2="6" /><line x1="3" x2="21" y1="18" y2="18" /></svg>
+    ),
+    ChevronDown: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+    ),
+    Check: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+    ),
+    Share: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" x2="12" y1="2" y2="15" /></svg>
+    ),
+    CheckCircle: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+    ),
+    Filter: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+    ),
+    Trash: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+    ),
+    Link: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+    ),
+    User: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+    ),
+    Phone: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+    ),
+    Activity: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+    ),
+    Clock: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
     )
 };
 
 const LabAdminDashboard = () => {
     const navigate = useNavigate();
-    const [activeSection, setActiveSection] = useState('Landing');
+    const [activeSection, setActiveSection] = useState('Overview');
     const [notification, setNotification] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -77,7 +112,8 @@ const LabAdminDashboard = () => {
         pendingOrders: 0,
         reportsGenerated: 0,
         revenue: '$0',
-        activeStaff: 0
+        activeStaff: 0,
+        dailyStats: []
     });
     const [appointments, setAppointments] = useState([]);
     const [testOrders, setTestOrders] = useState([]);
@@ -99,12 +135,50 @@ const LabAdminDashboard = () => {
     const [showPatientHistoryModal, setShowPatientHistoryModal] = useState(false);
     const [patientHistory, setPatientHistory] = useState(null);
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [activeReportTab, setActiveReportTab] = useState('Uploaded');
+    const [appointmentFilter, setAppointmentFilter] = useState('All');
+    const [activeReportFilter, setActiveReportFilter] = useState('All');
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const [showBookingModal, setShowBookingModal] = useState(false);
+    const [newBooking, setNewBooking] = useState({
+        patientName: '',
+        age: '',
+        gender: 'Male',
+        contact: '',
+        test: '',
+        date: '',
+        time: '',
+        doctor: ''
+    });
 
     // Clock
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
+
+    // --- Auth Check on Mount ---
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                // Check if user is authenticated AND has correct role
+                const res = await fetch('http://localhost:5000/api/profile', { credentials: 'include' });
+                if (res.status === 401 || res.status === 403) {
+                    navigate('/admin/login');
+                    return;
+                }
+                const data = await res.json();
+                if (data.role !== 'LAB_ADMIN' && data.role !== 'SUPER_ADMIN') {
+                    // Wrong role, redirect to login
+                    navigate('/admin/login');
+                }
+            } catch (err) {
+                console.error("Auth Check Failed:", err);
+                navigate('/admin/login');
+            }
+        };
+        checkAuth();
+    }, [navigate]);
 
     // --- Stats Fetcher ---
     useEffect(() => {
@@ -183,7 +257,7 @@ const LabAdminDashboard = () => {
                 }
             } catch (err) {
                 console.error(err);
-                if (activeSection !== 'Settings') showToast(`Failed to load ${activeSection}`, "error");
+                if (activeSection !== 'Settings') showToast(`Failed to load ${activeSection} `, "error");
             }
         };
 
@@ -195,7 +269,7 @@ const LabAdminDashboard = () => {
                     if (res.status === 401 || res.status === 403) {
                         throw new Error("Unauthorized");
                     }
-                    if (!res.ok) throw new Error(`Server Error: ${res.status}`);
+                    if (!res.ok) throw new Error(`Server Error: ${res.status} `);
                     return res.json();
                 })
                 .then(data => {
@@ -229,14 +303,17 @@ const LabAdminDashboard = () => {
     };
 
     const handleLogout = () => {
+        const doLogout = () => {
+            sessionStorage.removeItem('auth_role');
+            navigate('/admin/login');
+        };
         fetch('http://localhost:5000/api/logout', { method: 'POST', credentials: 'include' })
-            .then(() => navigate('/login'))
-            .catch(() => navigate('/login'));
+            .then(doLogout)
+            .catch(doLogout);
     };
 
     // --- Actions ---
-    const handleUpdateAppointment = async (id, currentStatus) => {
-        const newStatus = currentStatus === 'Pending' ? 'Sample Collected' : 'Completed';
+    const handleStatusChange = async (id, newStatus) => {
         try {
             const res = await fetch(`http://localhost:5000/api/admin/appointments/${id.replace('A-', '')}/status`, {
                 method: 'PUT',
@@ -249,6 +326,51 @@ const LabAdminDashboard = () => {
                 showToast("Status Updated");
             }
         } catch (e) { showToast("Update Failed", "error"); }
+    };
+
+    const handleSaveBooking = async () => {
+        if (!newBooking.patientName || !newBooking.test || !newBooking.date || !newBooking.time) {
+            showToast("Please fill all required fields", "error");
+            return;
+        }
+
+        try {
+            const res = await fetch('http://localhost:5000/api/admin/appointments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    labName: profileData.lab_name || 'My Lab',
+                    patientName: newBooking.patientName,
+                    tests: [newBooking.test],
+                    date: newBooking.date,
+                    time: newBooking.time,
+                    doctor: newBooking.doctor || 'Self',
+                    location: profileData.address || 'Lab Location',
+                    // passing other details if backend supports or just for record (backend update required to store these deeply)
+                    contact: newBooking.contact,
+                    age: newBooking.age,
+                    gender: newBooking.gender
+                }),
+                credentials: 'include'
+            });
+
+            if (res.ok) {
+                showToast("Booking Successful");
+                setShowBookingModal(false);
+                setNewBooking({ patientName: '', age: '', gender: 'Male', contact: '', test: '', date: '', time: '', doctor: '' });
+                // Refresh appointments
+                const appsRes = await fetch('http://localhost:5000/api/admin/appointments', { credentials: 'include' });
+                if (appsRes.ok) {
+                    const data = await appsRes.json();
+                    setAppointments(data);
+                }
+            } else {
+                showToast("Booking Failed", "error");
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Error creating booking", "error");
+        }
     };
 
     const handleAddStaff = async () => {
@@ -314,10 +436,13 @@ const LabAdminDashboard = () => {
     const handleViewHistory = async (patient) => {
         setSelectedPatient(patient);
         setPatientHistory(null); // Clear previous
+        setActiveReportTab('Uploaded'); // Default to uploaded view
         setShowPatientHistoryModal(true);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/patients/${patient.id}/history`, { credentials: 'include' });
+            // Encode ID to handle '+' in phone numbers
+            const encodedId = encodeURIComponent(patient.id);
+            const res = await fetch(`http://localhost:5000/api/admin/patients/${encodedId}/history`, { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
                 setPatientHistory(data);
@@ -395,14 +520,7 @@ const LabAdminDashboard = () => {
 
                 <div className="med-divider-v" style={{ margin: '0 16px', height: '24px' }}></div>
 
-                <button
-                    className={`med-icon-btn ${activeSection === 'Landing' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('Landing')}
-                    style={{ marginRight: '16px', color: activeSection === 'Landing' ? 'var(--med-primary)' : 'inherit' }}
-                    title="Home"
-                >
-                    <Icons.Home />
-                </button>
+
 
                 <h2 className="med-page-title">{activeSection === 'Landing' ? '' : activeSection}</h2>
             </div>
@@ -505,36 +623,67 @@ const LabAdminDashboard = () => {
     const renderOverview = () => (
         <>
             <div className="med-stats-grid">
-                <div className="med-card">
+                <div className="med-card hover-card">
                     <div className="med-stat-header">
                         <div className="med-stat-icon-wrapper blue"><Icons.Calendar /></div>
-                        <span className="med-stat-trend up">+8%</span>
+                        <span className="med-stat-trend up" style={{ background: '#dbeafe', color: '#1e40af' }}>+8%</span>
                     </div>
                     <h3 className="med-stat-value">{stats.appointmentsToday}</h3>
                     <p className="med-stat-label">Appointments Today</p>
                 </div>
-                <div className="med-card">
+                <div className="med-card hover-card">
                     <div className="med-stat-header">
                         <div className="med-stat-icon-wrapper orange"><Icons.TestTube /></div>
-                        <span className="med-stat-trend neutral">0%</span>
+                        <span className="med-stat-trend neutral" style={{ background: '#fef3c7', color: '#92400e' }}>0%</span>
                     </div>
                     <h3 className="med-stat-value">{stats.pendingOrders}</h3>
                     <p className="med-stat-label">Pending Orders</p>
                 </div>
-                <div className="med-card">
+                <div className="med-card hover-card">
                     <div className="med-stat-header">
                         <div className="med-stat-icon-wrapper green"><Icons.FileText /></div>
-                        <span className="med-stat-trend up">+12%</span>
+                        <span className="med-stat-trend up" style={{ background: '#dcfce7', color: '#166534' }}>+12%</span>
                     </div>
                     <h3 className="med-stat-value">{stats.reportsGenerated}</h3>
                     <p className="med-stat-label">Reports Generated</p>
                 </div>
-                <div className="med-card">
+                <div className="med-card hover-card">
                     <div className="med-stat-header">
                         <div className="med-stat-icon-wrapper purple"><Icons.Users /></div>
                     </div>
                     <h3 className="med-stat-value">{stats.activeStaff}</h3>
                     <p className="med-stat-label">Active Staff</p>
+                </div>
+            </div>
+
+            {/* Graph Section */}
+            <div className="med-card zoom-in-enter" style={{ marginBottom: '24px', padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3 className="med-table-title">Weekly Appointments Overview</h3>
+                    <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.9rem', color: '#475569' }}>
+                        <option>This Week</option>
+                        <option>Last Week</option>
+                    </select>
+                </div>
+                <div style={{ width: '100%', height: '300px' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={stats.dailyStats && stats.dailyStats.length > 0 ? stats.dailyStats : [{ name: 'Mon', count: 0 }, { name: 'Tue', count: 0 }, { name: 'Wed', count: 0 }, { name: 'Thu', count: 0 }, { name: 'Fri', count: 0 }, { name: 'Sat', count: 0 }, { name: 'Sun', count: 0 }]}>
+                            <defs>
+                                <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                            <Tooltip
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', padding: '12px' }}
+                                cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '4 4' }}
+                            />
+                            <Area type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" activeDot={{ r: 6, strokeWidth: 0 }} />
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
@@ -589,7 +738,18 @@ const LabAdminDashboard = () => {
             <div className="med-table-header">
                 <h3 className="med-table-title">Appointments</h3>
                 <div className="med-header-tools">
-                    <button className="med-btn med-btn-primary">New Booking</button>
+                    <select
+                        className="med-select-filter"
+                        value={appointmentFilter}
+                        onChange={(e) => setAppointmentFilter(e.target.value)}
+                        style={{ marginRight: '10px', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    >
+                        <option value="All">All Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Sample Collected">Sample Collected</option>
+                    </select>
+                    <button className="med-btn med-btn-primary" onClick={() => setShowBookingModal(true)}>New Booking</button>
                 </div>
             </div>
             <table className="med-table">
@@ -600,16 +760,17 @@ const LabAdminDashboard = () => {
                         <th>Test Type</th>
                         <th>Date & Time</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {appointments
-                        .filter(a =>
-                            a.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            a.test.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            a.id.toLowerCase().includes(searchTerm.toLowerCase())
-                        )
+                        .filter(a => {
+                            const matchesSearch = a.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                a.test.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                a.id.toLowerCase().includes(searchTerm.toLowerCase());
+                            const matchesFilter = appointmentFilter === 'All' || a.status === appointmentFilter;
+                            return matchesSearch && matchesFilter;
+                        })
                         .map(appt => (
                             <tr key={appt.id}>
                                 <td className="mono-text">{appt.id}</td>
@@ -617,16 +778,27 @@ const LabAdminDashboard = () => {
                                 <td>{appt.test}</td>
                                 <td>{appt.date}, {appt.time}</td>
                                 <td>
-                                    <span className={`med-status ${appt.status === 'Completed' ? 'status-success' :
-                                        appt.status === 'Sample Collected' ? 'status-info' :
-                                            appt.status === 'Pending' ? 'status-warning' : 'status-neutral'
-                                        }`}>
-                                        {appt.status}
-                                    </span>
-                                </td>
-                                <td>
-                                    <button className="med-action-btn" onClick={() => showToast('Details Opened')}>View</button>
-                                    <button className="med-action-btn" onClick={() => handleUpdateAppointment(appt.id, appt.status)}>Update</button>
+                                    <select
+                                        value={appt.status}
+                                        onChange={(e) => handleStatusChange(appt.id, e.target.value)}
+                                        className={`med-status ${appt.status === 'Completed' ? 'status-success' :
+                                            appt.status === 'Sample Collected' ? 'status-info' :
+                                                appt.status === 'Approved' ? 'status-info' :
+                                                    appt.status === 'Pending' ? 'status-warning' : 'status-neutral'
+                                            }`}
+                                        style={{
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '0.85rem',
+                                            outline: 'none',
+                                            background: 'transparent'
+                                        }}
+                                    >
+                                        <option value="Pending">Pending</option>
+                                        <option value="Approved">Approved</option>
+                                        <option value="Sample Collected">Sample Collected</option>
+                                        <option value="Completed">Completed</option>
+                                    </select>
                                 </td>
                             </tr>
                         ))}
@@ -726,8 +898,23 @@ const LabAdminDashboard = () => {
                                 <tr key={p.id}>
                                     <td className="mono-text">{p.id}</td>
                                     <td>
-                                        <div style={{ fontWeight: 600, color: '#1e293b' }}>{p.name}</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{p.email}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            {p.profile_pic ? (
+                                                <img src={p.profile_pic} alt={p.name} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                                                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{p.name.charAt(0).toUpperCase()}</span>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: '#1e293b' }}>{p.name}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                                    {p.email}
+                                                    {p.age && p.age !== 'N/A' && ` • ${p.age} Y/O`}
+                                                    {p.gender && p.gender !== 'N/A' && ` • ${p.gender}`}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
                                         {p.phone !== 'N/A' ? (
@@ -740,38 +927,26 @@ const LabAdminDashboard = () => {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <span className="med-badge" style={{ background: '#eff6ff', color: 'var(--primary)', fontSize: '0.9rem' }}>
-                                                {p.uploaded_data_count || 0} Reports
-                                            </span>
-                                            {p.latest_prescription_url && (
-                                                <a
-                                                    href={p.latest_prescription_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    title="View Latest Prescription"
+                                            {p.uploaded_data_count > 0 ? (
+                                                <button
+                                                    onClick={() => handleViewHistory(p)}
+                                                    className="med-btn"
                                                     style={{
-                                                        display: 'block', width: '40px', height: '40px',
-                                                        borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1',
-                                                        cursor: 'pointer', transition: 'transform 0.2s'
+                                                        padding: '6px 14px', fontSize: '0.85rem', fontWeight: 600,
+                                                        background: '#dcfce7', color: '#166534',
+                                                        border: '1px solid #bbf7d0', borderRadius: '8px',
+                                                        display: 'flex', alignItems: 'center', gap: '8px'
                                                     }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                                 >
-                                                    <img
-                                                        src={p.latest_prescription_url}
-                                                        alt="Rx"
-                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                    />
-                                                </a>
+                                                    <Icons.Eye /> View Uploads ({p.uploaded_data_count})
+                                                </button>
+                                            ) : (
+                                                <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>None</span>
                                             )}
                                         </div>
                                     </td>
                                     <td>
                                         <button className="med-link-btn" onClick={() => handleViewHistory(p)}>View History</button>
-                                        <button className="med-link-btn" style={{ marginLeft: '10px', color: 'var(--primary)' }} onClick={() => {
-                                            setUploadData(d => ({ ...d, patient_id: p.id }));
-                                            setShowUploadModal(true);
-                                        }}>Upload Report</button>
                                     </td>
                                 </tr>
                             ))}
@@ -782,39 +957,169 @@ const LabAdminDashboard = () => {
     );
 
 
-    const renderReports = () => (
-        <div className="med-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', alignItems: 'center' }}>
-                <h3 className="med-table-title">Reports Management</h3>
-                <button className="med-btn med-btn-primary" onClick={() => showToast('Upload Dialog Opened')}>
-                    Upload Report
-                </button>
-            </div>
+    const renderReports = () => {
+        // Mock data enhancement if real data is missing fields (for display purposes)
+        const enhancedReports = reports.map(r => ({
+            ...r,
+            ref: r.ref || `APT-${(r.id || '').split('-')[1] || Math.floor(Math.random() * 1000)}`,
+            fileType: r.fileType || 'PDF',
+            staff: r.staff || 'Lab Admin',
+            verified: r.status === 'Verified'
+        }));
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                {reports
-                    .filter(r =>
-                        r.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        r.test.toLowerCase().includes(searchTerm.toLowerCase())
-                    )
-                    .map((report) => (
-                        <div key={report.id} className="med-report-card">
-                            <div className="med-report-icon">
-                                <Icons.FileText />
-                            </div>
-                            <div className="med-report-info">
-                                <h4>{report.test}</h4>
-                                <p>{report.patient}</p>
-                                <span className="med-report-date">{report.date}</span>
-                            </div>
-                            <div className="med-report-actions">
-                                <span className={`med-status-dot ${report.status === 'Uploaded' ? 'success' : 'pending'}`}></span>
-                            </div>
+        const filteredReports = enhancedReports.filter(r =>
+            (activeReportFilter === 'All' || r.status === activeReportFilter) &&
+            (r.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                r.test.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (r.id && r.id.toLowerCase().includes(searchTerm.toLowerCase())))
+        );
+
+        return (
+            <div className="med-card no-pad">
+                <div className="med-table-header" style={{ paddingBottom: '0', borderBottom: 'none', display: 'block' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                        <h3 className="med-table-title">Reports Management</h3>
+                        <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '4px 0 0' }}>Manage, verify, and share patient diagnostic reports.</p>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                        {/* Dropdown Filter Button */}
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                className="med-btn"
+                                style={{ background: 'white', border: '1px solid #e2e8f0', color: '#64748b', minWidth: '160px', justifyContent: 'space-between', padding: '8px 16px' }}
+                                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Icons.Filter size={18} />
+                                    <span>{activeReportFilter === 'All' ? 'Filter Status' : activeReportFilter}</span>
+                                </div>
+                                <Icons.ChevronDown size={16} />
+                            </button>
+
+                            {showFilterMenu && (
+                                <div className="med-dropdown-menu" style={{
+                                    position: 'absolute', top: '100%', left: 0, marginTop: '8px',
+                                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                                    zIndex: 50, minWidth: '160px', padding: '4px', display: 'flex', flexDirection: 'column'
+                                }}>
+                                    {['All', 'Uploaded', 'Verified', 'Shared'].map(status => (
+                                        <button
+                                            key={status}
+                                            style={{
+                                                textAlign: 'left', padding: '10px 12px', border: 'none', background: 'transparent',
+                                                color: activeReportFilter === status ? 'var(--med-primary)' : '#64748b',
+                                                fontWeight: activeReportFilter === status ? '600' : '500',
+                                                cursor: 'pointer', borderRadius: '6px',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                transition: 'background 0.2s',
+                                                fontSize: '0.9rem'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                            onClick={() => {
+                                                setActiveReportFilter(status);
+                                                setShowFilterMenu(false);
+                                            }}
+                                        >
+                                            {status}
+                                            {activeReportFilter === status && <Icons.Check size={16} style={{ color: 'var(--med-primary)' }} />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    ))}
+
+                        <button className="med-btn med-btn-primary" onClick={() => {
+                            setUploadData({ patient_id: '', test_name: '', file: null });
+                            setShowUploadModal(true);
+                        }}>
+                            <Icons.UploadCloud size={18} /> Upload Report
+                        </button>
+                    </div>
+                </div>
+
+                {/* Search Bar Removed as requested */}
+
+                <div className="med-scrollbar-hidden" style={{ overflowX: 'auto' }}>
+                    <table className="med-table">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Patient Name</th>
+                                <th>Ref</th>
+                                <th>Test Name(s)</th>
+                                <th>File</th>
+                                <th>Date</th>
+                                <th>Staff</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: 'right', paddingRight: '24px' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredReports.length === 0 ? (
+                                <tr>
+                                    <td colSpan="9" style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                                            <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '50%', border: '1px dashed #cbd5e1' }}>
+                                                <Icons.FileText size={32} style={{ opacity: 0.5 }} />
+                                            </div>
+                                            <p style={{ margin: 0, fontWeight: 500 }}>No reports found.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredReports.map(report => (
+                                    <tr key={report.id}>
+                                        <td className="mono-text" style={{ fontWeight: 600, color: 'var(--med-primary)' }}>{report.id}</td>
+                                        <td>
+                                            <div style={{ fontWeight: 600, color: '#1e293b' }}>{report.patient}</div>
+                                            {report.patientId && <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>#{report.patientId}</div>}
+                                        </td>
+                                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{report.ref}</td>
+                                        <td>
+                                            <span style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', border: '1px solid #e2e8f0' }}>
+                                                {report.test}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                {report.fileType === 'Image' ? <Icons.Eye size={16} color="#0f766e" /> : <Icons.FileText size={16} color="#ef4444" />}
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>{report.fileType}</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ color: '#475569', fontSize: '0.9rem' }}>{report.date}</td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>
+                                                    {report.staff.charAt(0)}
+                                                </div>
+                                                <span style={{ fontSize: '0.9rem' }}>{report.staff.split(' ')[0]}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`med-status status-${report.status === 'Verified' ? 'success' : report.status === 'Shared' ? 'info' : 'warning'}`}>
+                                                {report.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right', paddingRight: '16px' }}>
+                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                <button title="Preview" className="med-icon-btn view" onClick={() => window.open(report.fileUrl || '#', '_blank')}><Icons.Eye size={18} /></button>
+                                                <button title="Verify" className="med-icon-btn verify" onClick={() => showToast(`Report ${report.id} Verified`, "success")}><Icons.CheckCircle size={18} /></button>
+                                                <button title="Share" className="med-icon-btn share" onClick={() => showToast(`Sharing Report ${report.id}`)}><Icons.Share size={18} /></button>
+                                                <button title="Map/Edit" className="med-icon-btn edit" onClick={() => showToast(`Edit/Map Report ${report.id}`)}><Icons.Link size={18} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const renderStaff = () => (
         <>
@@ -946,17 +1251,46 @@ const LabAdminDashboard = () => {
                                 {patientHistory.prescriptions.length === 0 ? (
                                     <p style={{ color: '#94a3b8' }}>No uploaded prescriptions.</p>
                                 ) : (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
                                         {patientHistory.prescriptions.map(rx => (
-                                            <div key={rx.id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                                                <a href={rx.image_url} target="_blank" rel="noopener noreferrer">
-                                                    <img src={rx.image_url} alt="Rx" style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
-                                                </a>
-                                                <div style={{ padding: '8px', background: '#f8fafc', fontSize: '0.8rem' }}>
-                                                    <div style={{ fontWeight: 500 }}>{rx.type || 'Prescription'}</div>
-                                                    <div style={{ color: '#64748b', fontSize: '0.75rem' }}>{rx.date}</div>
-                                                    <div className={`med-status status-${rx.status === 'Completed' ? 'success' : 'warning'}`} style={{ display: 'inline-block', marginTop: '4px', fontSize: '0.7rem' }}>
-                                                        {rx.status}
+                                            <div key={rx.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: 'white', display: 'flex', flexDirection: 'column' }}>
+                                                <div style={{ height: '140px', background: '#f8fafc', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <img
+                                                        src={rx.image_url}
+                                                        alt="Rx"
+                                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image' }}
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    />
+                                                </div>
+                                                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>{rx.type || 'Prescription'}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{rx.date}</div>
+                                                        </div>
+                                                        <span className={`med-status status-${rx.status === 'Completed' ? 'success' : 'warning'}`} style={{ fontSize: '0.7rem' }}>
+                                                            {rx.status}
+                                                        </span>
+                                                    </div>
+
+                                                    <div style={{ marginTop: 'auto', display: 'flex', gap: '8px' }}>
+                                                        <a
+                                                            href={rx.image_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="med-btn"
+                                                            style={{ flex: 1, padding: '6px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'white', border: '1px solid #cbd5e1', color: '#334155' }}
+                                                        >
+                                                            <Icons.Eye size={14} /> View
+                                                        </a>
+                                                        <a
+                                                            href={rx.image_url}
+                                                            download={`Prescription-${rx.id}.jpg`}
+                                                            className="med-btn med-btn-primary"
+                                                            style={{ flex: 1, padding: '6px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                                        >
+                                                            <Icons.Download size={14} /> Download
+                                                        </a>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1002,211 +1336,7 @@ const LabAdminDashboard = () => {
     };
 
 
-    const renderLanding = () => (
-        <div className="med-landing-container" style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            color: 'var(--med-text-main)', paddingBottom: '50px'
-        }}>
-            {/* Split Layout Container */}
-            <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: `url(${moleculeBg}) no-repeat right 50%`, backgroundSize: '70% auto', backgroundColor: 'white',
-                padding: '80px', borderRadius: '24px',
-                width: '100%', minHeight: '85vh',
-                boxShadow: '0 20px 40px rgba(100, 116, 139, 0.1)',
-                marginBottom: '50px', position: 'relative', overflow: 'hidden'
-            }}>
-                {/* Left Side: Welcome Text */}
-                <div style={{ flex: 1, textAlign: 'left', zIndex: 2 }}>
-                    <h1 style={{
-                        fontSize: '4.5rem', marginBottom: '20px', fontWeight: 800,
-                        color: '#047857', letterSpacing: '-0.04em', // Deep Green
-                        lineHeight: 1.1,
-                    }}>
-                        Welcome to MediBot
-                    </h1>
-                    <p style={{
-                        fontSize: '1.5rem', color: '#1f2937', marginBottom: '50px', lineHeight: '1.4', fontWeight: 500
-                    }}>
-                        Manage your laboratory efficiently...
-                    </p>
-                    <div style={{ display: 'flex', gap: '24px' }}>
-                        {/* 3D Glossy Green Button */}
-                        <button className="med-btn" style={{
-                            padding: '18px 48px', fontSize: '1.1rem', borderRadius: '50px', fontWeight: 700,
-                            background: 'linear-gradient(to bottom, #34d399, #059669)',
-                            color: 'white', border: 'none',
-                            boxShadow: '0 4px 0 #047857, 0 10px 10px rgba(0,0,0,0.2), inset 0 2px 2px rgba(255,255,255,0.4)',
-                            transform: 'translateY(0)', transition: 'all 0.1s ease', position: 'relative'
-                        }}
-                            onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.1)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.filter = 'brightness(1)'; }}
-                            onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(4px)'; e.currentTarget.style.boxShadow = '0 0 0 #047857, inset 0 2px 2px rgba(0,0,0,0.4)'; }}
-                            onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 0 #047857, 0 10px 10px rgba(0,0,0,0.2), inset 0 2px 2px rgba(255,255,255,0.4)'; }}
-                            onClick={() => setActiveSection('Overview')}>
-                            Go to Overview
-                        </button>
 
-                        {/* 3D Soft White Button */}
-                        <button className="med-btn" style={{
-                            padding: '18px 48px', fontSize: '1.1rem', borderRadius: '50px', fontWeight: 600,
-                            background: 'linear-gradient(to bottom, #ffffff, #f3f4f6)',
-                            color: '#065f46', border: '1px solid #e5e7eb',
-                            boxShadow: '0 4px 0 #d1d5db, 0 5px 10px rgba(0,0,0,0.05)',
-                            transform: 'translateY(0)', transition: 'all 0.1s ease'
-                        }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = '#f9fafb'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = 'linear-gradient(to bottom, #ffffff, #f3f4f6)'; }}
-                            onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(4px)'; e.currentTarget.style.boxShadow = '0 0 0 #d1d5db'; }}
-                            onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 0 #d1d5db, 0 5px 10px rgba(0,0,0,0.05)'; }}
-                            onClick={() => setActiveSection('Patients')}>
-                            Manage Patients
-                        </button>
-                    </div>
-                </div>
-
-                {/* Right Side: Glassmorphism Tiles */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', marginRight: '60px', zIndex: 2 }}>
-                    <div style={{
-                        width: '340px', padding: '30px',
-                        background: 'rgba(255, 255, 255, 0.4)', // More transparent
-                        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                        borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '20px',
-                        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.6)'
-                    }}>
-                        <div style={{ fontSize: '2.5rem', color: '#059669', width: '60px' }}>
-                            <Icons.TestTube />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '0.9rem', color: '#374151', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lab Status</div>
-                            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#111827' }}>Operational</div>
-                        </div>
-                    </div>
-
-                    <div style={{
-                        width: '340px', padding: '30px',
-                        background: 'rgba(255, 255, 255, 0.4)',
-                        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                        borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '20px',
-                        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.6)'
-                    }}>
-                        <div style={{ fontSize: '2.5rem', color: '#059669', width: '60px' }}>
-                            <Icons.Users />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '0.9rem', color: '#374151', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Patients</div>
-                            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#111827' }}>{patients.length}+ Active</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom Cards */}
-            {/* Bottom Cards - 3D Design Update */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '40px', width: '100%', padding: '0 10px' }}>
-                {/* Appointments Card */}
-                <div className="med-card-3d" style={{
-                    cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    background: 'white', padding: '40px 32px', borderRadius: '30px', position: 'relative',
-                    boxShadow: '0 10px 30px -5px rgba(50, 50, 93, 0.05), 0 5px 15px -5px rgba(0, 0, 0, 0.05), 0 -2px 6px 0 rgba(255,255,255,0.8)',
-                    border: '1px solid white'
-                }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-                        e.currentTarget.style.boxShadow = '0 30px 60px -12px rgba(59, 130, 246, 0.25), 0 18px 36px -18px rgba(0, 0, 0, 0.1)';
-                        e.currentTarget.querySelector('.card-icon').style.transform = 'scale(1.1) rotate(5deg)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                        e.currentTarget.style.boxShadow = '0 10px 30px -5px rgba(50, 50, 93, 0.05), 0 5px 15px -5px rgba(0, 0, 0, 0.05), 0 -2px 6px 0 rgba(255,255,255,0.8)';
-                        e.currentTarget.querySelector('.card-icon').style.transform = 'scale(1) rotate(0deg)';
-                    }}
-                    onClick={() => setActiveSection('Appointments')}>
-                    <div style={{
-                        position: 'absolute', top: 0, left: 0, width: '100%', height: '6px',
-                        background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
-                        borderRadius: '30px 30px 0 0'
-                    }}></div>
-                    <div className="card-icon" style={{
-                        color: '#3b82f6', marginBottom: '24px', background: '#eff6ff',
-                        width: '72px', height: '72px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        borderRadius: '20px', transition: 'all 0.4s ease', fontSize: '1.75rem',
-                        boxShadow: 'inset 0 0 0 1px rgba(59, 130, 246, 0.1)'
-                    }}><Icons.Calendar /></div>
-                    <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#0f172a', fontWeight: 700, letterSpacing: '-0.01em' }}>Appointments</h3>
-                    <p style={{ fontSize: '0.95rem', color: '#64748b', lineHeight: '1.6' }}>View complete schedule and manage upcoming test bookings efficiently.</p>
-                </div>
-
-                {/* Reports Card */}
-                <div className="med-card-3d" style={{
-                    cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    background: 'white', padding: '40px 32px', borderRadius: '30px', position: 'relative',
-                    boxShadow: '0 10px 30px -5px rgba(50, 50, 93, 0.05), 0 5px 15px -5px rgba(0, 0, 0, 0.05), 0 -2px 6px 0 rgba(255,255,255,0.8)',
-                    border: '1px solid white'
-                }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-                        e.currentTarget.style.boxShadow = '0 30px 60px -12px rgba(16, 185, 129, 0.25), 0 18px 36px -18px rgba(0, 0, 0, 0.1)';
-                        e.currentTarget.querySelector('.card-icon').style.transform = 'scale(1.1) rotate(-5deg)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                        e.currentTarget.style.boxShadow = '0 10px 30px -5px rgba(50, 50, 93, 0.05), 0 5px 15px -5px rgba(0, 0, 0, 0.05), 0 -2px 6px 0 rgba(255,255,255,0.8)';
-                        e.currentTarget.querySelector('.card-icon').style.transform = 'scale(1) rotate(0deg)';
-                    }}
-                    onClick={() => setActiveSection('Reports')}>
-                    <div style={{
-                        position: 'absolute', top: 0, left: 0, width: '100%', height: '6px',
-                        background: 'linear-gradient(90deg, #10b981, #34d399)',
-                        borderRadius: '30px 30px 0 0'
-                    }}></div>
-                    <div className="card-icon" style={{
-                        color: '#10b981', marginBottom: '24px', background: '#ecfdf5',
-                        width: '72px', height: '72px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        borderRadius: '20px', transition: 'all 0.4s ease', fontSize: '1.75rem',
-                        boxShadow: 'inset 0 0 0 1px rgba(16, 185, 129, 0.1)'
-                    }}><Icons.FileText /></div>
-                    <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#0f172a', fontWeight: 700, letterSpacing: '-0.01em' }}>Reports</h3>
-                    <p style={{ fontSize: '0.95rem', color: '#64748b', lineHeight: '1.6' }}>Streamlined upload, verification, and management of patient reports.</p>
-                </div>
-
-                {/* Settings Card */}
-                <div className="med-card-3d" style={{
-                    cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    background: 'white', padding: '40px 32px', borderRadius: '30px', position: 'relative',
-                    boxShadow: '0 10px 30px -5px rgba(50, 50, 93, 0.05), 0 5px 15px -5px rgba(0, 0, 0, 0.05), 0 -2px 6px 0 rgba(255,255,255,0.8)',
-                    border: '1px solid white'
-                }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-                        e.currentTarget.style.boxShadow = '0 30px 60px -12px rgba(139, 92, 246, 0.25), 0 18px 36px -18px rgba(0, 0, 0, 0.1)';
-                        e.currentTarget.querySelector('.card-icon').style.transform = 'scale(1.1) rotate(5deg)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                        e.currentTarget.style.boxShadow = '0 10px 30px -5px rgba(50, 50, 93, 0.05), 0 5px 15px -5px rgba(0, 0, 0, 0.05), 0 -2px 6px 0 rgba(255,255,255,0.8)';
-                        e.currentTarget.querySelector('.card-icon').style.transform = 'scale(1) rotate(0deg)';
-                    }}
-                    onClick={() => setActiveSection('Settings')}>
-                    <div style={{
-                        position: 'absolute', top: 0, left: 0, width: '100%', height: '6px',
-                        background: 'linear-gradient(90deg, #8b5cf6, #a78bfa)',
-                        borderRadius: '30px 30px 0 0'
-                    }}></div>
-                    <div className="card-icon" style={{
-                        color: '#8b5cf6', marginBottom: '24px', background: '#f5f3ff',
-                        width: '72px', height: '72px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        borderRadius: '20px', transition: 'all 0.4s ease', fontSize: '1.75rem',
-                        boxShadow: 'inset 0 0 0 1px rgba(139, 92, 246, 0.1)'
-                    }}><Icons.Settings /></div>
-                    <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#0f172a', fontWeight: 700, letterSpacing: '-0.01em' }}>Settings</h3>
-                    <p style={{ fontSize: '0.95rem', color: '#64748b', lineHeight: '1.6' }}>Configure laboratory profile, notifications, and system defaults.</p>
-                </div>
-            </div>
-        </div>
-    );
 
     return (
         <div className="med-dashboard-container">
@@ -1214,7 +1344,7 @@ const LabAdminDashboard = () => {
             <main className={`med-main-content ${isSidebarOpen ? 'sidebar-open' : ''}`}>
                 {renderHeader()}
                 <div className="med-view-container">
-                    {activeSection === 'Landing' && renderLanding()}
+
                     {activeSection === 'Overview' && renderOverview()}
                     {activeSection === 'Appointments' && renderAppointments()}
                     {activeSection === 'Test Orders' && renderTestOrders()}
@@ -1275,156 +1405,316 @@ const LabAdminDashboard = () => {
                     background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
                     zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{
-                        background: 'white', width: '900px', maxWidth: '95vw', height: '85vh',
-                        borderRadius: '24px', display: 'flex', flexDirection: 'column',
-                        overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-                    }}>
-                        {/* Modal Header */}
-                        <div style={{ padding: '2rem 2.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.25rem' }}>{selectedPatient.name}</h2>
-                                <p style={{ color: '#64748b', margin: 0 }}>ID: #{selectedPatient.id} | {selectedPatient.email}</p>
+                    {(() => {
+                        const patientReports = patientHistory ? patientHistory.prescriptions : [];
+                        return (
+                            <div className="med-modal-animate" onClick={e => e.stopPropagation()} style={{
+                                background: 'white', width: '1000px', maxWidth: '95vw', height: '85vh',
+                                borderRadius: '24px', display: 'flex', flexDirection: 'column',
+                                overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #f1f5f9'
+                            }}>
+                                {/* New Header Design */}
+                                <div style={{ padding: '24px 32px', borderBottom: '1px solid #f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'start', background: 'white' }}>
+                                    <div>
+                                        <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>{selectedPatient.name}</h2>
+                                        <p style={{ color: '#64748b', margin: '4px 0 0', fontSize: '0.9rem', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            <span style={{ fontWeight: 600 }}>ID: #{selectedPatient.id}</span>
+                                            <span style={{ width: '4px', height: '4px', background: '#cbd5e1', borderRadius: '50%' }}></span>
+                                            {selectedPatient.email}
+                                            {selectedPatient.phone && (
+                                                <>
+                                                    <span style={{ width: '4px', height: '4px', background: '#cbd5e1', borderRadius: '50%' }}></span>
+                                                    {selectedPatient.phone}
+                                                </>
+                                            )}
+                                        </p>
+                                    </div>
+                                    <button onClick={() => setShowPatientHistoryModal(false)} style={{ background: '#f1f5f9', border: 'none', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', color: '#64748b', transition: 'all 0.2s' }}>
+                                        <Icons.X size={20} />
+                                    </button>
+                                </div>
+
+                                {/* Main Content Layout */}
+                                <div style={{ display: 'flex', flex: 1, overflow: 'hidden', padding: '32px', gap: '32px', background: '#ffffff' }}>
+                                    {/* Left: Personal Details Cards */}
+                                    <div className="med-scrollbar-hidden" style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '16px', flexShrink: 0, overflowY: 'auto', paddingRight: '4px' }}>
+                                        <h4 style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>Personal Details</h4>
+
+                                        {/* Age Card */}
+                                        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px -2px rgba(0,0,0,0.03)' }}>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.05em' }}>AGE</span>
+                                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#334155' }}>{selectedPatient.age && selectedPatient.age !== 'N/A' ? `${selectedPatient.age} Years` : 'N/A'}</div>
+                                        </div>
+
+                                        {/* Gender Card */}
+                                        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px -2px rgba(0,0,0,0.03)' }}>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.05em' }}>GENDER</span>
+                                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#334155' }}>{selectedPatient.gender || 'N/A'}</div>
+                                        </div>
+
+                                        {/* Contact / Info Card */}
+                                        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px -2px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            <div>
+                                                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.05em' }}>CONTACT</span>
+                                                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#334155' }}>{selectedPatient.phone || 'N/A'}</div>
+                                            </div>
+                                            <div>
+                                                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.05em' }}>BLOOD GROUP</span>
+                                                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#334155' }}>{selectedPatient.blood_group || 'N/A'}</div>
+                                            </div>
+                                            <div>
+                                                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.05em' }}>ADDRESS</span>
+                                                <div style={{ fontSize: '0.95rem', fontWeight: 500, color: '#334155', lineHeight: '1.4' }}>{selectedPatient.address || 'N/A'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Reports Section */}
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                        {/* Tabs */}
+                                        <div style={{ background: '#f8fafc', padding: '4px', borderRadius: '12px', display: 'inline-flex', alignSelf: 'start', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+                                            {['Uploaded', 'Generated'].map(tab => (
+                                                <button
+                                                    key={tab}
+                                                    onClick={() => setActiveReportTab(tab)}
+                                                    style={{
+                                                        padding: '10px 32px',
+                                                        borderRadius: '8px',
+                                                        border: 'none',
+                                                        background: activeReportTab === tab ? '#0d9488' : 'transparent', // Teal for active
+                                                        color: activeReportTab === tab ? 'white' : '#64748b',
+                                                        fontWeight: activeReportTab === tab ? 600 : 500,
+                                                        cursor: 'pointer',
+                                                        boxShadow: activeReportTab === tab ? '0 4px 6px -1px rgba(13, 148, 136, 0.3)' : 'none',
+                                                        transition: 'all 0.2s ease',
+                                                        fontSize: '0.95rem'
+                                                    }}
+                                                >
+                                                    {tab === 'Uploaded' ? 'Uploaded Reports' : 'Generated Reports'}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Grid Content */}
+                                        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', paddingBottom: '20px' }} className="med-scrollbar-hidden">
+                                            {activeReportTab === 'Uploaded' ? (
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+                                                    {patientReports.length > 0 ? (
+                                                        patientReports.map(report => (
+                                                            <div key={report.id} style={{
+                                                                background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden',
+                                                                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.03), 0 4px 6px -2px rgba(0,0,0,0.01)',
+                                                                transition: 'transform 0.2s', cursor: 'default'
+                                                            }}>
+                                                                {/* Image Preview */}
+                                                                <div style={{ height: '180px', background: '#f1f5f9', position: 'relative', overflow: 'hidden' }}>
+                                                                    <img
+                                                                        src={report.image_url}
+                                                                        alt="Report"
+                                                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=No+Preview' }}
+                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                    />
+                                                                    <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                                                                        <span style={{
+                                                                            background: 'rgba(255, 255, 255, 0.95)', padding: '4px 10px', borderRadius: '20px',
+                                                                            fontSize: '0.75rem', fontWeight: 700, color: '#0f766e', boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                                                            backdropFilter: 'blur(4px)'
+                                                                        }}>
+                                                                            {report.status || 'Pending'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Card Body */}
+                                                                <div style={{ padding: '20px' }}>
+                                                                    <h4 style={{ margin: '0 0 6px', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>{report.type || 'General Lab Test'}</h4>
+                                                                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>{report.date ? new Date(report.date).toLocaleDateString() : 'Unknown Date'}</p>
+
+                                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '20px' }}>
+                                                                        <a
+                                                                            href={report.image_url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            style={{
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                                                                padding: '10px', borderRadius: '8px', border: '1px solid #0d9488',
+                                                                                background: 'white', color: '#0d9488', textDecoration: 'none',
+                                                                                fontWeight: 600, fontSize: '0.9rem', transition: 'all 0.2s'
+                                                                            }}
+                                                                            onMouseOver={(e) => e.currentTarget.style.background = '#f0fdfa'}
+                                                                            onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                                                                        >
+                                                                            <Icons.Eye size={18} /> View
+                                                                        </a>
+                                                                        <button
+                                                                            onClick={async (e) => {
+                                                                                /* Download Logic */
+                                                                                e.preventDefault();
+                                                                                window.open(report.image_url, '_blank');
+                                                                            }}
+                                                                            style={{
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                                                                padding: '10px', borderRadius: '8px', border: 'none',
+                                                                                background: '#0d9488', color: 'white',
+                                                                                fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+                                                                                boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.2)'
+                                                                            }}
+                                                                        >
+                                                                            <Icons.Download size={18} /> Download
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div style={{ gridColumn: '1 / -1', padding: '48px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed #e2e8f0', borderRadius: '16px', color: '#94a3b8' }}>
+                                                            <Icons.FileText size={48} style={{ opacity: 0.2 }} />
+                                                            <p style={{ marginTop: '16px', fontWeight: 500 }}>No uploaded reports found used.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                                    {/* Placeholder for Generated Reports to match style if needed, or keep list */}
+                                                    <div style={{ padding: '48px', textAlign: 'center', background: '#f8fafc', borderRadius: '16px', color: '#64748b' }}>
+                                                        <p>Generated reports section under construction.</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <button onClick={() => setShowPatientHistoryModal(false)} style={{ background: '#f1f5f9', border: 'none', padding: '0.75rem', borderRadius: '12px', cursor: 'pointer', display: 'flex' }}>
-                                <Icons.X />
+                        );
+                    })()}
+                </div>
+            )}
+            {/* New Booking Modal */}
+            {showBookingModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+                }}>
+                    <div className="med-modal-animate med-scrollbar-hidden" style={{ background: 'white', borderRadius: '20px', width: '600px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', padding: 0 }}>
+                        {/* Header with Gradient */}
+                        <div style={{ background: 'linear-gradient(135deg, var(--med-primary) 0%, #0f766e 100%)', padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>New Appointment</h3>
+                                <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>Fill in the details to book a new test.</p>
+                            </div>
+                            <button onClick={() => setShowBookingModal(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', color: 'white', backdropFilter: 'blur(4px)' }}>
+                                <Icons.X size={20} />
                             </button>
                         </div>
 
-                        {/* Split View Content */}
-                        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                            {/* Left: Basic Details */}
-                            <div style={{ width: '300px', background: '#f8fafc', padding: '2rem', borderRight: '1px solid #f1f5f9', overflowY: 'auto' }}>
-                                <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem', color: '#334155' }}>Personal Details</h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                    {[
-                                        ['Age', `${selectedPatient.age} Years`],
-                                        ['Gender', selectedPatient.gender],
-                                        ['Contact', selectedPatient.phone],
-                                        ['Blood Group', 'O+ (Mock)'],
-                                        ['Joined', selectedPatient.joined_at ? new Date(selectedPatient.joined_at).toLocaleDateString() : 'N/A']
-                                    ].map(([label, val]) => (
-                                        <div key={label}>
-                                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.25rem', fontWeight: 600, textTransform: 'uppercase' }}>{label}</span>
-                                            <span style={{ display: 'block', fontSize: '1rem', color: '#1e293b', fontWeight: 500 }}>{val}</span>
-                                        </div>
-                                    ))}
+                        <div style={{ padding: '32px' }}>
+                            {/* Section 1: Patient Details */}
+                            <div className="med-section-divider"><span>Patient Information</span></div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px', marginBottom: '24px' }}>
+                                <div className="med-form-group">
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '6px', display: 'block' }}>Full Name *</label>
+                                    <div className="med-input-container">
+                                        <Icons.User className="med-input-icon" size={18} />
+                                        <input
+                                            type="text"
+                                            className="med-input-enhanced med-input-with-icon"
+                                            value={newBooking.patientName}
+                                            onChange={e => setNewBooking({ ...newBooking, patientName: e.target.value })}
+                                            placeholder="Enter patient's full name"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                    <div className="med-form-group">
+                                        <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '6px', display: 'block' }}>Age</label>
+                                        <input
+                                            type="number"
+                                            className="med-input-enhanced"
+                                            value={newBooking.age}
+                                            onChange={e => setNewBooking({ ...newBooking, age: e.target.value })}
+                                            placeholder="Ex: 25"
+                                        />
+                                    </div>
+                                    <div className="med-form-group">
+                                        <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '6px', display: 'block' }}>Gender</label>
+                                        <select
+                                            className="med-input-enhanced med-select-enhanced"
+                                            value={newBooking.gender}
+                                            onChange={e => setNewBooking({ ...newBooking, gender: e.target.value })}
+                                        >
+                                            <option>Male</option>
+                                            <option>Female</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="med-form-group">
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '6px', display: 'block' }}>Contact Number</label>
+                                    <div className="med-input-container">
+                                        <Icons.Phone className="med-input-icon" size={18} />
+                                        <input
+                                            type="text"
+                                            className="med-input-enhanced med-input-with-icon"
+                                            value={newBooking.contact}
+                                            onChange={e => setNewBooking({ ...newBooking, contact: e.target.value })}
+                                            placeholder="+91..."
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Right: Reports & History */}
-                            <div style={{ flex: 1, padding: '2rem', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                            {/* Section 2: Appointment Details */}
+                            <div className="med-section-divider"><span>Test & Schedule</span></div>
 
-                                {/* Tabs */}
-                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', background: '#f1f5f9', padding: '0.3rem', borderRadius: '12px', width: 'fit-content' }}>
-                                    {['Uploaded', 'Generated'].map(tab => (
-                                        <button
-                                            key={tab}
-                                            onClick={() => setActiveReportTab(tab)}
-                                            style={{
-                                                padding: '0.6rem 1.5rem',
-                                                borderRadius: '10px',
-                                                border: 'none',
-                                                background: activeReportTab === tab ? 'white' : 'transparent',
-                                                color: activeReportTab === tab ? 'var(--primary)' : '#64748b',
-                                                fontWeight: activeReportTab === tab ? 700 : 500,
-                                                cursor: 'pointer',
-                                                boxShadow: activeReportTab === tab ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none',
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            {tab === 'Uploaded' ? 'Uploaded Reports' : 'Generated Reports'}
-                                        </button>
-                                    ))}
+                            <div className="med-form-group" style={{ marginBottom: '20px' }}>
+                                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '6px', display: 'block' }}>Test Requirements *</label>
+                                <div className="med-input-container">
+                                    <Icons.Activity className="med-input-icon" size={18} />
+                                    <input
+                                        type="text"
+                                        className="med-input-enhanced med-input-with-icon"
+                                        value={newBooking.test}
+                                        onChange={e => setNewBooking({ ...newBooking, test: e.target.value })}
+                                        placeholder="e.g. Complete Blood Count (CBC)"
+                                    />
                                 </div>
+                            </div>
 
-                                {/* Reports Report Content */}
-                                <div style={{ flex: 1 }}>
-                                    {activeReportTab === 'Uploaded' ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                            {patientReports.filter(r => r.status !== 'Completed').length > 0 || patientReports.length > 0 ? (
-                                                // Same logic as LandingPage: Show list of report rows
-                                                patientReports.map(report => (
-                                                    <div key={report.id} style={{
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                        padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0',
-                                                        background: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                                                    }}>
-                                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                                            <div style={{ background: '#eff6ff', padding: '0.75rem', borderRadius: '10px', color: 'var(--primary)' }}>
-                                                                <Icons.FileText />
-                                                            </div>
-                                                            <div>
-                                                                <h4 style={{ margin: 0, fontSize: '1rem', color: '#1e293b' }}>Prescription #{report.id}</h4>
-                                                                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-                                                                    Status: <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{report.status}</span> • {new Date(report.date).toLocaleDateString()}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                                            <a href={report.file_path} target="_blank" rel="noopener noreferrer" style={{
-                                                                padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0',
-                                                                background: 'white', color: '#334155', textDecoration: 'none', fontSize: '0.9rem',
-                                                                display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500
-                                                            }}>
-                                                                <Icons.Eye /> View
-                                                            </a>
-                                                            <a href={report.file_path} download style={{
-                                                                padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid var(--primary)',
-                                                                background: 'var(--primary)', color: 'white', textDecoration: 'none', fontSize: '0.9rem',
-                                                                display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500
-                                                            }}>
-                                                                <Icons.Download /> Download
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #e2e8f0' }}>
-                                                    <p>No uploaded reports found.</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        // Generated Section
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                            {patientReports.filter(r => r.status === 'Completed').length > 0 ? (
-                                                patientReports.filter(r => r.status === 'Completed').map(report => (
-                                                    <div key={report.id} style={{
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                        padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0',
-                                                        background: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                                                    }}>
-                                                        {/* ... Content similarly styled ... */}
-                                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                                            <div style={{ background: '#dcfce7', padding: '0.75rem', borderRadius: '10px', color: '#16a34a' }}>
-                                                                <Icons.FileText />
-                                                            </div>
-                                                            <div>
-                                                                <h4 style={{ margin: 0, fontSize: '1rem', color: '#1e293b' }}>Lab Result #{report.id}</h4>
-                                                                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-                                                                    Completed on {new Date(report.date).toLocaleDateString()}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <a href={report.file_path} download style={{
-                                                            padding: '0.5rem 1rem', borderRadius: '8px', border: 'none',
-                                                            background: '#16a34a', color: 'white', textDecoration: 'none', fontSize: '0.9rem',
-                                                            display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500
-                                                        }}>
-                                                            <Icons.Download /> Download
-                                                        </a>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #e2e8f0' }}>
-                                                    <p>No generated reports available yet.</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div className="med-form-group">
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '6px', display: 'block' }}>Preferred Date *</label>
+                                    <div className="med-input-container">
+                                        <Icons.Calendar className="med-input-icon" size={18} />
+                                        <input
+                                            type="date"
+                                            className="med-input-enhanced med-input-with-icon"
+                                            value={newBooking.date}
+                                            onChange={e => setNewBooking({ ...newBooking, date: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
+                                <div className="med-form-group">
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '6px', display: 'block' }}>Preferred Time *</label>
+                                    <div className="med-input-container">
+                                        <Icons.Clock className="med-input-icon" size={18} />
+                                        <input
+                                            type="time"
+                                            className="med-input-enhanced med-input-with-icon"
+                                            value={newBooking.time}
+                                            onChange={e => setNewBooking({ ...newBooking, time: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '32px' }}>
+                                <button className="med-btn" onClick={() => setShowBookingModal(false)} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#64748b' }}>Cancel</button>
+                                <button className="med-btn med-btn-primary" onClick={handleSaveBooking} style={{ minWidth: '160px', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(13, 118, 110, 0.2)' }}>
+                                    Confirm Booking
+                                </button>
                             </div>
                         </div>
                     </div>

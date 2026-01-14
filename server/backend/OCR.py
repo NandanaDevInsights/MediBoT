@@ -261,7 +261,7 @@ def whatsapp_webhook():
             
             # Prepare file path relative to server root for frontend
             # Assuming frontend uses something like http://localhost:5000/static/prescriptions/...
-            relative_file_path = f"http://127.0.0.1:5000/static/prescriptions/{filename}"
+            relative_file_path = f"http://localhost:5000/static/prescriptions/{filename}"
             
             cursor.execute(
                 """INSERT INTO prescriptions 

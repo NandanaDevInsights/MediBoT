@@ -112,7 +112,8 @@ const SuperAdminDashboard = () => {
 
     const handleLogout = () => {
         // Clear tokens logic here
-        navigate('/');
+        sessionStorage.removeItem('auth_role');
+        navigate('/admin/login');
     };
 
     const handleLabAction = (id, action) => {

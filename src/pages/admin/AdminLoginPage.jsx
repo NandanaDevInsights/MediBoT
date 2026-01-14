@@ -57,12 +57,18 @@ const AdminLoginPage = () => {
     }
 
     const processLoginSuccess = (result) => {
-        if (role === 'LAB_ADMIN') {
+        // Enforce Server-Side Role Check
+        const serverRole = result.role;
+
+        if (serverRole === 'LAB_ADMIN') {
+            sessionStorage.setItem('auth_role', 'LAB_ADMIN');
             sessionStorage.removeItem('lab_admin_pin_verified');
             navigate('/lab-admin-dashboard', { replace: true });
-        } else if (role === 'SUPER_ADMIN') {
+        } else if (serverRole === 'SUPER_ADMIN') {
+            sessionStorage.setItem('auth_role', 'SUPER_ADMIN');
             navigate('/super-admin-dashboard', { replace: true });
         } else {
+            // If a regular user tries to log in, redirect them to the patient portal
             navigate('/welcome', { replace: true });
         }
     }

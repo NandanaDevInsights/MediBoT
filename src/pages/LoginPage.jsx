@@ -73,13 +73,11 @@ const LoginPage = () => {
   }
 
   const processLoginSuccess = (result) => {
-    if (result.role === 'LAB_ADMIN') {
-      navigate('/lab-admin-dashboard', { replace: true })
-    } else if (result.role === 'SUPER_ADMIN') {
-      navigate('/super-admin-dashboard', { replace: true })
-    } else {
-      navigate('/welcome', { replace: true })
-    }
+    // Set Auth Flag
+    sessionStorage.setItem('auth_role', 'USER');
+    // Always redirect to Landing Page for generic logins, even if user has admin role.
+    // Admin dashboard access should be done via /admin/login
+    navigate('/', { replace: true })
   }
 
   const onSubmit = async (e) => {

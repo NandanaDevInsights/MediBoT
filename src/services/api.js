@@ -93,6 +93,16 @@ export const getUserProfile = async () => {
   return parseResponse(res)
 }
 
+export const updateUserProfile = async (payload) => {
+  const res = await fetch(`${API_BASE}/profile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  })
+  return parseResponse(res)
+}
+
 export const getUserReports = async () => {
   const res = await fetch(`${API_BASE}/reports`, {
     method: 'GET',

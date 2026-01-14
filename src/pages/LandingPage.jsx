@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import heroBg from '../assets/LabHero.jpg';
 import logoImage from '../assets/Logo.png';
 import './LandingPage.css';
-import { getUserProfile, getUserReports } from '../services/api';
+import { getUserProfile, getUserReports, updateUserProfile } from '../services/api';
 
 // --- Icon Components ---
 const IconHome = ({ size = 20 }) => (
@@ -12,8 +12,8 @@ const IconHome = ({ size = 20 }) => (
     <polyline points="9 22 9 12 15 12 15 22"></polyline>
   </svg>
 );
-const IconActivity = ({ size = 24 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconActivity = ({ size = 24, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
   </svg>
 );
@@ -46,14 +46,14 @@ const IconArrowLeft = ({ size = 20 }) => (
   </svg>
 );
 
-const IconDroplet = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconDroplet = ({ size = 24, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M12 2.69l5.74 5.74c.9 1 1.63 2.16 2.1 3.44.48 1.28.6 2.65.37 4-.24 1.34-1 2.54-2.2 3.32-1.2.78-2.6 1-4.01.65-2.66-.65-4.5-3.05-4.5-5.8V2.69z"></path>
   </svg>
 );
 
-const IconCalendar = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconCalendar = ({ size = 20, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
     <line x1="16" y1="2" x2="16" y2="6"></line>
     <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -78,8 +78,8 @@ const IconUser = () => (
   </svg>
 );
 
-const IconX = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconX = ({ size = 24, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <line x1="18" y1="6" x2="6" y2="18"></line>
     <line x1="6" y1="6" x2="18" y2="18"></line>
   </svg>
@@ -107,8 +107,8 @@ const IconBell = ({ size = 20 }) => (
   </svg>
 );
 
-const IconClock = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconClock = ({ size = 20, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <circle cx="12" cy="12" r="10"></circle>
     <polyline points="12 6 12 12 16 14"></polyline>
   </svg>
@@ -468,6 +468,19 @@ const LandingPage = () => {
         const data = await getUserProfile();
         setUserProfile(data);
 
+        // Populate editable state
+        setPatientDetails({
+          displayName: data.displayName || '',
+          age: data.age || '',
+          gender: data.gender || '',
+          bloodGroup: data.bloodGroup || '',
+          contact: data.contact || '',
+          savedLocation: data.savedLocation || data.address || ''
+        });
+        if (data.profilePic) {
+          setProfilePic(data.profilePic);
+        }
+
         // Auto-redirect admins who land here (e.g. after Google Login or direct link)
         // Commented out to allow access to Landing Page for testing/viewing
         /*
@@ -547,43 +560,35 @@ const LandingPage = () => {
 
   // Handle Main Search Bar Enter Key
   const handleSearchSubmit = async (e) => {
-    if (e.key === 'Enter' && searchTerm.trim()) {
-      // Check if the search term is a location
+    if (e.key === 'Enter') {
+      // Always scroll to results first so user feels "action"
+      scrollToLabs();
+
+      if (!searchTerm.trim()) return;
+
       const query = searchTerm.trim();
 
       try {
-        // optimistically try to find it as a location
+        // Attempt to treat as location first
         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
         const data = await response.json();
 
         if (data && data.length > 0) {
+          // It IS a valid location
           const { lat, lon } = data[0];
           const coords = { lat: parseFloat(lat), lon: parseFloat(lon) };
 
-          // Update Location
+          // Update Location Context
           setUserCoords(coords);
-          setUserLocationInput(query); // Update the "current location" name
+          setUserLocationInput(query);
           sessionStorage.setItem('user_location_coords', JSON.stringify({ ...coords, name: query }));
-
-          // Clear filtered text so we see all labs in this new location
-          // Or keep it? User might be searching "Xray in Mumbai".
-          // If we update location to Mumbai, and keep "Xray in Mumbai" as filter, it might match nothing if "Mumbai" is not in lab name/tags.
-          // Better logic: If we successfully switched location, maybe clear the search term OR strip the location part.
-          // For now, let's just switch location and let the user refine if needed, or keep the search term.
-          // If I type "Mumbai", and location switches to Mumbai, the labs at Mumbai will appear. Then we filter by "Mumbai".
-          // The labs generated at Mumbai will likely have "Mumbai" in their address, so it should be fine.
-
         } else {
-          // If not a location, just strict filter existing labs (already happens via useEffect)
-          // If not a location, just strict filter existing labs (already happens via useEffect)
-          console.log("Not a location or not found, filtering list...");
-
-          // Optionally: Explicitly tell the user we couldn't find that location?
-          // For now, silently failing to update location is safer, leaving the keyword search active.
-          // But if userCoords was null, we rely on the keyword fallback we added to filterLabs.
+          // Not a location, so it stays as a keyword filter (handled by useEffect/filterLabs)
+          // Just ensure we are focusing on the list
+          console.log("Keyword search: Filtering existing list...");
         }
       } catch (err) {
-        console.error("Search error", err);
+        console.error("Search error (likely network), falling back to keyword filter", err);
       }
     }
   };
@@ -600,7 +605,7 @@ const LandingPage = () => {
   };
 
   // Derive Display Name
-  const displayName = userProfile?.email ? userProfile.email.split('@')[0] : (patientDetails.displayName || userProfile?.displayName || 'Guest');
+  const displayName = userProfile?.displayName || (userProfile?.email ? userProfile.email.split('@')[0] : 'Guest');
 
   // Core Filter Logic
   const filterLabs = (filter, search, coords) => {
@@ -799,6 +804,7 @@ const LandingPage = () => {
     const confirm = window.confirm("Are you sure you want to logout?");
     if (confirm) {
       sessionStorage.removeItem('user_location_coords');
+      sessionStorage.removeItem('auth_role');
       navigate('/login');
     }
   };
@@ -851,122 +857,134 @@ const LandingPage = () => {
               onClick={handleLocationSubmit}
               disabled={locationLoading}
             >
-              {locationLoading ? 'Searching...' : 'Find Laboratories'} <IconArrowRight size={18} />
+              {locationLoading ? 'Searching...' : 'Find Laboratories'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Booking Modal (Redesigned) */}
+      {/* Booking Page (Professional) */}
       {showBookingModal && selectedLab && (
-        <div className="fs-booking-container">
-          <div className="fs-split-layout">
-
-            {/* Sidebar Card */}
-            <div className="fs-sidebar-card">
-              <div className="sidebar-avatar" style={{ backgroundImage: `url(${selectedLab.image})` }}>
-                {!selectedLab.image && <IconMapPin size={40} />}
+        <div className="page-container">
+          <div className="page-content-wrapper">
+            <div className="page-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <button className="nav-item-btn" onClick={() => setShowBookingModal(false)} style={{ padding: '0.5rem' }}>
+                  <IconArrowLeft size={24} />
+                </button>
+                <h2>Complete Your Booking</h2>
               </div>
-
-              <div className="sidebar-info">
-                <h3>{selectedLab.name}</h3>
-
-                <div className="sidebar-rating">
-                  <span>{selectedLab.rating}</span>
-                  <IconStar fill="currentColor" size={16} />
-                </div>
-
-                <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
-                  <IconMapPin size={14} /> {selectedLab.location}
-                </p>
-
-                {selectedLab.distance && (
-                  <p style={{ color: '#2563eb', fontWeight: 600, fontSize: '0.9rem' }}>
-                    Distance: {selectedLab.distance}
-                  </p>
-                )}
-
-                <div className="sidebar-price-row">
-                  <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#64748b' }}>Consultation Starts</p>
-                  <p style={{ margin: 0, fontSize: '2.5rem', fontWeight: 800, color: '#1d4ed8', lineHeight: 1 }}>₹{selectedLab.price}</p>
-                </div>
+              <div className="page-actions">
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Step 1 of 2</span>
               </div>
             </div>
 
-            {/* Main Content Card */}
-            <div className="fs-main-card">
-              <h3 className="fs-section-title">Patient Details</h3>
-              <p className="fs-section-subtitle">Select the tests you want to book</p>
-
-              <div className="fs-form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                {/* 1. Category Dropdown */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.8rem', fontWeight: 700, color: '#334155', fontSize: '0.95rem' }}>Test Category</label>
-                  <select
-                    className="fs-input"
-                    value={activeTestCategory}
-                    onChange={(e) => setActiveTestCategory(e.target.value)}
-                  >
-                    {Object.keys(TEST_CATEGORIES).map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+            <div className="fs-split-layout">
+              {/* Sidebar Card */}
+              <div className="fs-sidebar-card">
+                <div className="sidebar-avatar" style={{ backgroundImage: `url(${selectedLab.image})` }}>
+                  {!selectedLab.image && <IconMapPin size={40} />}
                 </div>
 
-                {/* 2. Test Selection Dropdown */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.8rem', fontWeight: 700, color: '#334155', fontSize: '0.95rem' }}>Select Test</label>
-                  <select
-                    className="fs-input"
-                    onChange={(e) => {
-                      if (e.target.value) toggleTestSelection(e.target.value);
-                      e.target.value = ""; // Reset
-                    }}
-                  >
-                    <option value="">-- Choose a test --</option>
-                    {TEST_CATEGORIES[activeTestCategory].map(test => (
-                      <option key={test} value={test} disabled={selectedTests.includes(test)}>
-                        {test} {selectedTests.includes(test) ? '(Selected)' : ''}
-                      </option>
-                    ))}
-                  </select>
+                <div className="sidebar-info">
+                  <h3>{selectedLab.name}</h3>
 
-                  {/* Selected Tests Chips */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '1rem' }}>
-                    {selectedTests.map(test => (
-                      <div key={test} style={{ background: '#eff6ff', border: '1px solid #2563eb', color: '#2563eb', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {test}
-                        <button onClick={() => toggleTestSelection(test)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', display: 'flex', padding: 0 }}>
-                          <IconX size={14} />
-                        </button>
-                      </div>
-                    ))}
-                    {selectedTests.length === 0 && <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontStyle: 'italic' }}>No tests selected</span>}
+                  <div className="sidebar-rating">
+                    <span>{selectedLab.rating}</span>
+                    <IconStar fill="currentColor" size={16} />
+                  </div>
+
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                    <IconMapPin size={14} /> {selectedLab.location}
+                  </p>
+
+                  <div className="sidebar-price-row">
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#64748b' }}>Consultation Starts</p>
+                    <p style={{ margin: 0, fontSize: '2.5rem', fontWeight: 800, color: '#1d4ed8', lineHeight: 1 }}>₹{selectedLab.price}</p>
                   </div>
                 </div>
+              </div>
 
-                {/* Date & Time */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.8rem', fontWeight: 700, color: '#334155', fontSize: '0.95rem' }}>Preferred Date</label>
-                    <input className="fs-input" type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.8rem', fontWeight: 700, color: '#334155', fontSize: '0.95rem' }}>Preferred Time</label>
-                    <input className="fs-input" type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} />
-                  </div>
-                </div>
+              {/* Main Form */}
+              <div className="fs-main-card" style={{ padding: '1.5rem 2rem' }}>
+                <h3 className="fs-section-title" style={{ marginBottom: '0.25rem' }}>Patient Details</h3>
+                <p className="fs-section-subtitle" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Select the tests you want to book</p>
 
-                {/* Footer */}
-                <div className="booking-footer">
-                  <div style={{ textAlign: 'right' }}>
-                    <p className="total-est-label">Total Estimated Cost</p>
-                    <p className="total-est-amount">₹{selectedLab.price + (selectedTests.length * 150)}</p>
+                <div className="fs-form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* Category & Selection Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    {/* Test Category */}
+                    <div>
+                      <label className="fs-label"><IconDroplet size={16} style={{ marginBottom: -2, marginRight: 6, color: 'var(--primary)' }} /> Test Category</label>
+                      <select
+                        className="fs-input"
+                        value={activeTestCategory}
+                        onChange={(e) => setActiveTestCategory(e.target.value)}
+                        style={{ marginBottom: 0 }}
+                      >
+                        {Object.keys(TEST_CATEGORIES).map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Test Selection */}
+                    <div>
+                      <label className="fs-label"><IconActivity size={16} style={{ marginBottom: -2, marginRight: 6, color: 'var(--primary)' }} /> Select Test</label>
+                      <select
+                        className="fs-input"
+                        onChange={(e) => {
+                          if (e.target.value) toggleTestSelection(e.target.value);
+                          e.target.value = "";
+                        }}
+                        style={{ marginBottom: 0 }}
+                      >
+                        <option value="">-- Choose a test --</option>
+                        {TEST_CATEGORIES[activeTestCategory].map(test => (
+                          <option key={test} value={test} disabled={selectedTests.includes(test)}>
+                            {test} {selectedTests.includes(test) ? '(Selected)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <button className="confirm-booking-btn" onClick={handleProceedToPayment}>
-                    Proceed to Payment
-                  </button>
+
+                  {/* Selected Tests Tags - Full Width */}
+                  <div style={{ minHeight: '34px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {selectedTests.map(test => (
+                        <div key={test} className="selected-test-chip">
+                          {test}
+                          <button onClick={() => toggleTestSelection(test)}>
+                            <IconX size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Date & Time */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div>
+                      <label className="fs-label"><IconCalendar size={16} style={{ marginBottom: -2, marginRight: 6, color: 'var(--primary)' }} /> Preferred Date</label>
+                      <input className="fs-input" type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} style={{ marginBottom: 0 }} />
+                    </div>
+                    <div>
+                      <label className="fs-label"><IconClock size={16} style={{ marginBottom: -2, marginRight: 6, color: 'var(--primary)' }} /> Preferred Time</label>
+                      <input className="fs-input" type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} style={{ marginBottom: 0 }} />
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="booking-footer" style={{ marginTop: '1.5rem', paddingTop: '1.5rem' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <p className="total-est-label">Total Estimated Cost</p>
+                      <p className="total-est-amount">₹{selectedLab.price + (selectedTests.length * 150)}</p>
+                    </div>
+                    <button className="confirm-booking-btn" onClick={handleProceedToPayment}>
+                      Proceed to Payment
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1118,35 +1136,32 @@ const LandingPage = () => {
               <span>Home</span>
             </button>
             {/* Notifications & Reminders - Only visible if location entered */}
-            {userCoords && (
-              <>
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className="nav-item-btn"
-                    onClick={() => { setShowNotifications(!showNotifications); setShowReminders(false); }}
-                  >
-                    <IconBell />
-                    <span>Notifications</span>
-                    <span style={{
-                      position: 'absolute', top: -2, right: -2,
-                      background: '#ef4444', color: 'white',
-                      fontSize: '0.6rem', padding: '2px 5px', borderRadius: '50%',
-                      fontWeight: 'bold'
-                    }}>2</span>
-                  </button>
-                </div>
+            {/* Notifications & Reminders - Always visible */}
+            <div style={{ position: 'relative' }}>
+              <button
+                className="nav-item-btn"
+                onClick={() => { setShowNotifications(!showNotifications); setShowReminders(false); }}
+              >
+                <IconBell />
+                <span>Notifications</span>
+                <span style={{
+                  position: 'absolute', top: -2, right: -2,
+                  background: '#ef4444', color: 'white',
+                  fontSize: '0.6rem', padding: '2px 5px', borderRadius: '50%',
+                  fontWeight: 'bold'
+                }}>2</span>
+              </button>
+            </div>
 
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className="nav-item-btn"
-                    onClick={() => { setShowReminders(!showReminders); setShowNotifications(false); }}
-                  >
-                    <IconClock />
-                    <span>Reminders</span>
-                  </button>
-                </div>
-              </>
-            )}
+            <div style={{ position: 'relative' }}>
+              <button
+                className="nav-item-btn"
+                onClick={() => { setShowReminders(!showReminders); setShowNotifications(false); }}
+              >
+                <IconClock />
+                <span>Reminders</span>
+              </button>
+            </div>
 
             <button className="nav-item-btn" onClick={() => setShowMyBookingsModal(true)}>
               <IconCalendar />
@@ -1182,128 +1197,99 @@ const LandingPage = () => {
       {/* Full Screen Reports Section */}
       {/* Full Screen Reports Section */}
       {/* Reports Modal (Redesigned) */}
+      {/* Reports Page */}
       {showReportsModal && (
-        <div className="reports-modal-overlay">
-          <div className="reports-wrapper">
-
-            {/* Toggle Buttons */}
-            <div className="report-tabs">
-              <button
-                className={`report-tab-btn ${activeReportTab === 'Uploaded' ? 'primary' : 'secondary'}`}
-                onClick={() => setActiveReportTab('Uploaded')}
-              >
-                <IconUploadCloud size={20} /> Uploaded Reports
-              </button>
-              <button
-                className={`report-tab-btn ${activeReportTab === 'Generated' ? 'primary' : 'secondary'}`}
-                onClick={() => setActiveReportTab('Generated')}
-              >
-                <IconFileText size={20} /> Generated Reports
-              </button>
+        <div className="page-container">
+          <div className="page-content-wrapper">
+            <div className="page-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h2>My Medical Reports</h2>
+              </div>
             </div>
 
-            <div className="report-card-container">
-              {/* Section 1: Uploaded Reports */}
-              {activeReportTab === 'Uploaded' && (
-                <>
-                  <div className="report-section-header">
-                    <IconUploadCloud size={28} color="var(--primary)" />
-                    <span>Uploaded Papers</span>
-                  </div>
+            <div className="form-card">
+              {/* Toggle Buttons */}
+              <div className="report-tabs" style={{ background: 'transparent', padding: '0 0 1.5rem 0', border: 'none' }}>
+                <button
+                  className={`report-tab-btn ${activeReportTab === 'Uploaded' ? 'primary' : 'secondary'}`}
+                  onClick={() => setActiveReportTab('Uploaded')}
+                >
+                  <IconUploadCloud size={20} /> Uploaded Prescriptions
+                </button>
+                <button
+                  className={`report-tab-btn ${activeReportTab === 'Generated' ? 'primary' : 'secondary'}`}
+                  onClick={() => setActiveReportTab('Generated')}
+                >
+                  <IconFileText size={20} /> Lab Results
+                </button>
+              </div>
 
-                  {reports.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {reports.map((report) => (
-                        <div key={report.id} className="report-list-item">
-
-                          {/* Info */}
-                          <div className="report-meta">
-                            <h4>Prescription #{report.id}
-                              <span className="report-pending-text">{report.status}</span>
-                            </h4>
-                            <p>
-                              <IconCalendar size={14} /> Uploaded on {new Date(report.date).toLocaleDateString()}
-                            </p>
+              <div className="report-card-container" style={{ padding: 0 }}>
+                {/* Uploaded Reports */}
+                {activeReportTab === 'Uploaded' && (
+                  <>
+                    {reports.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {reports.map((report) => (
+                          <div key={report.id} className="list-item-card">
+                            <div className="report-meta">
+                              <h4>Prescription #{report.id} <span className="report-pending-text" style={{ fontSize: '0.8rem', background: '#fef08a', padding: '2px 8px', borderRadius: '4px', color: '#854d0e', marginLeft: '8px' }}>{report.status}</span></h4>
+                              <p><IconCalendar size={14} /> Uploaded on {new Date(report.date).toLocaleDateString()}</p>
+                            </div>
+                            <div className="report-actions">
+                              <a href={report.file_path} target="_blank" rel="noopener noreferrer" className="report-btn-outline">
+                                <IconEye size={16} /> View
+                              </a>
+                              <button
+                                onClick={() => downloadFile(report.file_path, `Prescription_${report.id}.pdf`)}
+                                className="report-btn-outline"
+                              >
+                                <IconDownload size={16} /> Download
+                              </button>
+                            </div>
                           </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+                        <p>No prescriptions uploaded yet.</p>
+                      </div>
+                    )}
+                  </>
+                )}
 
-                          {/* Actions */}
-                          <div className="report-actions">
-                            <a href={report.file_path} target="_blank" rel="noopener noreferrer" className="report-btn-outline">
-                              <IconEye size={16} /> View
-                            </a>
-                            <button
-                              onClick={() => downloadFile(report.file_path, `Prescription_${report.id}.pdf`)}
-                              className="report-btn-outline"
-                              style={{ cursor: 'pointer', fontFamily: 'inherit' }}
-                            >
-                              <IconDownload size={16} /> Download
-                            </button>
+                {/* Generated Reports */}
+                {activeReportTab === 'Generated' && (
+                  <>
+                    {reports.filter(r => r.status === 'Completed').length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {reports.filter(r => r.status === 'Completed').map((report) => (
+                          <div key={`gen-${report.id}`} className="list-item-card" style={{ borderLeft: '4px solid #16a34a' }}>
+                            <div className="report-meta">
+                              <h4>Lab Result #{report.id} <span style={{ color: '#16a34a', fontSize: '0.8rem', fontWeight: 600, background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}>Ready</span></h4>
+                              <p><IconCalendar size={14} /> {new Date(report.date).toLocaleDateString()}</p>
+                            </div>
+                            <div className="report-actions">
+                              <button
+                                onClick={() => downloadFile(report.file_path, `Lab_Result_${report.id}.pdf`)}
+                                className="report-btn-outline"
+                                style={{ borderColor: '#16a34a', color: '#16a34a' }}
+                              >
+                                <IconDownload size={16} /> Download PDF
+                              </button>
+                            </div>
                           </div>
-
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-                      <p>No prescriptions uploaded yet.</p>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Section 2: Generated Reports */}
-              {activeReportTab === 'Generated' && (
-                <>
-                  <div className="report-section-header">
-                    <IconFileText size={28} color="#16a34a" />
-                    <span>Generated Results</span>
-                  </div>
-
-                  {reports.filter(r => r.status === 'Completed').length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {reports.filter(r => r.status === 'Completed').map((report) => (
-                        <div key={`gen-${report.id}`} className="report-list-item" style={{ borderLeftColor: '#16a34a' }}>
-
-                          <div className="report-meta">
-                            <h4>Lab Result #{report.id}
-                              <span className="report-pending-text" style={{ color: '#16a34a' }}>Ready</span>
-                            </h4>
-                            <p>
-                              <IconCalendar size={14} /> {new Date(report.date).toLocaleDateString()}
-                            </p>
-                          </div>
-
-                          <div className="report-actions">
-                            <button
-                              onClick={() => downloadFile(report.file_path, `Lab_Result_${report.id}.pdf`)}
-                              className="report-btn-outline"
-                              style={{ borderColor: '#16a34a', color: '#16a34a', cursor: 'pointer', fontFamily: 'inherit' }}
-                            >
-                              <IconDownload size={16} /> Download PDF
-                            </button>
-                          </div>
-
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-                      <p>No generated reports returned yet.</p>
-                    </div>
-                  )}
-                </>
-              )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+                        <p>No generated reports returned yet.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-
-            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-              <button
-                style={{ background: 'none', border: 'none', color: '#64748b', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}
-                onClick={() => setShowReportsModal(false)}
-              >
-                <IconX size={18} /> Close
-              </button>
-            </div>
-
           </div>
         </div>
       )}
@@ -1313,11 +1299,18 @@ const LandingPage = () => {
 
       {/* Full Screen Profile Section */}
       {/* Full Screen Profile Section */}
+      {/* Profile Page */}
       {showProfileModal && (
-        <div className="fullscreen-section">
-          {/* Header Removed */}
-          <div className="fullscreen-content">
+        <div className="page-container">
+          <div className="page-content-wrapper">
+            <div className="page-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h2>My Profile</h2>
+              </div>
+            </div>
+
             <div className="fs-split-layout">
+              {/* Sidebar: Avatar & Actions */}
               <div className="fs-sidebar-card">
                 <input
                   type="file"
@@ -1355,18 +1348,21 @@ const LandingPage = () => {
                     <IconUploadCloud size={12} color="white" />
                   </div>
                 </div>
+
                 <div className="sidebar-info">
                   <h3>{displayName}</h3>
                   <p>{userProfile?.email || 'No Email'}</p>
-                  <button className="book-btn" style={{ marginTop: '2rem', width: '100%', borderColor: '#ef4444', color: '#ef4444', background: 'transparent' }} onClick={handleLogout}>
-                    Logout
-                  </button>
                 </div>
+
+                <button className="book-btn" style={{ marginTop: '2rem', width: '100%', borderColor: '#ef4444', color: '#ef4444', background: 'transparent' }} onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
 
+              {/* Main Content: Details Form */}
               <div className="fs-main-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--text-main)' }}>My Profile</h3>
+                  <h3 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--text-main)' }}>Personal Information</h3>
                   {!isEditingProfile && (
                     <button className="book-btn" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsEditingProfile(true)}>
                       <IconUser size={16} /> Edit Profile
@@ -1374,9 +1370,9 @@ const LandingPage = () => {
                   )}
                 </div>
 
-                <div className="fs-form-grid">
+                <div className="fs-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Full Name</label>
+                    <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Full Name</label>
                     {isEditingProfile ? (
                       <input
                         className="fs-input"
@@ -1387,22 +1383,23 @@ const LandingPage = () => {
                       <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{displayName}</div>
                     )}
                   </div>
+
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#64748b' }}>Email Address</label>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{userProfile?.email || 'No Email'}</div>
+                    <label className="fs-label">Email Address</label>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 500, padding: '0.9rem 0' }}>{userProfile?.email || 'No Email'}</div>
                   </div>
 
-                  {/* Editable Fields */}
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Age</label>
+                    <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Age</label>
                     {isEditingProfile ? (
                       <input className="fs-input" type="number" placeholder="Eg. 28" value={patientDetails.age} onChange={e => setPatientDetails({ ...patientDetails, age: e.target.value })} />
                     ) : (
                       <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.age || '--'}</div>
                     )}
                   </div>
+
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Gender</label>
+                    <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Gender</label>
                     {isEditingProfile ? (
                       <select className="fs-input" value={patientDetails.gender} onChange={e => setPatientDetails({ ...patientDetails, gender: e.target.value })}>
                         <option value="">Select Gender</option>
@@ -1414,8 +1411,9 @@ const LandingPage = () => {
                       <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.gender || '--'}</div>
                     )}
                   </div>
+
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Blood Group</label>
+                    <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Blood Group</label>
                     {isEditingProfile ? (
                       <select className="fs-input" value={patientDetails.bloodGroup} onChange={e => setPatientDetails({ ...patientDetails, bloodGroup: e.target.value })}>
                         <option>Select</option>
@@ -1432,16 +1430,18 @@ const LandingPage = () => {
                       <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.bloodGroup || '--'}</div>
                     )}
                   </div>
+
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Contact Number</label>
+                    <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Contact Number</label>
                     {isEditingProfile ? (
                       <input className="fs-input" type="tel" placeholder="+91 9876543210" value={patientDetails.contact} onChange={e => setPatientDetails({ ...patientDetails, contact: e.target.value })} />
                     ) : (
                       <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.contact || '--'}</div>
                     )}
                   </div>
+
                   <div style={{ gridColumn: '1/-1' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Home Address</label>
+                    <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Home Address</label>
                     {isEditingProfile ? (
                       <textarea className="fs-input" rows="3" placeholder="Enter full address for home collection..." value={patientDetails.savedLocation} onChange={e => setPatientDetails({ ...patientDetails, savedLocation: e.target.value })}></textarea>
                     ) : (
@@ -1453,10 +1453,25 @@ const LandingPage = () => {
                 {isEditingProfile && (
                   <div style={{ marginTop: '2rem', textAlign: 'right', borderTop: '1px solid #f1f5f9', paddingTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                     <button className="book-btn" style={{ borderColor: '#cbd5e1', color: '#64748b' }} onClick={() => setIsEditingProfile(false)}>Cancel</button>
-                    <button className="location-submit-btn" style={{ width: 'auto', padding: '0.8rem 2rem' }} onClick={() => {
-                      // Mock Save
-                      setIsEditingProfile(false);
-                      alert('Profile Updated Successfully!');
+                    <button className="location-submit-btn" style={{ width: 'auto', padding: '0.8rem 2rem' }} onClick={async () => {
+                      try {
+                        await updateUserProfile({
+                          displayName: patientDetails.displayName,
+                          age: patientDetails.age,
+                          gender: patientDetails.gender,
+                          bloodGroup: patientDetails.bloodGroup,
+                          contact: patientDetails.contact,
+                          savedLocation: patientDetails.savedLocation,
+                          profilePic: profilePic
+                        });
+                        alert('Profile Updated Successfully!');
+                        setIsEditingProfile(false);
+                        const data = await getUserProfile();
+                        setUserProfile(data);
+                      } catch (e) {
+                        alert('Failed to save profile.');
+                        console.error(e);
+                      }
                     }}>
                       Save Changes
                     </button>
@@ -1468,90 +1483,113 @@ const LandingPage = () => {
         </div>
       )}
 
-      {/* Full Screen Notifications Section */}
+      {/* Notifications Page */}
       {showNotifications && (
-        <div className="fullscreen-section">
-          {/* Header Removed */}
-          <div className="fullscreen-content">
-            {notifications.map(n => (
-              <div key={n.id} className="notification-item">
-                <div style={{ background: '#e0f2fe', padding: '0.8rem', borderRadius: '50%', height: 'fit-content' }}>
-                  <IconBell size={20} color="var(--primary)" />
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '1.1rem' }}>{n.text}</p>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{n.time}</span>
-                </div>
+        <div className="page-container">
+          <div className="page-content-wrapper">
+            <div className="page-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h2>Notifications</h2>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
 
-      {/* Full Screen Reminders Section */}
-      {showReminders && (
-        <div className="fullscreen-section">
-          {/* Header Removed */}
-          <div className="fullscreen-content">
-            {reminders.map(r => (
-              <div key={r.id} className="notification-item" style={{ borderLeftColor: '#f59e0b' }}>
-                <div style={{ background: '#fffbeb', padding: '0.8rem', borderRadius: '50%', height: 'fit-content' }}>
-                  <IconClock size={20} color="#d97706" />
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '1.1rem' }}>{r.text}</p>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{r.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Full Screen My Bookings Section */}
-      {showMyBookingsModal && (
-        <div className="fullscreen-section">
-          {/* Header Removed */}
-          <div className="fullscreen-content">
-            {bookings.length > 0 ? (
-              <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
-                {bookings.map(b => (
-                  <div key={b.id} className="booking-ticket">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                      <h3 style={{ margin: 0, color: 'var(--primary-dark)' }}>{b.labName}</h3>
-                      <span className="status-badge Completed" style={{ background: '#dcfce7', color: '#166534' }}>{b.status}</span>
+            <div className="form-card" style={{ maxWidth: '800px' }}>
+              {notifications.map(n => (
+                <div key={n.id} className="list-item-card" style={{ borderLeft: '4px solid var(--primary)' }}>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ background: '#eff6ff', padding: '0.75rem', borderRadius: '50%' }}>
+                      <IconBell size={20} color="var(--primary)" />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.95rem' }}>
+                    <div>
+                      <p style={{ margin: '0 0 0.25rem 0', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-main)' }}>{n.text}</p>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{n.time}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reminders Page */}
+      {showReminders && (
+        <div className="page-container">
+          <div className="page-content-wrapper">
+            <div className="page-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h2>Reminders</h2>
+              </div>
+            </div>
+
+            <div className="form-card" style={{ maxWidth: '800px' }}>
+              {reminders.map(r => (
+                <div key={r.id} className="list-item-card" style={{ borderLeft: '4px solid var(--accent)' }}>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ background: '#fffbeb', padding: '0.75rem', borderRadius: '50%' }}>
+                      <IconClock size={20} color="var(--accent)" />
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 0.25rem 0', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-main)' }}>{r.text}</p>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{r.time}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* My Bookings Page */}
+      {showMyBookingsModal && (
+        <div className="page-container">
+          <div className="page-content-wrapper">
+            <div className="page-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h2>My Bookings</h2>
+              </div>
+            </div>
+
+            <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+              {bookings.length > 0 ? (
+                bookings.map(b => (
+                  <div key={b.id} className="list-item-card" style={{ display: 'block', padding: '1.5rem', borderTop: '4px solid var(--secondary)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                      <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.2rem' }}>{b.labName}</h3>
+                      <span style={{ background: '#dcfce7', color: '#166534', fontWeight: 700, fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px' }}>{b.status}</span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem' }}>
                       <div>
-                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem' }}>Date</span>
-                        <strong>{b.date}</strong>
+                        <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Date</span>
+                        <strong style={{ color: 'var(--text-body)' }}>{b.date}</strong>
                       </div>
                       <div>
-                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem' }}>Time</span>
-                        <strong>{b.time}</strong>
+                        <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Time</span>
+                        <strong style={{ color: 'var(--text-body)' }}>{b.time}</strong>
                       </div>
                       <div style={{ gridColumn: '1/-1' }}>
-                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem' }}>Tests</span>
-                        <strong>{b.tests.join(', ')}</strong>
+                        <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Tests</span>
+                        <strong style={{ color: 'var(--text-body)' }}>{b.tests.join(', ')}</strong>
                       </div>
-                      <div style={{ gridColumn: '1/-1' }}>
-                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem' }}>Location</span>
+                      <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-body)' }}>
+                        <IconMapPin size={14} />
                         {b.location}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-                <IconCalendar size={48} style={{ opacity: 0.5, marginBottom: '1rem' }} />
-                <p>No confirmed bookings yet.</p>
-              </div>
-            )}
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8', gridColumn: '1/-1' }}>
+                  <IconCalendar size={48} style={{ opacity: 0.5, marginBottom: '1rem' }} />
+                  <p>No confirmed bookings yet.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )
-      }
+      )}
 
       {/* 2. Hero Section */}
       <section className="hero-section" style={{
@@ -1590,7 +1628,7 @@ const LandingPage = () => {
             </div>
 
             <div className="filter-chips">
-              {['All Labs', 'Nearby', 'Top Rated', 'Low Cost'].map(filter => (
+              {['All Labs', 'Nearby', 'Top Rated'].map(filter => (
                 <button
                   key={filter}
                   className={`chip ${activeFilter === filter ? 'active' : ''}`}
@@ -1703,7 +1741,7 @@ const LandingPage = () => {
           <div className="reviews-slider">
             {[1, 2, 3].map(i => (
               <div key={i} className="review-card">
-                <div style={{ display: 'flex', gap: '4px', color: '#f59e0b', marginBottom: '1rem' }}>
+                <div className="review-stars" style={{ display: 'flex', gap: '4px', marginBottom: '1rem' }}>
                   {[1, 2, 3, 4, 5].map(s => <IconStar key={s} fill="currentColor" size={16} />)}
                 </div>
                 <p className="review-text">"MediBot made it so easy to book my tests. The home collection was on time and the reports were delivered directly to my WhatsApp!"</p>
@@ -1767,52 +1805,56 @@ const LandingPage = () => {
           <p>© 2026 MediBot Healthcare Inc. All rights reserved.</p>
         </div>
       </footer>
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="modal-overlay" style={{ zIndex: 1000 }}>
-          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#1e293b' }}>Select Payment Method</h3>
+      {showPaymentModal && selectedLab && (
+        <div className="payment-modal-overlay">
+          <div className="payment-modal-content">
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+            <div className="payment-header">
+              <span className="payment-subtitle">Total Amount to Pay</span>
+              <h2 className="payment-total">₹{selectedLab.price + (selectedTests.length * 150)}</h2>
+            </div>
+
+            <div className="payment-divider"></div>
+
+            <h3 className="payment-section-title">Select Payment Method</h3>
+
+            <div className="payment-options">
               {['Pay at Lab', 'UPI', 'Credit/Debit Card'].map(method => (
                 <button
                   key={method}
                   onClick={() => setPaymentMethod(method)}
-                  style={{
-                    padding: '1rem',
-                    borderRadius: '12px',
-                    border: paymentMethod === method ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                    background: paymentMethod === method ? '#eff6ff' : 'white',
-                    color: paymentMethod === method ? '#2563eb' : '#64748b',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                    transition: 'all 0.2s'
-                  }}
+                  className={`payment-method-btn ${paymentMethod === method ? 'selected' : ''}`}
                 >
-                  {method === 'Pay at Lab' && <IconHome size={18} />}
-                  {method === 'UPI' && <span style={{ fontSize: '1.2rem' }}>📱</span>}
-                  {method === 'Credit/Debit Card' && <span style={{ fontSize: '1.2rem' }}>💳</span>}
-                  {method}
-                  {paymentMethod === method && <IconCheckCircle size={18} style={{ marginLeft: 'auto' }} />}
+                  <div className="payment-method-icon">
+                    {method === 'Pay at Lab' && <IconHome size={20} />}
+                    {method === 'UPI' && <span>📱</span>}
+                    {method === 'Credit/Debit Card' && <span>💳</span>}
+                  </div>
+                  <span style={{ flex: 1, textAlign: 'left' }}>{method}</span>
+                  <div className={`radio-circle ${paymentMethod === method ? 'checked' : ''}`}>
+                    {paymentMethod === method && <div className="radio-dot"></div>}
+                  </div>
                 </button>
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={finalizeBooking}
-                style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: 'none', background: '#2563eb', color: 'white', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}
-              >
-                Pay & Confirm
-              </button>
+            <button
+              className="payment-confirm-btn"
+              onClick={finalizeBooking}
+              style={{ width: '100%', padding: '1.2rem', fontSize: '1.1rem' }}
+            >
+              Pay ₹{selectedLab.price + (selectedTests.length * 150)} & Confirm
+            </button>
+
+            <button
+              className="payment-cancel-link"
+              onClick={() => setShowPaymentModal(false)}
+            >
+              Cancel Payment
+            </button>
+
+            <div className="payment-secure-badge">
+              <IconShield size={14} /> 100% Secure & Safe
             </div>
           </div>
         </div>
