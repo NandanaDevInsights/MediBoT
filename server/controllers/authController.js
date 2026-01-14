@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { OAuth2Client } from 'google-auth-library'
@@ -10,7 +11,7 @@ const buildOAuthClient = () => {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
   if (!googleClientId || !clientSecret) throw new Error('Google OAuth is not fully configured.')
   const redirectUri =
-    process.env.GOOGLE_REDIRECT_URI || `${process.env.BACKEND_BASE_URL || 'http://localhost:4000'}/api/auth/google/callback`
+    process.env.GOOGLE_REDIRECT_URI || `${process.env.BACKEND_BASE_URL || 'http://localhost:5000'}/api/auth/google/callback`
   return new OAuth2Client(googleClientId, clientSecret, redirectUri)
 }
 
@@ -154,7 +155,7 @@ export const googleOAuthCallback = async (req, res, next) => {
     const authToken = signAuthToken(user)
     setAuthCookie(res, authToken)
 
-    const redirectUrl = `${process.env.ALLOWED_ORIGIN || 'http://localhost:5173'}/login`
+    const redirectUrl = `${process.env.ALLOWED_ORIGIN || 'http://localhost:5173'}/welcome`
     res.redirect(redirectUrl)
   } catch (err) {
     next(err)
@@ -166,10 +167,75 @@ export const forgotPassword = async (req, res, next) => {
     const { email } = req.body
     if (!email) return res.status(400).json({ message: 'Email is required.' })
 
-    // TODO: Integrate email delivery here (SES/SendGrid/SMTP) to send a reset link with a signed token.
-    // Generate a one-time reset token, persist it with expiry in MySQL, and dispatch via email provider.
+    const [rows] = await pool.query('SELECT id, provider FROM users WHERE email = ?', [email])
+    if (!rows.length) return res.json({ message: 'If the account exists, a reset link will be emailed.' })
+
+    const user = rows[0]
+    if (user.provider !== 'password') return res.json({ message: 'If the account exists, a reset link will be emailed.' })
+
+    const token = crypto.randomBytes(32).toString('hex')
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours to prevent timezone issues expiration
+
+    await pool.query(
+      'INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
+      [user.id, tokenHash, expiresAt]
+    )
+
+    const origin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173'
+    const resetLink = `${origin}/reset?token=${token}`
+
+    // In production, use nodemailer. For dev/demo, log to console.
+    console.log(`[RESET LINK] For ${email}: ${resetLink}`)
 
     res.json({ message: 'If the account exists, a reset link will be emailed.' })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password, confirmPassword } = req.body
+    if (!token || !password) return res.status(400).json({ message: 'Token and new password are required.' })
+    if (password !== confirmPassword) return res.status(400).json({ message: 'Passwords do not match.' })
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+
+    // Find valid, unused token
+    // DEBUG MODE: First find purely by hash
+    const [tokens] = await pool.query(
+      'SELECT pr.id, pr.user_id, pr.used, pr.expires_at FROM password_resets pr WHERE pr.token_hash = ?',
+      [tokenHash]
+    )
+
+    console.log('[DEBUG-NODE] Tokens found for hash:', tokens)
+
+    const validToken = tokens.find(t => {
+      // Robust check for 'used' (handle number, boolean, or buffer)
+      let isUsed = t.used === 1 || t.used === true
+      if (Buffer.isBuffer(t.used)) isUsed = t.used[0] === 1
+
+      const now = new Date()
+      const expiresAt = new Date(t.expires_at)
+      const isExpired = expiresAt <= now
+
+      console.log(`[DEBUG-NODE] Checking token ${t.id}: UsedRaw=${t.used}, Used=${isUsed}, Expires=${expiresAt.toISOString()}, Now=${now.toISOString()}`)
+      return !isUsed && !isExpired
+    })
+
+    if (!validToken) return res.status(400).json({ message: 'Invalid or expired reset link.' })
+    const resetRecord = validToken
+
+    const hashed = await bcrypt.hash(password, 12)
+
+    // Update user password
+    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [hashed, resetRecord.user_id])
+
+    // Mark token as used
+    await pool.query('UPDATE password_resets SET used = 1 WHERE id = ?', [resetRecord.id])
+
+    res.json({ message: 'Password updated successfully.' })
   } catch (err) {
     next(err)
   }

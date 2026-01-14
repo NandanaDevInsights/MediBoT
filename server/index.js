@@ -1,3 +1,4 @@
+import fs from 'fs'
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
@@ -25,13 +26,20 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' })
 })
 
+
+
 app.use((err, _req, res, _next) => {
   const status = err.status || 500
   const message = err.message || 'Unexpected server error.'
+
+  const logMessage = `[${new Date().toISOString()}] Error: ${message}\nStack: ${err.stack}\n\n`
+  fs.appendFileSync('server_error.log', logMessage)
+  console.error(err)
+
   res.status(status).json({ message })
 })
 
-const port = process.env.PORT || 4000
+const port = process.env.PORT || 5000
 app.listen(port, () => {
   // eslint-disable-next-line no-console
   console.log(`Auth server running on port ${port}`)

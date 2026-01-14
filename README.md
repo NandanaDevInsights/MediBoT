@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-MediBot – Smart Clinical Laboratory Automation System
 
 MediBot is a smart, automated laboratory management system designed to simplify the diagnostic testing process for patients and laboratories. Using WhatsApp, OCR technology, and intelligent scheduling, MediBot allows patients to submit prescriptions digitally, book lab tests seamlessly, and receive reports online. The system improves efficiency, reduces manual workload, and ensures a smooth, user-friendly experience for both patients and lab staff.
 

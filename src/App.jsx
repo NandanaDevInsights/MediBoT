@@ -4,21 +4,16 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import LandingPage from './pages/LandingPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
-import heroImage from './assets/farm.png'
+import heroImage from './assets/Bg.jpg'
+import logoImage from './assets/Logo.png'
+import LabAdminDashboard from './pages/LabAdminDashboard'
+import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import AdminAuthLayout from './pages/admin/AdminAuthLayout'
+import AdminLoginPage from './pages/admin/AdminLoginPage'
+import AdminSignupPage from './pages/admin/AdminSignupPage'
+import AdminForgotPasswordPage from './pages/admin/AdminForgotPasswordPage'
+import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
-
-const LeafMark = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M15.5 2.5C10.5 2.5 7 5 7 9C7 12.5 9 14 10.5 15.5C12 17 13 18.5 13 18.5C13 18.5 14.5 16.5 16 14.5C17.5 12.5 18.5 10 18.5 7.5C18.5 5.5 17.5 2.5 15.5 2.5Z"
-      stroke="#7AAE24"
-      strokeWidth="1.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path d="M11 9.5C11 9.5 12 7.5 15 6" stroke="#7AAE24" strokeWidth="1.2" strokeLinecap="round" />
-  </svg>
-)
 
 const AuthLayout = ({ children, heading, subheading }) => {
   const location = useLocation()
@@ -27,24 +22,24 @@ const AuthLayout = ({ children, heading, subheading }) => {
   return (
     <div className="auth-shell">
       <div className="hero-side">
-        <img src={heroImage} alt="Lush greenhouse" />
+        <img src={heroImage} alt="MediBot Healthcare" />
         <div className="hero-copy">
-          <p className="hero-title">Cultivating Intelligence</p>
-          <p className="hero-sub">Access your AI-powered greenhouse environment monitoring system.</p>
+          <p className="hero-title">Healthcare Intelligence</p>
+          <p className="hero-sub">Access your AI-powered healthcare management system.</p>
         </div>
       </div>
 
       <div className="form-side">
         <div className="admin-chip">
-          <Link to="/login?role=ADMIN">Admin panel</Link>
+          <Link to="/admin/login">Admin panel</Link>
         </div>
-        <div className="brand-row">
-          <LeafMark />
-          <span className="brand-name">EcoGrow</span>
+        <div className="brand-row" style={{ flexDirection: 'column', marginBottom: '16px' }}>
+          <img src={logoImage} alt="MediBot Logo" style={{ width: 56, height: 'auto', marginBottom: '12px' }} />
+          <h2 style={{ fontSize: '26px', fontWeight: '800', color: '#0F172A', margin: 0 }}>MediBot</h2>
         </div>
         <div className="intro">
-          <h2>{heading || (isLogin ? 'Welcome back' : 'Join EcoGrow')}</h2>
-          <p className="sub-text">Please enter your details to continue.</p>
+          {/* Main heading now integrated into brand-row */}
+          <p className="sub-text">{subheading || 'Please enter your details to continue.'}</p>
         </div>
         {children}
       </div>
@@ -58,15 +53,15 @@ function App() {
       <Route
         path="/"
         element={
-          <AuthLayout heading="Welcome back">
-            <LoginPage />
-          </AuthLayout>
+          <ProtectedRoute allowedRoles={['USER']}>
+            <LandingPage />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/login"
         element={
-          <AuthLayout heading="Welcome back">
+          <AuthLayout heading="Welcome back" subheading="Please enter your details to access your account.">
             <LoginPage />
           </AuthLayout>
         }
@@ -74,7 +69,7 @@ function App() {
       <Route
         path="/signup"
         element={
-          <AuthLayout heading="Create account">
+          <AuthLayout heading="Create Account" subheading="Sign up with your work email to access MediBot.">
             <SignupPage />
           </AuthLayout>
         }
@@ -82,20 +77,70 @@ function App() {
       <Route
         path="/forgot"
         element={
-          <AuthLayout heading="Reset access">
+          <AuthLayout heading="Forgot Password" subheading="Enter your account email to receive reset instructions.">
             <ForgotPasswordPage />
           </AuthLayout>
         }
       />
-      <Route path="/welcome" element={<LandingPage />} />
+      <Route
+        path="/welcome"
+        element={
+          <ProtectedRoute allowedRoles={['USER']}>
+            <LandingPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/reset"
         element={
-          <AuthLayout heading="Create a new password">
+          <AuthLayout heading="Set a new password" subheading="Enter a strong password for your MediBot account.">
             <ResetPasswordPage />
           </AuthLayout>
         }
       />
+      <Route
+        path="/lab-admin-dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['LAB_ADMIN']}>
+            <LabAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin-dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin Auth Routes */}
+      <Route
+        path="/admin/login"
+        element={
+          <AdminAuthLayout heading="Admin Access">
+            <AdminLoginPage />
+          </AdminAuthLayout>
+        }
+      />
+      <Route
+        path="/admin/signup"
+        element={
+          <AdminAuthLayout heading="Request Access">
+            <AdminSignupPage />
+          </AdminAuthLayout>
+        }
+      />
+      <Route
+        path="/admin/forgot"
+        element={
+          <AdminAuthLayout heading="Reset Password">
+            <AdminForgotPasswordPage />
+          </AdminAuthLayout>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

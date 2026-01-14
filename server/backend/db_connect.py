@@ -16,7 +16,7 @@ load_dotenv()
 def get_pool():
 	"""Create or return a shared MySQL connection pool."""
 	return pooling.MySQLConnectionPool(
-		pool_name="ecogrow_flask_pool",
+		pool_name="medibot_flask_pool",
 		pool_size=int(os.environ.get("DB_POOL_SIZE", 5)),
 		host=os.environ.get("DB_HOST", "127.0.0.1"),
 		port=int(os.environ.get("DB_PORT", 3306)),
@@ -29,10 +29,12 @@ def get_pool():
 	)
 
 
-pool = get_pool()
-
+pool = None
 
 def get_connection():
 	"""Get a pooled connection for request-scoped use."""
+	global pool
+	if pool is None:
+		pool = get_pool()
 	return pool.get_connection()
 

@@ -10,13 +10,14 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --green-strong: #7aae24;
-  --green-soft: #9bbf3c;
-  --green-pale: #e9f4de;
+  --green-strong: #007bff;
+  --green-soft: #4da3ff;
+  --green-pale: #e6f0ff;
   --neutral-ink: #131313;
   --neutral-muted: #6d6d6d;
   --surface: #ffffff;
-  --border: #dfe8d4;
+  --border: #dce9f5;
+  --bg-color: #f0f7ff;
 }
 
 * {

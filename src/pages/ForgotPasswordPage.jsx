@@ -30,10 +30,7 @@ const ForgotPasswordPage = () => {
 
   return (
     <form className="auth-form" onSubmit={onSubmit} noValidate>
-      <div className="form-heading">
-        <h1>Forgot Password</h1>
-        <p className="sub-text">Enter your account email to receive reset instructions.</p>
-      </div>
+
 
       <div className="form-field">
         <label htmlFor="email">Email Address</label>
@@ -41,7 +38,7 @@ const ForgotPasswordPage = () => {
           id="email"
           name="email"
           type="email"
-          placeholder="farmer@ecogrow.com"
+          placeholder="labuser@medibot.com"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value)
@@ -66,9 +63,7 @@ const ForgotPasswordPage = () => {
         Remembered your password? <Link to="/login">Back to login</Link>
       </p>
 
-      <div className="email-placeholder">
-        {/* TODO: Integrate transactional email provider for reset links. Place SMTP/API invocation here. */}
-      </div>
+
     </form>
   )
 }
