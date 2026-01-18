@@ -23,7 +23,7 @@ const InputField = ({ label, name, type = 'text', placeholder, value, onChange, 
 
 const SignupPage = () => {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', role: 'USER' })
+  const [form, setForm] = useState({ username: '', email: '', password: '', confirmPassword: '', role: 'USER' })
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -58,6 +58,16 @@ const SignupPage = () => {
   return (
     <form className="auth-form" onSubmit={onSubmit} noValidate>
 
+
+      <InputField
+        label="Username"
+        name="username"
+        type="text"
+        placeholder="Enter username"
+        value={form.username}
+        onChange={onInput}
+        error={errors.username}
+      />
 
       <InputField
         label="Email Address"

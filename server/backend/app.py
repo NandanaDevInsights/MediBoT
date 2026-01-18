@@ -12,6 +12,7 @@ Security highlights:
 import os
 import hashlib
 import secrets
+import string
 from datetime import datetime, timedelta
 import bcrypt
 import smtplib
@@ -26,6 +27,8 @@ from google.auth.transport import requests as google_requests
 from db_connect import get_connection
 from validators import validate_email, validate_password
 import threading
+import google.generativeai as genai
+from twilio.rest import Client
 
 load_dotenv()
 
@@ -71,14 +74,60 @@ def email_exists(conn, email: str) -> bool:
   return exists
 
 
-def insert_user(conn, email: str, password_hash: str):
+def is_whitelisted_lab_admin(conn, email: str) -> bool:
+    """Check if email is in lab_admin_users whitelist table."""
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM lab_admin_users WHERE email=%s LIMIT 1", (email,))
+    exists = cur.fetchone() is not None
+    cur.close()
+    return exists
+
+
+
+def username_exists(conn, username: str) -> bool:
   cur = conn.cursor()
+  cur.execute("SELECT 1 FROM users WHERE username=%s", (username,))
+  exists = cur.fetchone() is not None
+  cur.close()
+  return exists
+
+def insert_user(conn, email: str, username: str, password_hash: str):
+  cur = conn.cursor()
+  # Role is always USER for this table now
   cur.execute(
-    "INSERT INTO users (email, password_hash, provider, role) VALUES (%s, %s, %s, %s)",
-    (email, password_hash, "password", "USER"),
+    "INSERT INTO users (email, username, password_hash, provider, role) VALUES (%s, %s, %s, %s, %s)",
+    (email, username, password_hash, "password", "USER"),
   )
   conn.commit()
   cur.close()
+
+def insert_lab_admin(conn, email: str, password_hash: str, lab_name: str, admin_name: str, phone: str):
+  cur = conn.cursor()
+  
+  # Generate username from email
+  username = email.split('@')[0]
+  # Ensure unique username
+  cur.execute("SELECT 1 FROM users WHERE username=%s", (username,))
+  if cur.fetchone():
+      username = f"{username}_{secrets.token_hex(2)}"
+
+  # Insert into users table
+  cur.execute(
+    "INSERT INTO users (email, username, password_hash, provider, role) VALUES (%s, %s, %s, %s, %s)",
+    (email, username, password_hash, "password", "LAB_ADMIN"),
+  )
+  user_id = cur.lastrowid
+
+  # Insert profile details
+  cur.execute(
+      "INSERT INTO lab_admin_profile (user_id, lab_name, admin_name, contact_number) VALUES (%s, %s, %s, %s)",
+      (user_id, lab_name, admin_name, phone)
+  )
+
+  conn.commit()
+  cur.close()
+  return user_id
+
 
 
 def upsert_google_user(conn, email: str):
@@ -97,6 +146,7 @@ def upsert_google_user(conn, email: str):
   cur.execute("SELECT id, role FROM users WHERE email=%s", (email,))
   existing = cur.fetchone()
   
+
   if existing:
     existing_id, existing_role = existing
     
@@ -111,9 +161,15 @@ def upsert_google_user(conn, email: str):
     cur.close()
     return (existing_id, existing_role)
 
+  # Check if username exists, if so append random
+  username = email.split('@')[0]
+  cur.execute("SELECT 1 FROM users WHERE username=%s", (username,))
+  if cur.fetchone():
+      username = f"{username}_{secrets.token_hex(2)}"
+
   cur.execute(
-    "INSERT INTO users (email, provider, role) VALUES (%s, %s, %s)",
-    (email, "google", target_role),
+    "INSERT INTO users (email, username, provider, role) VALUES (%s, %s, %s, %s)",
+    (email, username, "google", target_role),
   )
   conn.commit()
   new_id = cur.lastrowid
@@ -121,16 +177,45 @@ def upsert_google_user(conn, email: str):
   return (new_id, target_role)
 
 
-def get_user_with_password(conn, email: str):
-  """Fetch user id, hash, provider, and role for login."""
+
+def get_user_with_password(conn, identifier: str):
+  """Fetch user by username or email."""
   cur = conn.cursor()
+  # Check if input looks like email
+  if '@' in identifier:
+      query = "SELECT id, email, password_hash, provider, role, pin_code, username FROM users WHERE email=%s LIMIT 1"
+  else:
+      query = "SELECT id, email, password_hash, provider, role, pin_code, username FROM users WHERE username=%s LIMIT 1"
+
+  cur.execute(query, (identifier,))
+  row = cur.fetchone()
+  cur.close()
+  return row
+
+def get_lab_admin_with_password(conn, identifier: str):
+  """Fetch admin from users table by email or username."""
+  cur = conn.cursor()
+  
+  target_email = identifier
+  
+  # If identifier is not an email, try to find email from users table first
+  if '@' not in identifier:
+      cur.execute("SELECT email FROM users WHERE username=%s LIMIT 1", (identifier,))
+      user_row = cur.fetchone()
+      if user_row:
+          target_email = user_row[0]
+      else:
+          cur.close()
+          return None
+
   cur.execute(
-    "SELECT id, email, password_hash, provider, role, pin_code FROM users WHERE email=%s LIMIT 1",
-    (email,),
+    "SELECT id, email, password_hash, provider, role, pin_code FROM users WHERE email=%s AND role IN ('LAB_ADMIN', 'SUPER_ADMIN') LIMIT 1",
+    (target_email,),
   )
   row = cur.fetchone()
   cur.close()
   return row
+
 
 
 def get_user_id(conn, email: str):
@@ -211,6 +296,45 @@ def send_otp_email(to_email: str, otp_code: str):
       pass
 
 
+def send_whatsapp_message(to_number: str, message_body: str):
+    """Send WhatsApp message using Twilio."""
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    from_number = os.environ.get("TWILIO_PHONE_NUMBER") # e.g. "whatsapp:+14155238886"
+
+    if not account_sid or not auth_token or not from_number:
+        print("[DEBUG] Twilio credentials missing. WhatsApp skipped.")
+        return
+
+    if not to_number:
+        return
+
+    # Ensure to_number has 'whatsapp:' prefix
+    # Assuming to_number comes as "+919999999999" or "9999999999"
+    # We need strictly E.164 format with "whatsapp:" prefix
+    
+    # Simple sanitization
+    clean_number = to_number.strip().replace(" ", "").replace("-", "")
+    if not clean_number.startswith("+"):
+        # Default to India if no country code? Or just warn?
+        # Let's assume user provides country code or we default to +91 for this context if missing
+        if len(clean_number) == 10:
+             clean_number = "+91" + clean_number
+    
+    formatted_to = f"whatsapp:{clean_number}"
+
+    try:
+        client = Client(account_sid, auth_token)
+        message = client.messages.create(
+            from_=from_number,
+            body=message_body,
+            to=formatted_to
+        )
+        print(f"[DEBUG] WhatsApp sent to {formatted_to}: {message.sid}")
+    except Exception as e:
+        print(f"[ERROR] Failed to send WhatsApp: {e}")
+
+
 def build_google_flow(state: str | None = None):
   client_id = os.environ.get("GOOGLE_CLIENT_ID")
   client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
@@ -234,14 +358,18 @@ def build_google_flow(state: str | None = None):
   return flow
 
 
+
 @app.post("/api/signup")
 def signup_user():
   data = request.get_json(silent=True) or {}
+  username = (data.get("username") or "").strip()
   email = (data.get("email") or "").strip()
   password = data.get("password") or ""
   confirm = data.get("confirmPassword") or ""
 
-  # Authoritative backend validation
+  # Validation
+  if not username:
+      return jsonify({"message": "Username is required."}), 400
   if not validate_email(email):
     return jsonify({"message": "Invalid email format."}), 400
   if not validate_password(password):
@@ -253,46 +381,69 @@ def signup_user():
   try:
     if email_exists(conn, email):
       return jsonify({"message": "Email already registered."}), 409
+    if username_exists(conn, username):
+      return jsonify({"message": "Username already taken."}), 409
 
-    pw_hash = hash_password(password)  # Hashing happens here (backend only)
-    insert_user(conn, email, pw_hash)   # DB write happens here
+    pw_hash = hash_password(password)
+    insert_user(conn, email, username, pw_hash)
 
     return jsonify({"message": "Signup successful."}), 201
-  except Exception:
-    # Do not leak internal errors or SQL details
+  except Exception as e:
+    print(f"Signup Error: {e}")
     return jsonify({"message": "Unable to process signup right now."}), 500
   finally:
     conn.close()
 
 
+
+
 @app.post("/api/login")
 def login_user():
   data = request.get_json(silent=True) or {}
-  email = (data.get("email") or "").strip()
+  username = (data.get("username") or "").strip()
+  # Fallback for email field usage
+  if not username and "email" in data:
+      username = data["email"].strip()
+
   password = data.get("password") or ""
 
-  if not validate_email(email):
-    return jsonify({"message": "Invalid email format."}), 400
+  if not username:
+    return jsonify({"message": "Username is required."}), 400
   if not password:
     return jsonify({"message": "Password is required."}), 400
 
   conn = get_connection()
   try:
-    user_row = get_user_with_password(conn, email)
+    user_row = get_user_with_password(conn, username)
     if not user_row:
       return jsonify({"message": "Invalid credentials."}), 401
 
-    user_id, _, password_hash, provider, role, pin_code = user_row
+    # Unpack row (updated for username column)
+    # SELECT id, email, password_hash, provider, role, pin_code, username FROM users
+    user_id, email, password_hash, provider, role, pin_code, db_username = user_row
+    
     if provider != "password":
       return jsonify({"message": "Use Google sign-in for this account."}), 400
 
-    if not password_hash:
+    if not password_hash or not bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8")):
       return jsonify({"message": "Invalid credentials."}), 401
 
-    if not bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8")):
-      return jsonify({"message": "Invalid credentials."}), 401
+    # Ensure role is USER (since Admins login elsewhere, but if they try here, we should probably allow or redirect?)
+    # For separation, we only log in Patients here.
+    if role in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        # Direct login for admins (skip OTP)
+        # Using ID from users table as the primary source of truth
+        session["user_id"] = user_id
+        session["email"] = email
+        session["role"] = role
+        
+        return jsonify({
+            "message": "Login successful",
+            "role": role,
+            "email": email,
+            "user_id": user_id
+        }), 200
 
-    # OTP Logic
     # Generate 6-digit OTP
     otp_code = ''.join(secrets.choice(string.digits) for i in range(6))
     if email == 'testadmin@lab.com' or email == 'admin_fix_20260110@lab.com' or email == 'admin@example.com':
@@ -300,7 +451,6 @@ def login_user():
     
     expires_at = datetime.utcnow() + timedelta(minutes=10)
 
-    # Store OTP (Upsert)
     try:
         cur = conn.cursor()
         cur.execute(
@@ -310,24 +460,107 @@ def login_user():
         conn.commit()
         cur.close()
 
-        # Send Email
-        # Send in thread to not block response
         threading.Thread(target=send_otp_email, args=(email, otp_code)).start()
 
         return jsonify({
-            "message": "OTP sent to your email.", 
-            "require_otp": True,
-            "email": email
+            "message": "OTP sent to email.",
+            "email": email,
+            "username": db_username,
+            "require_otp": True
         }), 200
 
     except Exception as e:
-        print(f"[ERROR] OTP generation failed: {e}")
-        return jsonify({"message": "Login failed due to server error."}), 500
+        print(f"[ERROR] OTP Save/Send failed: {e}")
+        return jsonify({"message": "Failed to send OTP."}), 500
 
-  except Exception:
-    return jsonify({"message": "Unable to process login right now."}), 500
+  except Exception as e:
+      print(f"[ERROR] Login failed: {e}")
+      return jsonify({"message": "Login failed."}), 500
   finally:
     conn.close()
+
+@app.post("/api/admin/signup")
+def signup_lab_admin():
+  data = request.get_json(silent=True) or {}
+  email = (data.get("email") or "").strip()
+  password = data.get("password") or ""
+  lab_name = (data.get("labName") or "").strip()
+  admin_name = (data.get("adminName") or "").strip()
+  phone = (data.get("phone") or "").strip()
+  
+  if not validate_email(email):
+      return jsonify({"message": "Invalid email."}), 400
+  if not validate_password(password):
+      return jsonify({"message": "Password invalid."}), 400
+      
+  conn = get_connection()
+  try:
+      # Check if exists in users
+      if email_exists(conn, email):
+           return jsonify({"message": "Email already registered."}), 409
+      
+      pw_hash = hash_password(password)
+      # Generate a random PIN for the admin
+      pin_code = ''.join(secrets.choice(string.ascii_uppercase) for i in range(4))
+      
+      user_id = insert_lab_admin(conn, email, pw_hash, lab_name, admin_name, phone)
+      
+      # Update generated PIN
+      cur = conn.cursor()
+      cur.execute("UPDATE users SET pin_code=%s WHERE id=%s", (pin_code, user_id))
+      conn.commit()
+      cur.close()
+      
+      return jsonify({
+          "message": "Admin Request Submitted.",
+          "pin_code": pin_code
+      }), 201
+  except Exception as e:
+      print(f"Admin Signup Error: {e}")
+      return jsonify({"message": "Failed."}), 500
+  finally:
+      conn.close()
+
+@app.post("/api/admin/login")
+def login_lab_admin():
+  data = request.get_json(silent=True) or {}
+  email = (data.get("email") or "").strip()
+  password = data.get("password") or ""
+  
+  if not email or not password:
+      return jsonify({"message": "Email and Password required."}), 400
+      
+  conn = get_connection()
+  try:
+      admin = get_lab_admin_with_password(conn, email)
+      if not admin:
+           return jsonify({"message": "Invalid credentials."}), 401
+           
+      # Unpack: id, email, password_hash, provider, role, pin_code
+      uid, email, phash, provider, role, pin_code = admin
+      
+      if not phash or not bcrypt.checkpw(password.encode("utf-8"), phash.encode("utf-8")):
+          return jsonify({"message": "Invalid credentials."}), 401
+          
+      # Success - Set Session
+      session["user_id"] = uid
+      session["email"] = email
+      session["role"] = role
+      session["is_admin_table"] = True 
+      
+      return jsonify({
+             "message": "Login successful",
+             "role": role,
+             "email": email,
+             "admin_name": email.split('@')[0]
+      }), 200
+  except Exception as e:
+      print(f"Admin Login Error: {e}")
+      return jsonify({"message": "Login failed."}), 500
+  finally:
+      conn.close()
+
+
 
 
 @app.post("/api/verify-otp")
@@ -363,7 +596,7 @@ def verify_otp():
         if not user_row:
              return jsonify({"message": "User not found."}), 404
 
-        user_id, _, password_hash, provider, role, pin_code = user_row
+        user_id, _, password_hash, provider, role, pin_code, _ = user_row
 
         # Set Session
         session["user_id"] = user_id
@@ -394,50 +627,182 @@ def verify_otp():
         conn.close()
 
 
+@app.get("/api/profile")
+def get_profile():
+    """Get logged-in user's profile information"""
+    user_id = session.get("user_id")
+    email = session.get("email")
+    role = session.get("role")
+    
+    if not user_id:
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Get user basic info
+        cur.execute("SELECT email, role FROM users WHERE id=%s", (user_id,))
+        user = cur.fetchone()
+        
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+        
+        user_email, user_role = user
+        
+        # For LAB_ADMIN, get lab profile data
+        lab_name = None
+        address = None
+        contact = None
+        admin_name = None
+
+        
+        if user_role in ["LAB_ADMIN", "SUPER_ADMIN"]:
+            cur.execute("""
+                SELECT lab_name, address, contact_number, admin_name 
+                FROM lab_admin_profile 
+                WHERE user_id=%s
+            """, (user_id,))
+            profile = cur.fetchone()
+
+            
+            if profile:
+                lab_name, address, contact, admin_name = profile
+            
+            # If no admin_name in profile, use email username
+            if not admin_name:
+                admin_name = user_email.split('@')[0].title()
+        
+        cur.close()
+        
+        return jsonify({
+            "user_id": user_id,
+            "email": user_email,
+            "role": user_role,
+            "admin_name": admin_name or user_email.split('@')[0].title(),
+            "lab_name": lab_name,
+            "address": address,
+            "contact": contact
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Profile fetch failed: {e}")
+        return jsonify({"message": "Failed to fetch profile"}), 500
+    finally:
+        conn.close()
+
+
+@app.post("/api/admin/profile")
+def save_admin_profile():
+    """Save/update lab admin profile"""
+    user_id = session.get("user_id")
+    role = session.get("role")
+    
+    if not user_id:
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    if role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    data = request.get_json() or {}
+    lab_name = data.get("lab_name", "").strip()
+    address = data.get("address", "").strip()
+    contact = data.get("contact", "").strip()
+    admin_name = data.get("admin_name", "").strip()
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Check if profile exists
+        cur.execute("SELECT id FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+        existing = cur.fetchone()
+        
+        if existing:
+            # Update existing profile
+            cur.execute("""
+                UPDATE lab_admin_profile 
+                SET lab_name=%s, address=%s, contact_number=%s, admin_name=%s
+                WHERE user_id=%s
+            """, (lab_name, address, contact, admin_name, user_id))
+        else:
+            # Create new profile
+            cur.execute("""
+                INSERT INTO lab_admin_profile (user_id, lab_name, address, contact_number, admin_name)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (user_id, lab_name, address, contact, admin_name))
+        
+        conn.commit()
+        cur.close()
+        
+        return jsonify({"message": "Profile saved successfully"}), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Profile save failed: {e}")
+        return jsonify({"message": "Failed to save profile"}), 500
+    finally:
+        conn.close()
+
+
 @app.post("/api/forgot-password")
 def forgot_password():
   data = request.get_json(silent=True) or {}
-  email = (data.get("email") or "").strip()
+  identifier = (data.get("email") or "").strip() # Frontend sends "email" field even if it's username
 
-  if not validate_email(email):
-    return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
-
+  target_email = identifier
   conn = None
+  
   try:
-    conn = get_connection()
-    user_row = get_user_id(conn, email)
-    if not user_row:
-      # Avoid revealing account existence
-      return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
+      conn = get_connection()
+      
+      # If not email, resolve username
+      if '@' not in identifier:
+          cur = conn.cursor()
+          cur.execute("SELECT email FROM users WHERE username=%s LIMIT 1", (identifier,))
+          row = cur.fetchone()
+          cur.close()
+          if row:
+              target_email = row[0]
+          else:
+              # Username not found, just return success to hide existence
+              return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
 
-    user_id, provider, role = user_row
-    if provider != "password":
-      return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
+      if not validate_email(target_email):
+        return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
 
-    token = create_reset_request(conn, user_id)
-    frontend_origin = os.environ.get("CORS_ORIGIN", "http://localhost:5173").split(",")[0].strip()
-    
-    reset_link = f"{frontend_origin}/reset?token={token}"
-    if "ADMIN" in role:
-        reset_link += "&type=admin"
+      user_row = get_user_id(conn, target_email)
+      if not user_row:
+          # Avoid revealing account existence
+          return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
 
-    # Send email in background to avoid blocking/timeouts
-    def send_async():
-        try:
-            send_reset_email(email, reset_link)
-        except Exception as e:
-            print(f"[WARNING] Background SMTP failed: {e}")
+      user_id, provider, role = user_row
+      if provider != "password":
+          return jsonify({"message": "If the account exists, a reset link will be emailed."}), 200
 
-    try:
-        threading.Thread(target=send_async).start()
-    except Exception as e:
-        print(f"[ERROR] Failed to start email thread: {e}")
+      token = create_reset_request(conn, user_id)
+      frontend_origin = os.environ.get("CORS_ORIGIN", "http://localhost:5173").split(",")[0].strip()
+      
+      reset_link = f"{frontend_origin}/reset?token={token}"
+      if "ADMIN" in role:
+          reset_link += "&type=admin"
 
-    response_body = {"message": "If the account exists, a reset link will be emailed."}
-    if RESET_LINK_DEBUG:
-      response_body["reset_link"] = reset_link
+      # Send email in background to avoid blocking/timeouts
+      def send_async():
+          try:
+              send_reset_email(target_email, reset_link)
+          except Exception as e:
+              print(f"[WARNING] Background SMTP failed: {e}")
 
-    return jsonify(response_body), 200
+      try:
+          threading.Thread(target=send_async).start()
+      except Exception as e:
+          print(f"[ERROR] Failed to start email thread: {e}")
+
+      response_body = {"message": "If the account exists, a reset link will be emailed."}
+      if RESET_LINK_DEBUG:
+          response_body["reset_link"] = reset_link
+
+      return jsonify(response_body), 200
   except Exception as e:
     print(f"[ERROR] Forgot password flow failed: {e}")
     return jsonify({"message": "Unable to process reset right now."}), 500
@@ -554,6 +919,17 @@ def google_callback():
   conn = get_connection()
   try:
     user_id, role = upsert_google_user(conn, email)
+    
+    # If Admin, switch user_id to the one in lab_admin_users table to match password flow
+    if role in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM lab_admin_users WHERE email=%s", (email,))
+        admin_row = cur.fetchone()
+        cur.close()
+        if admin_row:
+             user_id = admin_row[0]
+             session["is_admin_table"] = True
+    
     session["user_id"] = user_id
     session["email"] = email
     session["role"] = role
@@ -684,7 +1060,32 @@ def ensure_otp_table():
     finally:
         conn.close()
 
-ensure_otp_table()
+    ensure_otp_table()
+
+def ensure_laboratories_table():
+    """Create laboratories table if not exists."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS laboratories (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                address TEXT,
+                location VARCHAR(255),
+                latitude DECIMAL(10, 8),
+                longitude DECIMAL(11, 8),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_lab (name, latitude, longitude)
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Laboratories table check failed: {e}")
+    finally:
+        conn.close()
+
+ensure_laboratories_table()
 
 def ensure_appointments_table():
     """Create or update appointments table."""
@@ -703,7 +1104,7 @@ def ensure_appointments_table():
                 appointment_date DATE,
                 appointment_time VARCHAR(20),
                 tests TEXT,
-                status VARCHAR(50) DEFAULT 'Confirmed',
+                status VARCHAR(50) DEFAULT 'Pending',
                 location VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -730,6 +1131,21 @@ def ensure_appointments_table():
              print("[INFO] Adding missing column 'patient_name' to appointments...")
              cur.execute("ALTER TABLE appointments ADD COLUMN patient_name VARCHAR(255)")
 
+        # Extended Schema Updates
+        new_cols = {
+            "contact_number": "VARCHAR(50)",
+            "technician": "VARCHAR(255)",
+            "sample_type": "VARCHAR(100)",
+            "payment_status": "VARCHAR(50) DEFAULT 'Pending'",
+            "report_status": "VARCHAR(50) DEFAULT 'Not Uploaded'",
+            "source": "VARCHAR(50) DEFAULT 'Website'"
+        }
+        for col, dtype in new_cols.items():
+            cur.execute(f"SHOW COLUMNS FROM appointments LIKE '{col}'")
+            if not cur.fetchone():
+                print(f"[INFO] Adding missing column '{col}' to appointments...")
+                cur.execute(f"ALTER TABLE appointments ADD COLUMN {col} {dtype}")
+
         conn.commit()
     except Exception as e:
         print(f"[WARNING] Appointments table check failed: {e}")
@@ -737,6 +1153,38 @@ def ensure_appointments_table():
         conn.close()
 
 ensure_appointments_table()
+
+def ensure_reports_table():
+    """Create reports table if not exists."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # reports table that supports both user_id (int) or guest_id (string)
+        # We use patient_id as VARCHAR to store either.
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS reports (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                patient_id VARCHAR(255),
+                test_name VARCHAR(255),
+                file_path TEXT,
+                status VARCHAR(50) DEFAULT 'Uploaded',
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Migration: Ensure patient_id is VARCHAR
+        try:
+             cur.execute("ALTER TABLE reports MODIFY COLUMN patient_id VARCHAR(255)")
+        except Exception:
+             pass 
+             
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Reports table check failed: {e}")
+    finally:
+        conn.close()
+
+ensure_reports_table()
 
 @app.post("/api/admin/appointments")
 def create_appointment():
@@ -785,7 +1233,7 @@ def create_appointment():
         query = """
             INSERT INTO appointments 
             (user_id, patient_name, lab_name, doctor_name, appointment_date, appointment_time, tests, location, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Confirmed')
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Pending')
         """
         
         cur.execute(query, (user_id, patient_name, lab_name, doctor, date_str, time_str, tests_str, location))
@@ -804,14 +1252,6 @@ def create_appointment():
         return jsonify({"message": "Failed to create booking."}), 500
     finally:
         conn.close()
-
-
-def is_whitelisted_lab_admin(conn, email: str) -> bool:
-    cur = conn.cursor()
-    cur.execute("SELECT 1 FROM lab_admin_users WHERE email=%s LIMIT 1", (email,))
-    exists = cur.fetchone() is not None
-    cur.close()
-    return exists
 
 
 @app.get("/api/reports")
@@ -862,14 +1302,14 @@ def get_user_profile():
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id, email, role, provider, created_at, pin_code FROM users WHERE id=%s", (user_id,))
+        cur.execute("SELECT id, email, role, provider, created_at, pin_code, username FROM users WHERE id=%s", (user_id,))
         row = cur.fetchone()
         cur.close()
 
         if not row:
             return jsonify({"message": "User not found"}), 404
 
-        uid, email, role, provider, created_at, pin_code = row
+        uid, email, role, provider, created_at, pin_code, username = row
         
         # Self-heal null PIN for Lab Admins
         if role == 'LAB_ADMIN' and not pin_code:
@@ -908,6 +1348,7 @@ def get_user_profile():
         return jsonify({
             "id": uid,
             "email": email,
+            "username": username,
             "role": role,
             "provider": provider,
             "joined_at": joined_at_iso,
@@ -929,32 +1370,30 @@ def update_user_profile():
     user_id = session["user_id"]
     data = request.get_json()
     
-    # Extract fields
-    profile_pic = data.get("profilePic") # Base64 or URL
-
-    # Sanitize inputs (convert empty strings to None)
-    for key in ["age", "displayName", "gender", "bloodGroup", "contact", "savedLocation", "profilePic"]:
-        if key == "age":
-             # Ensure age is Int or None
-             val = data.get(key)
-             age = int(val) if val and str(val).strip() else None
-        elif key == "displayName":
-             display_name = data.get(key) or None
-        elif key == "gender":
-             gender = data.get(key) or None
-        elif key == "bloodGroup":
-             blood_group = data.get(key) or None
-        elif key == "contact":
-             contact = data.get(key) or None
-        elif key == "savedLocation":
-             address = data.get(key) or None
-        elif key == "profilePic":
-             profile_pic = data.get(key) or None
+    # Initialize all variables
+    username = data.get("username") or None
+    display_name = data.get("displayName") or None
+    profile_pic = data.get("profilePic") or None
+    gender = data.get("gender") or None
+    blood_group = data.get("bloodGroup") or None
+    contact = data.get("contact") or None
+    address = data.get("savedLocation") or None
+    
+    # Handle age separately (needs to be int or None)
+    age_val = data.get("age")
+    age = int(age_val) if age_val and str(age_val).strip() else None
 
     conn = get_connection()
     try:
         cur = conn.cursor()
-        # UPSERT logic for MySQL
+        
+        # Update username in users table if provided
+        if username:
+            print(f"[DEBUG] Updating username to: {username} for user_id: {user_id}")
+            cur.execute("UPDATE users SET username=%s WHERE id=%s", (username, user_id))
+        
+        # UPSERT logic for MySQL (user_profiles)
+        print(f"[DEBUG] Upserting profile for user_id: {user_id}")
         cur.execute("""
             INSERT INTO user_profiles (user_id, display_name, age, gender, blood_group, contact_number, address, profile_pic_url)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -970,10 +1409,65 @@ def update_user_profile():
         
         conn.commit()
         cur.close()
+        print(f"[SUCCESS] Profile updated successfully for user_id: {user_id}")
         return jsonify({"message": "Profile updated successfully"}), 200
     except Exception as e:
         print(f"[ERROR] Update profile failed: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"message": "Update failed"}), 500
+    finally:
+        conn.close()
+
+
+@app.get("/api/admin/appointments")
+def get_admin_appointments():
+    """Fetch all appointments for Lab Admins / Super Admins."""
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    # Optional: Verify role
+    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized access."}), 403
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # Fetch all appointments with user contact info
+        cur.execute("""
+            SELECT 
+                a.id, a.user_id, a.patient_name, a.lab_name, a.doctor_name, 
+                a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
+                up.contact_number
+            FROM appointments a
+            LEFT JOIN user_profiles up ON a.user_id = up.user_id
+            ORDER BY a.created_at DESC
+        """)
+        rows = cur.fetchall()
+        cur.close()
+
+        appointments = []
+        for row in rows:
+            aid, uid, p_name, l_name, d_name, tests, a_date, a_time, status, loc, contact = row
+            appointments.append({
+                "id": aid,
+                "user_id": uid,
+                "patient": p_name,
+                "labName": l_name,
+                "doctor": d_name,
+                "technician": d_name, # Map doctor to technician for UI
+                "test": tests,
+                "date": str(a_date),
+                "time": str(a_time),
+                "status": status,
+                "location": loc,
+                "contact": contact or "N/A"
+            })
+
+        return jsonify(appointments), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch admin appointments failed: {e}")
+        return jsonify({"message": "Server error"}), 500
     finally:
         conn.close()
 
@@ -1389,24 +1883,115 @@ def manage_appointments():
             cur = conn.cursor()
             user_id = session.get("user_id") # Nullable if guest
             
-            # Insert
+            # --- Auto-Create Laboratory (Lazy Creation) ---
+            lab_name = data.get("labName")
+            lab_address = data.get("labAddress")
+            lab_lat = data.get("lat")
+            lab_lon = data.get("lon")
+            # Default location text if not provided
+            lab_loc = data.get("location", "Unknown Location") 
+            
+            print(f"[DEBUG] Booking for Lab: {lab_name} at ({lab_lat}, {lab_lon})")
+
+            # Try to find or insert the lab
+            lab_id = None
+            if lab_name:
+                # 1. Try to find by name AND coordinates (Precise)
+                # To avoid float comparison issues, we can try searching by name first
+                cur.execute("SELECT id, latitude, longitude FROM laboratories WHERE name=%s", (lab_name,))
+                candidates = cur.fetchall()
+                
+                # Check for coordinate match in python (with epsilon)
+                for cand in candidates:
+                    c_id, c_lat, c_lon = cand
+                    # If both have lat/lon, check distance or equality
+                    if lab_lat and lab_lon and c_lat and c_lon:
+                         # 0.0001 degrees is ~11 meters. Enough for same building.
+                         if abs(float(c_lat) - float(lab_lat)) < 0.0001 and abs(float(c_lon) - float(lab_lon)) < 0.0001:
+                             lab_id = c_id
+                             print(f"[DEBUG] Found existing Lab ID: {lab_id}")
+                             break
+                
+                if not lab_id:
+                    print(f"[DEBUG] Lab not found. Inserting new: {lab_name}")
+                    # Insert new laboratory
+                    try:
+                        cur.execute("""
+                            INSERT INTO laboratories (name, address, location, latitude, longitude)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, (lab_name, lab_address, lab_loc, lab_lat, lab_lon))
+                        conn.commit()
+                        lab_id = cur.lastrowid
+                        print(f"[DEBUG] Created new Lab ID: {lab_id}")
+                    except Exception as ex:
+                        print(f"[WARNING] Lab insertion failed (race condition?): {ex}")
+                        # Retry fetch strict
+                        cur.execute("SELECT id FROM laboratories WHERE name=%s LIMIT 1", (lab_name,))
+                        row = cur.fetchone()
+                        if row: lab_id = row[0]
+
+            # Insert Appointment with lab_id
             cur.execute("""
-                INSERT INTO appointments (user_id, patient_name, doctor_name, test_type, appointment_date, appointment_time, location, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, 'Pending')
+                INSERT INTO appointments (user_id, lab_id, lab_name, patient_name, doctor_name, test_type, appointment_date, appointment_time, location, status, contact_number, source)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s)
             """, (
-                user_id, 
-                data.get("patientName") or session.get("email", "Guest"), # Use provided name or fallback
+                user_id,
+                lab_id, # Can be None if completely failed, but lab_name is stored
+                lab_name,
+                data.get("patientName") or session.get("email", "Guest"), 
                 data.get("doctor", "Self"), 
                 ", ".join(data.get("tests", [])),
                 data.get("date"),
                 data.get("time"),
-                data.get("location")
+                data.get("location"),
+                data.get("contact"),
+                "Website" if session.get("user_id") else "Guest Website" 
             ))
+            
+            # Also insert into bookings table if this is Royal Clinical Laboratory
+            if lab_name == "Royal Clinical Laboratory":
+                print(f"[DEBUG] Inserting booking for Royal Clinical Laboratory into bookings table with lab_id=1")
+                
+                # Get user email for the booking
+                user_email = session.get("email", "guest@example.com")
+                patient_name_value = data.get("patientName") or user_email.split('@')[0]
+                
+                # Prepare test information
+                tests_list = data.get("tests", [])
+                test_category = tests_list[0] if tests_list else "General"
+                selected_test = ", ".join(tests_list) if tests_list else "General Checkup"
+                
+                # Get contact information
+                phone_number = data.get("contact") or ""
+                
+                try:
+                    cur.execute("""
+                        INSERT INTO bookings 
+                        (patient_name, patient_id, email, phone_number, lab_id, 
+                         test_category, selected_test, preferred_date, preferred_time, booking_status)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        patient_name_value,
+                        str(user_id) if user_id else "GUEST",  # patient_id as string
+                        user_email,
+                        phone_number,
+                        1,  # Fixed lab_id = 1 for Royal Clinical Laboratory
+                        test_category,
+                        selected_test,
+                        data.get("date"),
+                        data.get("time"),
+                        "Pending"
+                    ))
+                    print(f"[DEBUG] Successfully inserted into bookings table")
+                except Exception as booking_err:
+                    print(f"[ERROR] Failed to insert into bookings table: {booking_err}")
+                    # Don't fail the whole request if bookings insert fails
+            
             conn.commit()
             return jsonify({"message": "Appointment Booked"}), 201
         except Exception as e:
             print(f"Booking Error: {e}")
-            return jsonify({"message": "Booking Failed"}), 500
+            return jsonify({"message": f"Booking Failed: {e}"}), 500
         finally:
             conn.close()
 
@@ -1418,7 +2003,52 @@ def manage_appointments():
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id, patient_name, test_type, appointment_date, appointment_time, status FROM appointments ORDER BY created_at DESC")
+        
+        query = """
+            SELECT id, patient_name, test_type, appointment_date, appointment_time, status, lab_name, location, 
+                   contact_number, technician, sample_type, payment_status, report_status, source 
+            FROM appointments 
+        """
+        params = []
+        
+        # Filter for Lab Admin
+        if current_role == "LAB_ADMIN":
+            user_id = session.get("user_id")
+            # Find Admin's Lab Name/ID
+            cur.execute("SELECT lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+            admin_lab_row = cur.fetchone()
+            
+            if admin_lab_row and admin_lab_row[0]:
+                admin_lab_name = admin_lab_row[0]
+                
+                # Check if this lab exists in laboratories table to get ID?
+                # Actually, simpler to filter appointments by lab_id OR lab_name
+                # Let's get the ID if possible for robustness
+                cur.execute("SELECT id FROM laboratories WHERE name=%s", (admin_lab_name,))
+                lab_id_row = cur.fetchone()
+                
+                where_clauses = []
+                if lab_id_row:
+                    where_clauses.append("lab_id=%s")
+                    params.append(lab_id_row[0])
+                
+                # Also match by name string to catch older bookings or loose matches
+                where_clauses.append("lab_name=%s")
+                params.append(admin_lab_name)
+                
+                # Combine: (lab_id = X OR lab_name = Y)
+                if where_clauses:
+                     query += " WHERE (" + " OR ".join(where_clauses) + ")"
+                else:
+                     # Admin has name but no match found? Show nothing?
+                     query += " WHERE 1=0" 
+            else:
+                # Admin has no assigned lab?
+                query += " WHERE 1=0"
+
+        query += " ORDER BY created_at DESC"
+        
+        cur.execute(query, tuple(params))
         rows = cur.fetchall()
         
         appointments = []
@@ -1426,14 +2056,67 @@ def manage_appointments():
             appointments.append({
                 "id": f"A-{r[0]}",
                 "patient": r[1],
+                "labName": r[6],
                 "test": r[2],
                 "date": str(r[3]),
                 "time": str(r[4]),
-                "status": r[5]
+                "status": r[5],
+                "location": r[7] if len(r) > 7 else "",
+                "contact": r[8] if len(r) > 8 else "N/A",
+                "technician": r[9] if len(r) > 9 else "Unassigned",
+                "sampleType": r[10] if len(r) > 10 else "N/A",
+                "paymentStatus": r[11] if len(r) > 11 else "Pending",
+                "reportStatus": r[12] if len(r) > 12 else "Not Uploaded",
+                "source": r[13] if len(r) > 13 else "Website"
             })
         return jsonify(appointments), 200
     except Exception as e:
         return jsonify({"message": "Error fetching appointments"}), 500
+    finally:
+        conn.close()
+
+@app.put("/api/admin/appointments/<int:id>/details")
+def update_appointment_details(id):
+    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    data = request.get_json()
+    
+    # Allow updating standard fields
+    fields = {
+        "technician": data.get("technician"),
+        "sample_type": data.get("sampleType"),
+        "payment_status": data.get("paymentStatus"),
+        "report_status": data.get("reportStatus"),
+        "appointment_date": data.get("date"),
+        "appointment_time": data.get("time"),
+        "status": data.get("status")
+    }
+    
+    # Construct update query dynamically
+    updates = []
+    values = []
+    
+    for k, v in fields.items():
+        if v is not None:
+             updates.append(f"{k}=%s")
+             values.append(v)
+             
+    if not updates:
+        return jsonify({"message": "No changes provided"}), 400
+        
+    values.append(id)
+    query = f"UPDATE appointments SET {', '.join(updates)} WHERE id=%s"
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(query, tuple(values))
+        conn.commit()
+        return jsonify({"message": "Details Updated"}), 200
+    except Exception as e:
+        print(f"Update Error: {e}")
+        return jsonify({"message": "Update Failed"}), 500
     finally:
         conn.close()
 
@@ -1449,10 +2132,65 @@ def update_appointment_status(id):
     try:
         cur = conn.cursor()
         cur.execute("UPDATE appointments SET status=%s WHERE id=%s", (new_status, id))
+        
+        # Create Notification if Confirmed
+        # Create Notification if Confirmed
+        if new_status == "Confirmed":
+            cur.execute("""
+                SELECT 
+                    a.user_id, a.test_type, a.appointment_date, a.lab_name, a.contact_number,
+                    up.contact_number
+                FROM appointments a
+                LEFT JOIN user_profiles up ON a.user_id = up.user_id
+                WHERE a.id=%s
+            """, (id,))
+            appt = cur.fetchone()
+            
+            if appt and appt[0]:
+                uid, tests, date, lab_name, apt_contact, prof_contact = appt
+                
+                # Format test names properly
+                if tests:
+                    # Handle multiple tests separated by comma
+                    test_list = [t.strip() for t in tests.split(',') if t.strip()]
+                    if len(test_list) > 1:
+                        test_display = f"{len(test_list)} tests ({', '.join(test_list[:2])}{'...' if len(test_list) > 2 else ''})"
+                    elif len(test_list) == 1:
+                        test_display = test_list[0]
+                    else:
+                        test_display = "your test"
+                else:
+                    test_display = "your test"
+                
+                # Format date nicely
+                try:
+                    from datetime import datetime
+                    if isinstance(date, str):
+                        date_obj = datetime.strptime(str(date), '%Y-%m-%d')
+                    else:
+                        date_obj = date
+                    date_display = date_obj.strftime('%B %d, %Y')
+                except:
+                    date_display = str(date)
+                
+                # Create notification message
+                lab_info = f" at {lab_name}" if lab_name else ""
+                msg = f"Your appointment for {test_display} on {date_display}{lab_info} has been confirmed!"
+                
+                # Db Notification
+                cur.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (uid, msg))
+                
+                # WhatsApp Notification
+                final_contact = apt_contact if apt_contact else prof_contact
+                if final_contact:
+                    # Run in thread to not block response
+                    threading.Thread(target=send_whatsapp_message, args=(final_contact, msg)).start()
+
         conn.commit()
         return jsonify({"message": "Updated"}), 200
     finally:
         conn.close()
+
 
 @app.get("/api/admin/test-orders")
 def get_test_orders():
@@ -1491,6 +2229,73 @@ def get_test_orders():
     finally:
         conn.close()
 
+
+def ensure_lab_staff_extended_schema():
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # Create plain if not exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS lab_staff (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                role VARCHAR(100),
+                status VARCHAR(50) DEFAULT 'Available',
+                image_url LONGTEXT,
+                qualification VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Add new columns
+        new_cols = {
+            "name": "VARCHAR(255)",
+            "role": "VARCHAR(100)",
+            "status": "VARCHAR(50) DEFAULT 'Available'",
+            "image_url": "LONGTEXT",
+            "qualification": "VARCHAR(255)",
+            "staff_id": "VARCHAR(50) UNIQUE",
+            "gender": "VARCHAR(20)",
+            "dob": "VARCHAR(20)",
+            "phone": "VARCHAR(20)",
+            "email": "VARCHAR(100)",
+            "address": "TEXT",
+            "department": "VARCHAR(100)",
+            "employment_type": "VARCHAR(50)",
+            "joining_date": "VARCHAR(20)",
+            "experience": "VARCHAR(10)",
+            "shift": "VARCHAR(50)",
+            "working_days": "VARCHAR(255)",
+            "working_hours": "VARCHAR(100)",
+            "home_collection": "BOOLEAN DEFAULT 0",
+            "specializations": "TEXT",
+            "documents": "TEXT",
+            "emergency_name": "VARCHAR(100)",
+            "emergency_relation": "VARCHAR(50)",
+            "emergency_phone": "VARCHAR(20)",
+            "internal_notes": "TEXT"
+        }
+        
+        for col, dtype in new_cols.items():
+            cur.execute(f"SHOW COLUMNS FROM lab_staff LIKE '{col}'")
+            if not cur.fetchone():
+                print(f"[INFO] Adding missing column '{col}' to lab_staff...")
+                cur.execute(f"ALTER TABLE lab_staff ADD COLUMN {col} {dtype}")
+        
+        # Upgrade image_url to LONGTEXT if it's not already
+        try:
+             cur.execute("ALTER TABLE lab_staff MODIFY COLUMN image_url LONGTEXT")
+        except Exception:
+             pass
+
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Lab Staff schema update failed: {e}")
+    finally:
+        conn.close()
+
+ensure_lab_staff_extended_schema()
+
 @app.post("/api/admin/staff")
 def add_staff():
     if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
@@ -1500,14 +2305,75 @@ def add_staff():
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO lab_staff (name, role, status, image_url, qualification)
-            VALUES (%s, %s, 'Available', %s, %s)
-        """, (data['name'], data['role'], data.get('image'), data.get('qualification')))
-        conn.commit()
-        return jsonify({"message": "Staff Added"}), 201
+        
+        # Helper to join list to string
+        def list_to_str(val):
+            if isinstance(val, list):
+                # If list of objects (files), try to extract names, else join
+                if val and isinstance(val[0], dict) and 'name' in val[0]:
+                     return ", ".join([f['name'] for f in val])
+                return ", ".join(map(str, val))
+            return str(val) if val else ""
+
+        query = """
+            INSERT INTO lab_staff (
+                name, role, status, image_url, qualification,
+                staff_id, gender, dob, phone, email, address,
+                department, employment_type, joining_date, experience,
+                shift, working_days, working_hours, home_collection,
+                specializations, documents, emergency_name, emergency_relation, emergency_phone, internal_notes
+            )
+            VALUES (%s, %s, 'Available', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        
+        # Helper to handle empty dates
+        def clean_date(d):
+            return d if d and d.strip() else None
+
+        params = (
+            data.get('name'), 
+            data.get('role'), 
+            data.get('photoPreview'), # Mapping photoPreview to image_url for now
+            data.get('qualification', ''),
+            
+            data.get('staffId'),
+            data.get('gender'),
+            clean_date(data.get('dob')),
+            data.get('phone'),
+            data.get('email'),
+            data.get('address'),
+            
+            data.get('department'),
+            data.get('type'), # employment_type
+            clean_date(data.get('joiningDate')),
+            data.get('experience'),
+            
+            data.get('shift'),
+            list_to_str(data.get('workingDays')),
+            data.get('workingHours'),
+            1 if data.get('homeCollection') else 0,
+            
+            list_to_str(data.get('specializations')),
+            list_to_str(data.get('documents')), # Handle documents
+            data.get('emergencyName'),
+            data.get('emergencyRelation'),
+            data.get('emergencyPhone'),
+            data.get('internalNotes')
+        )
+        
+        try:
+            cur.execute(query, params)
+            conn.commit()
+            return jsonify({"message": "Staff Added Successfully"}), 201
+        except Exception as sql_err:
+            # Log exact error
+            with open("staff_error.log", "w") as f:
+                f.write(f"SQL Error: {sql_err}\nParams: {params}")
+            print(f"[ERROR] Add staff SQL failed: {sql_err}")
+            return jsonify({"message": f"Database Error: {str(sql_err)}"}), 500
     except Exception as e:
-        return jsonify({"message": f"Error: {e}"}), 500
+        print(f"[ERROR] Add staff failed: {e}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
     finally:
         conn.close()
 
@@ -1516,9 +2382,68 @@ def get_staff():
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id, name, role, status FROM lab_staff")
-        staff = [{"id": r[0], "name": r[1], "role": r[2], "status": r[3]} for r in cur.fetchall()]
+        # Select all relevant columns
+        cur.execute("""
+            SELECT 
+                id, name, role, status, image_url, staff_id, department, phone, email, shift, working_days
+            FROM lab_staff
+        """)
+        rows = cur.fetchall()
+        
+        staff = []
+        for r in rows:
+            # Safe handling for workingDays which might be non-serializable
+            w_days = r[10]
+            if isinstance(w_days, set):
+                w_days = list(w_days)
+            elif isinstance(w_days, bytes):
+                w_days = w_days.decode('utf-8')
+                
+            staff.append({
+                "id": r[0],
+                "name": r[1],
+                "role": r[2],
+                "status": r[3],
+                "image": r[4],
+                "staffId": r[5],
+                "department": r[6],
+                "phone": r[7],
+                "email": r[8],
+                "shift": r[9],
+                "workingDays": w_days
+            })
+            
         return jsonify(staff), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch Staff Failed: {e}")
+        return jsonify({"message": f"Server Error: {str(e)}"}), 500
+    finally:
+        conn.close()
+
+@app.put("/api/admin/staff/<int:staff_id>/status")
+def update_staff_status(staff_id):
+    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    new_status = data.get("status")
+    
+    if not new_status:
+        return jsonify({"message": "Status is required"}), 400
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE lab_staff SET status = %s WHERE id = %s", (new_status, staff_id))
+        conn.commit()
+        
+        if cur.rowcount == 0:
+             return jsonify({"message": "Staff member not found"}), 404
+             
+        return jsonify({"message": "Status updated successfully"}), 200
+    except Exception as e:
+        print(f"[ERROR] Update status failed: {e}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
     finally:
         conn.close()
         
@@ -1605,7 +2530,7 @@ def get_all_reports():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at 
+            SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at, u.username
             FROM reports r
             LEFT JOIN users u ON r.patient_id = u.id
             ORDER BY r.uploaded_at DESC
@@ -1613,17 +2538,64 @@ def get_all_reports():
         rows = cur.fetchall()
         reports = []
         for row in rows:
+            # Check if username exists (index 6) or fallback to email
+            p_name = row[6] if len(row) > 6 and row[6] else (row[1] or "Unknown")
             reports.append({
                 "id": f"R-{row[0]}",
-                "patient": row[1] or "Unknown", # email as name
+                "patient": p_name, 
                 "test": row[2],
                 "file_path": row[3],
                 "status": row[4],
                 "date": row[5].strftime("%Y-%m-%d") if row[5] else ""
             })
+            
+        # Add Appointments as Pending Reports
+        cur.execute("""
+            SELECT id, patient_name, test_type, appointment_date, status, user_id 
+            FROM appointments 
+            ORDER BY appointment_date DESC LIMIT 50
+        """)
+        appt_rows = cur.fetchall()
+        for a in appt_rows:
+            # Only add if not seemingly in reports matching ID? (Hard to match exactly without link)
+            # For now just list them as "Pending Upload"
+            reports.append({
+                "id": f"A-{a[0]}",
+                "patient": a[1] or "Guest",
+                "test": a[2],
+                "file_path": "",
+                "status": "Pending Upload",
+                "date": str(a[3]),
+                "type": "appointment_entry" 
+            })
+
         return jsonify(reports), 200
     finally:
         conn.close()
+
+@app.get("/api/user/notifications")
+def get_notifications():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify([]), 200 # Return empty if not logged in
+        
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id, message, is_read, created_at FROM notifications WHERE user_id=%s ORDER BY created_at DESC", (user_id,))
+        rows = cur.fetchall()
+        notes = []
+        for r in rows:
+            notes.append({
+                "id": r[0],
+                "message": r[1],
+                "isRead": bool(r[2]),
+                "date": r[3].strftime("%Y-%m-%d %H:%M")
+            })
+        return jsonify(notes), 200
+    finally:
+        conn.close()
+
 
 @app.post("/api/admin/upload-report")
 def upload_report():
@@ -1675,6 +2647,93 @@ def upload_report():
     return jsonify({"message": "Upload failed"}), 500
 
 
+@app.get("/api/admin/bookings")
+def get_bookings():
+    """Get all bookings from the bookings table (primarily for Royal Clinical Laboratory)"""
+    current_role = session.get("role")
+    if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT booking_id, patient_name, patient_id, age, gender, email, 
+                   phone_number, lab_id, test_category, selected_test, 
+                   preferred_date, preferred_time, booking_status, created_at
+            FROM bookings
+            ORDER BY created_at DESC
+        """)
+        rows = cur.fetchall()
+        
+        bookings = []
+        for r in rows:
+            bookings.append({
+                "bookingId": r[0],
+                "patientName": r[1],
+                "patientId": r[2],
+                "age": r[3],
+                "gender": r[4],
+                "email": r[5],
+                "phoneNumber": r[6],
+                "labId": r[7],
+                "testCategory": r[8],
+                "selectedTest": r[9],
+                "preferredDate": str(r[10]) if r[10] else None,
+                "preferredTime": str(r[11]) if r[11] else None,
+                "bookingStatus": r[12],
+                "createdAt": r[13].isoformat() if r[13] else None
+            })
+        
+        return jsonify(bookings), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch bookings failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
+
+
+
+
+@app.post("/api/chat")
+def chat_bot():
+    data = request.get_json(silent=True) or {}
+    message = data.get("message")
+    history = data.get("history", [])
+
+    if not message:
+        return jsonify({"response": "Please say something."}), 400
+    
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+         return jsonify({"response": "I am unable to connect to the AI service (Missing API Key). But I can help you navigate the app!"}), 200
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-pro")
+        
+        # Convert frontend history to Gemini format
+        chat_history = []
+        for msg in history:
+            role = "user" if msg.get("type") == "user" else "model"
+            text = msg.get("text", "")
+            # Skip current message if it's already in history (unlikely if strictly past)
+            # Gemini expects strictly alternating parts, filtering empty
+            if text:
+                chat_history.append({"role": role, "parts": [text]})
+        
+        # Ensure history is not valid if it ends with user?
+        # start_chat history must be previous turns. 
+        # If the user just sent a message, that is the `message` arg to send_message, not in history yet.
+        
+        chat = model.start_chat(history=chat_history)
+        response = chat.send_message(message)
+        
+        return jsonify({"response": response.text}), 200
+    except Exception as e:
+        print(f"Chat Error: {e}")
+        return jsonify({"response": "Sorry, I am having trouble answering that right now."}), 500
 
 
 if __name__ == '__main__':

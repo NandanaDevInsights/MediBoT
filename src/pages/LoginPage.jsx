@@ -50,7 +50,7 @@ const StatusText = ({ status }) => {
 const LoginPage = () => {
   const [search] = useSearchParams()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '', role: 'USER' })
+  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'USER' })
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -73,11 +73,22 @@ const LoginPage = () => {
   }
 
   const processLoginSuccess = (result) => {
-    // Set Auth Flag
-    sessionStorage.setItem('auth_role', 'USER');
-    // Always redirect to Landing Page for generic logins, even if user has admin role.
-    // Admin dashboard access should be done via /admin/login
-    navigate('/', { replace: true })
+    // Set Auth Flag based on role
+    const role = result.role || 'USER';
+    sessionStorage.setItem('auth_role', role);
+
+    // Redirect based on role
+    if (role === 'LAB_ADMIN') {
+      navigate('/lab-admin-dashboard', { replace: true })
+    } else if (role === 'SUPER_ADMIN') {
+      navigate('/super-admin-dashboard', { replace: true })
+    } else {
+      // Redirect regular users to the landing page only AFTER successful verification
+      sessionStorage.setItem('auth_role', 'USER');
+      setTimeout(() => {
+        navigate('/welcome', { replace: true })
+      }, 100);
+    }
   }
 
   const onSubmit = async (e) => {
@@ -102,11 +113,16 @@ const LoginPage = () => {
       return
     }
 
-    const validation = validateUserInput({ email: form.email, password: form.password })
-    if (Object.keys(validation).length) {
-      setErrors(validation)
+    // Simple validation for username/email
+    if (!form.username) {
+      setErrors({ username: 'Please enter your username or email.' })
       return
     }
+    if (!form.password) {
+      setErrors({ password: 'Please enter your password.' })
+      return
+    }
+
 
     setSubmitting(true)
     try {
@@ -114,6 +130,8 @@ const LoginPage = () => {
 
       if (result.require_otp) {
         setShowOtp(true)
+        // Store the email returned by backend so verifyOtp can use it
+        setForm(prev => ({ ...prev, email: result.email }))
         setStatus({ type: 'success', message: result.message })
       } else {
         setStatus({ type: 'success', message: result?.message || 'Login successful.' })
@@ -133,25 +151,21 @@ const LoginPage = () => {
       {!showOtp ? (
         <>
           <InputField
-            label="Email Address"
-            name="email"
-            type="email"
-            placeholder="labuser@medibot.com"
-            value={form.email}
+            label="Username or Email"
+            name="username"
+            type="text"
+            placeholder="Enter your username or email"
+            value={form.username || ''}
             onChange={onInput}
-            error={errors.email}
+            error={errors.username}
             icon={
-              <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M1 3.22222L8.25 7.83333L15.5 3.22222M2.8 1H14.2C15.1941 1 16 1.79218 16 2.76471V11.2353C16 12.2078 15.1941 13 14.2 13H2.8C1.80589 13 1 12.2078 1 11.2353V2.76471C1 1.79218 1.80589 1 2.8 1Z"
-                  stroke="#4da3ff"
-                  strokeWidth="1.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#4da3ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="7" r="4" stroke="#4da3ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             }
           />
+
 
           <div className="field-with-link">
             <InputField

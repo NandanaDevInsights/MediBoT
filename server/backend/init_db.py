@@ -77,12 +77,27 @@ def init_db():
                 except Exception as e:
                     print(f"Could not add column {col}: {e}")
 
+        # Create laboratories table (Auto-created from OSM data)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS laboratories (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            address TEXT,
+            location VARCHAR(255),
+            latitude DECIMAL(10, 8),
+            longitude DECIMAL(11, 8),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_lab (name, latitude, longitude) 
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+
         print("Tables validated/created successfully.")
         # Create appointments table
         cur.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT,
+            lab_id INT, 
             patient_name VARCHAR(255),
             doctor_name VARCHAR(255),
             test_type VARCHAR(255),
@@ -91,9 +106,20 @@ def init_db():
             status VARCHAR(50) DEFAULT 'Pending',
             location VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+            FOREIGN KEY (lab_id) REFERENCES laboratories(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
+
+        # Add lab_id to appointments if missing
+        try:
+            cur.execute("SHOW COLUMNS FROM appointments LIKE 'lab_id'")
+            if not cur.fetchone():
+                print("Adding lab_id to appointments...")
+                cur.execute("ALTER TABLE appointments ADD COLUMN lab_id INT")
+                cur.execute("ALTER TABLE appointments ADD CONSTRAINT fk_appt_lab FOREIGN KEY (lab_id) REFERENCES laboratories(id) ON DELETE SET NULL")
+        except Exception as e:
+            print(f"Could not add lab_id: {e}")
 
         # Create lab_staff table
         cur.execute("""

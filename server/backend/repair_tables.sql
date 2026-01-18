@@ -1,0 +1,10 @@
+USE mysql;
+REPAIR TABLE user;
+REPAIR TABLE db;
+REPAIR TABLE tables_priv;
+REPAIR TABLE columns_priv;
+REPAIR TABLE procs_priv;
+REPAIR TABLE proxies_priv;
+REPAIR TABLE roles_mapping;
+REPAIR TABLE global_priv;
+FLUSH PRIVILEGES;

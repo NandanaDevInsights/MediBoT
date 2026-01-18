@@ -20,6 +20,17 @@ export const handleLogin = async (payload) => {
   return parseResponse(res)
 }
 
+export const handleAdminLogin = async (payload) => {
+  const res = await fetch(`${API_BASE}/admin/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  })
+  return parseResponse(res)
+}
+
+
 export const verifyOtp = async (payload) => {
   const res = await fetch(`${API_BASE}/verify-otp`, {
     method: 'POST',
@@ -111,3 +122,13 @@ export const getUserReports = async () => {
   })
   return parseResponse(res)
 }
+
+export const getUserNotifications = async () => {
+  const res = await fetch(`${API_BASE}/user/notifications`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  })
+  return parseResponse(res)
+}
+
