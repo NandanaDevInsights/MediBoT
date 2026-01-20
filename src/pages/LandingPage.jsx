@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import heroBg from '../assets/LabHero.jpg';
+import labHeroSplit from '../assets/LabHeroSplit.png';
 import logoImage from '../assets/Logo.png';
+import microscopeBg from '../assets/MicroscopeBg.png';
 import './LandingPage.css';
 import { getUserProfile, getUserReports, updateUserProfile, getUserNotifications } from '../services/api';
 
@@ -167,6 +169,102 @@ const IconTrash = ({ size = 20 }) => (
 
 
 
+const IconGrid = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7"></rect>
+    <rect x="14" y="3" width="7" height="7"></rect>
+    <rect x="14" y="14" width="7" height="7"></rect>
+    <rect x="3" y="14" width="7" height="7"></rect>
+  </svg>
+);
+
+const IconGooglePay = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05" />
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+  </svg>
+);
+
+const IconPhonePeShape = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="1" y="1" width="22" height="22" rx="6" fill="#5F259F" />
+    <path d="M15 8H8.5V6.5H15V8ZM13 8V12.5C13 14 12 15 10.5 15H9V17H7V13H8.5C9 13 9.5 12.8 9.5 12V8H11V17H13V8Z" fill="white" />
+  </svg>
+);
+
+const IconPaytm = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 32 24" fill="none">
+    <rect x="0" y="2" width="32" height="20" rx="4" fill="#fff" />
+    <path d="M4 12h2.5v1.2h1.2V11H10v5h-1.2v-1.2h-1.5V16H6v-3.2H4v-0.8zm8 0h1.2v4h-1.2v-4zm2.5 0h1.4l1 2.5 1-2.5h1.4v4h-1.2v-2.8l-1 2.8h-0.4l-1-2.8V16h-1.2v-4z" fill="#002970" />
+    <path d="M2.5 8C2.5 8 10 7 16 7C22 7 29.5 8 29.5 8" stroke="#00BAF2" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const IconBHIM = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 3L3.5 18H20.5L12 3Z" fill="#F47B20" />
+    <path d="M12 21L5.5 10H18.5L12 21Z" fill="#189934" style={{ mixBlendMode: 'multiply' }} opacity="0.8" />
+    <circle cx="12" cy="13" r="1.5" fill="white" />
+  </svg>
+);
+
+const IconSBI = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" fill="#280071" />
+    <circle cx="12" cy="12" r="4" fill="white" />
+    <rect x="11" y="12" width="2" height="10" fill="white" />
+  </svg>
+);
+
+const IconHDFC = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="2" width="20" height="20" rx="2" fill="#004C8F" />
+    <rect x="2" y="9" width="20" height="6" fill="#ED232A" />
+    <rect x="9" y="2" width="6" height="20" fill="#ED232A" />
+    <rect x="9" y="9" width="6" height="6" fill="#ffffff" />
+  </svg>
+);
+
+const IconICICI = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="4" width="20" height="16" rx="2" fill="#F37E13" />
+    <path d="M2 14h20v6H2z" fill="#053c6d" />
+    <circle cx="12" cy="10" r="3" fill="white" />
+    <path d="M10 10h4v6h-4z" fill="white" />
+  </svg>
+);
+
+const IconAxis = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L2 22h20L12 2zm0 4l6 14H6l6-14z" fill="#97144D" />
+    <path d="M14 14l-2-4-2 4h4z" fill="#97144D" />
+  </svg>
+);
+
+const IconKotak = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="2" width="20" height="20" rx="2" fill="#ED1C24" />
+    <path d="M7 6v12h3V6H7zm9 0h-3l-3 6 3 6h3l-3-6 3-6z" fill="white" />
+  </svg>
+);
+
+const IconCanara = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L2 22h20L12 2z" fill="#0091D5" />
+    <path d="M12 8L7 18h10L12 8z" fill="#F4E04D" />
+  </svg>
+);
+
+const IconUnion = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="4" width="20" height="16" rx="4" fill="#E21D25" />
+    <path d="M7 4v16M17 4v16" stroke="white" strokeWidth="4" />
+  </svg>
+);
+
+
 const ALL_TESTS = [
   "Complete Blood Count (CBC)",
   "Lipid Profile",
@@ -274,9 +372,25 @@ const LandingPage = () => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
-  const clearNotification = (id) => {
-    if (window.confirm("Remove this notification?")) {
-      setNotifications(notifications.filter(n => n.id !== id));
+  const clearNotification = async (id) => {
+    // If id is local (created via Date.now() for demo purposes only and large enough), we might not find it in backend, but we'll try. 
+    // Actually all notifications should now come from backend or be removed if just frontend.
+    // We will try backend delete, if fails (or if it was a frontend-only note), we still remove from UI.
+
+    if (!window.confirm("Remove this notification?")) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/user/notifications/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      // Remove from UI regardless of backend status to stay responsive, 
+      // effectively treating failure as "already gone" or "local only".
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (e) {
+      console.error("Error deleting notification:", e);
+      // Still remove from UI
+      setNotifications(prev => prev.filter(n => n.id !== id));
     }
   };
 
@@ -316,7 +430,9 @@ const LandingPage = () => {
   const [showMyBookingsModal, setShowMyBookingsModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Pay at Lab');
-  const [paymentStep, setPaymentStep] = useState('select'); // 'select', 'upi_scan', 'card_form'
+  const [paymentStep, setPaymentStep] = useState('select'); // 'select', 'upi_scan', 'netbanking_selection', 'card_form'
+  const [selectedUpiApp, setSelectedUpiApp] = useState(null);
+  const [selectedBank, setSelectedBank] = useState(null);
 
   // Booking Form State
   const [bookingDate, setBookingDate] = useState('');
@@ -359,9 +475,24 @@ const LandingPage = () => {
     setShowPaymentModal(true);
   };
 
-  const handleDeleteBooking = (id) => {
-    if (window.confirm("Are you sure you want to remove this booking from your history?")) {
-      setBookings(prev => prev.filter(b => b.id !== id));
+  const handleDeleteBooking = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this booking from your history?")) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/user/appointments/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setBookings(prev => prev.filter(b => b.id !== id));
+        showToast("Booking removed successfully.", 'success');
+      } else {
+        showToast("Failed to remove booking.", 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("Error removing booking.", 'error');
     }
   };
 
@@ -372,7 +503,7 @@ const LandingPage = () => {
         setPaymentStep('upi_scan');
         return;
       }
-      if (paymentMethod === 'Credit/Debit Card') {
+      if (paymentMethod === 'Net Banking') {
         setPaymentStep('card_form');
         return;
       }
@@ -1337,7 +1468,7 @@ const LandingPage = () => {
             <div className="logo-icon-wrapper" style={{ background: 'transparent', width: 'auto', height: 'auto', padding: 0 }}>
               <img src={logoImage} alt="MediBot Logo" style={{ width: 40, height: 'auto' }} />
             </div>
-            <span className="brand-logo">MediBot</span>
+            <span className="brand-logo" style={{ color: '#2563eb', fontWeight: '800' }}>MediBot</span>
           </div>
 
           <div className="search-bar-nav" style={{ display: 'none' }}></div>
@@ -2207,39 +2338,40 @@ const LandingPage = () => {
         )
       }
 
-      {/* 2. Hero Section */}
-      <section className="hero-section" style={{
-        backgroundImage: `url(${heroBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}>
-        <div className="hero-content">
-          <h1>Find Best Laboratories Near You</h1>
-          <p>Don't wait in lines. Book your tests now and get results faster than ever.</p>
+      {/* 2. Hero Section - Split Layout */}
+      <section className="hero-section-split">
+        <div className="hero-left">
+          <div className="hero-content-left">
+            <h1>Find Best Laboratories<br />Near You</h1>
+            <p>Don't wait in lines. Book your tests now and get results faster than ever.</p>
 
-          <div className="hero-search-container">
-            <div className="hero-search-input-wrapper">
-              <IconSearch className="hero-search-icon" size={22} />
-              <input
-                type="text"
-                className="hero-search-input"
-                placeholder="Search for labs, tests, or location..."
-                value={searchTerm}
-                onChange={handleSearch}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearchSubmit(e);
-                  }
-                }}
-              />
+            <div className="hero-search-container">
+              <div className="hero-search-input-wrapper">
+                <IconSearch className="hero-search-icon" size={22} />
+                <input
+                  type="text"
+                  className="hero-search-input"
+                  placeholder="Search for labs, tests, or location..."
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearchSubmit(e);
+                    }
+                  }}
+                />
+              </div>
+              <button
+                className="hero-search-btn"
+                onClick={() => handleSearchSubmit({ key: 'Enter' })}
+              >
+                Search
+              </button>
             </div>
-            <button
-              className="hero-search-btn"
-              onClick={() => handleSearchSubmit({ key: 'Enter' })} // Simulate Enter key
-            >
-              Search
-            </button>
           </div>
+        </div>
+        <div className="hero-right">
+          <img src={labHeroSplit} alt="Modern Laboratory" className="hero-lab-image" />
         </div>
       </section>
 
@@ -2430,242 +2562,453 @@ const LandingPage = () => {
       </footer>
       {
         showPaymentModal && selectedLab && (
-          <div className="payment-modal-overlay">
-            <div className="payment-modal-content">
+          <div className="payment-modal-overlay" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0, 0, 0, 0.65)', // Slightly darker for better focus
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000
+          }}>
+            {paymentStep === 'success' ? (
+              // --- STANDALONE SUCCESS MODAL ---
+              // --- STANDALONE SUCCESS MODAL ---
+              <div className="payment-success-modal" style={{
+                background: 'white',
+                width: '400px',
+                borderRadius: '24px',
+                padding: '2.5rem',
+                textAlign: 'left',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                position: 'relative'
+              }}>
+                <style>{`
+                    @keyframes popIn {
+                      0% { opacity: 0; transform: scale(0.8); }
+                      100% { opacity: 1; transform: scale(1); }
+                    }
+                    @keyframes slideUpFade {
+                      0% { opacity: 0; transform: translateY(10px); }
+                      100% { opacity: 1; transform: translateY(0); }
+                    }
+                    @keyframes checkScale {
+                      0% { transform: scale(0); }
+                      80% { transform: scale(1.2); }
+                      100% { transform: scale(1); }
+                    }
+                 `}</style>
 
-              {/* Payment Content based on Step - Refined Professional UI */}
-              {paymentStep === 'select' && (
-                <div className="payment-step-container">
-                  <div className="payment-header" style={{
-                    textAlign: 'center',
-                    marginBottom: '1rem',
-                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                    padding: '1.25rem',
-                    borderRadius: '16px',
-                    color: 'white',
-                    boxShadow: '0 10px 20px -5px rgba(37, 99, 235, 0.3)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                  <div style={{
+                    width: 70, height: 70, background: '#dcfce7', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 1rem auto'
                   }}>
-                    {/* Decorative circles - subtle */}
-                    <div style={{ position: 'absolute', top: -30, left: -20, width: 80, height: 80, background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }}></div>
-
-                    <div style={{ textAlign: 'left', zIndex: 1 }}>
-                      <span className="payment-subtitle" style={{ display: 'block', fontSize: '0.75rem', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Total Payable</span>
-                      <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Includes all taxes</span>
-                    </div>
-                    <h2 className="payment-total" style={{ margin: 0, fontSize: '1.8rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.1)', zIndex: 1 }}>₹{selectedLab.price + (selectedTests.length * 150)}</h2>
+                    <IconCheckCircle size={40} color="#16a34a" />
                   </div>
-
-                  <h3 className="payment-section-title" style={{ fontSize: '0.75rem', marginBottom: '0.8rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Select Payment Method</h3>
-
-                  <div className="payment-options" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '350px', overflowY: 'auto' }}>
-                    {['Pay at Lab', 'UPI', 'Credit/Debit Card'].map(method => (
-                      <button
-                        key={method}
-                        onClick={() => setPaymentMethod(method)}
-                        className={`payment-method-btn ${paymentMethod === method ? 'selected' : ''}`}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '0.8rem',
-                          padding: '0.75rem 1rem',
-                          borderRadius: '12px',
-                          border: paymentMethod === method ? '1.5px solid #2563eb' : '1px solid #f1f5f9',
-                          background: paymentMethod === method ? '#eff6ff' : 'white',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          position: 'relative',
-                          boxShadow: paymentMethod === method ? '0 4px 6px -1px rgba(37, 99, 235, 0.1)' : 'none',
-                        }}
-                      >
-                        <div className="payment-method-icon" style={{
-                          width: '36px', height: '36px', borderRadius: '8px',
-                          background: paymentMethod === method ? 'white' : '#f8fafc',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: paymentMethod === method ? '#2563eb' : '#64748b',
-                          border: '1px solid #e2e8f0'
-                        }}>
-                          {method === 'Pay at Lab' && <IconHome size={18} />}
-                          {method === 'UPI' && <span style={{ fontSize: '1rem' }}>📱</span>}
-                          {method === 'Credit/Debit Card' && <span style={{ fontSize: '1rem' }}>💳</span>}
-                        </div>
-                        <div style={{ flex: 1, textAlign: 'left' }}>
-                          <span style={{ display: 'block', fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>{method}</span>
-                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                            {method === 'Pay at Lab' ? 'Pay at counter' : method === 'UPI' ? 'GPay, PhonePe' : 'Cards'}
-                          </span>
-                        </div>
-                        <div className={`radio-circle ${paymentMethod === method ? 'checked' : ''}`} style={{
-                          width: '18px', height: '18px', borderRadius: '50%',
-                          border: paymentMethod === method ? '5px solid #2563eb' : '1.5px solid #cbd5e1',
-                          background: 'white'
-                        }}>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div style={{ marginTop: '2rem' }}>
-                    <button
-                      className="payment-confirm-btn"
-                      onClick={finalizeBooking}
-                      style={{
-                        width: '100%', padding: '1rem', fontSize: '1.1rem', fontWeight: 700,
-                        borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none',
-                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                      }}
-                    >
-                      <IconShield size={18} />
-                      {paymentMethod === 'Pay at Lab' ? `Confirm Booking` : `Pay ₹${selectedLab.price + (selectedTests.length * 150)}`}
-                    </button>
-                    <p style={{ textAlign: 'center', marginTop: '1rem' }}>
-                      <button
-                        onClick={() => setShowPaymentModal(false)}
-                        style={{
-                          background: '#fff1f2',
-                          border: '1px solid #fecdd3',
-                          color: '#e11d48',
-                          fontSize: '0.95rem',
-                          cursor: 'pointer',
-                          padding: '0.8rem 1.5rem',
-                          borderRadius: '12px',
-                          fontWeight: 600,
-                          width: '100%',
-                          transition: 'background 0.2s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem'
-                        }}
-                      >
-                        <IconX size={16} /> Cancel Transaction
-                      </button>
-                    </p>
-                  </div>
+                  <h2 style={{ fontSize: '1.6rem', color: '#16a34a', margin: '0', fontWeight: 700 }}>Payment Successful</h2>
                 </div>
-              )}
 
-              {paymentStep === 'upi_scan' && (
-                <div className="payment-step-container">
-                  <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                    <h3 className="payment-section-title" style={{ fontSize: '1rem', marginBottom: '0.2rem', fontWeight: 700 }}>Scan QR to Pay</h3>
-                    <p style={{ color: '#64748b', fontSize: '0.8rem' }}>Use any UPI app on your phone</p>
-                  </div>
-
-                  <div className="qr-container" style={{ background: 'white', padding: '1rem', borderRadius: '16px', boxShadow: '0 4px 15px -3px rgba(0,0,0,0.1)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '260px', margin: '0 auto 1.5rem auto' }}>
-                    <div className="qr-code-mock" style={{ width: '140px', height: '140px', padding: '8px', background: 'white', border: '2px solid #0f172a', borderRadius: '12px', position: 'relative' }}>
-                      <div style={{ width: '100%', height: '100%', background: `repeating-linear-gradient(45deg, #0f172a 0, #0f172a 4px, #fff 4px, #fff 8px)` }}></div>
-                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', padding: '4px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>₹</span>
+                <div className="success-steps" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '2.5rem' }}>
+                  {[
+                    { text: "Payment Processed", delay: 0 },
+                    { text: "Booking Slot Confirmed", delay: 1000 },
+                    { text: "Lab Notified", delay: 2000 },
+                    { text: "Receipt Generated", delay: 3000 }
+                  ].map((step, index) => (
+                    <div key={index} style={{
+                      display: 'flex', alignItems: 'center', gap: '1rem',
+                      opacity: 0, animation: `slideUpFade 0.5s ease-out forwards ${step.delay}ms`
+                    }}>
+                      <div style={{
+                        width: 24, height: 24, borderRadius: '50%', background: '#16a34a',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        animation: `checkScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards ${step.delay + 200}ms`,
+                        transform: 'scale(0)'
+                      }}>
+                        <IconCheckCircle size={14} color="white" />
                       </div>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#334155' }}>{step.text}</span>
                     </div>
+                  ))}
+                </div>
 
-                    <div className="payment-options" style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '1rem', width: '100%' }}>
-                      {/* App Logos Placeholder */}
-                      {['GPay', 'PhonePe', 'Paytm', 'BHIM'].map(app => (
-                        <div key={app} style={{ width: 32, height: 32, borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#64748b', fontWeight: 700 }}>{app[0]}</div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="back-link" onClick={() => setShowPaymentModal(false)} style={{ flex: 1, padding: '0.8rem', borderRadius: '10px', background: '#fff1f2', border: '1px solid #fecdd3', color: '#e11d48', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-                      <IconX size={16} /> Cancel
-                    </button>
-                    <button
-                      className="payment-confirm-btn"
-                      onClick={finalizeBooking}
-                      style={{ flex: 2, padding: '0.8rem', fontSize: '0.95rem', fontWeight: 700, borderRadius: '10px', background: '#16a34a', color: 'white', border: 'none', boxShadow: '0 4px 10px rgba(22, 163, 74, 0.2)', cursor: 'pointer' }}
-                    >
-                      Paid ₹{selectedLab.price + (selectedTests.length * 150)}
-                    </button>
-                  </div>
-
-                  <button className="back-link" onClick={() => setPaymentStep('select')} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: '1rem', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.8rem' }}>
-                    &larr; Choose different method
+                <div style={{ opacity: 0, animation: 'slideUpFade 0.5s ease-out forwards 3500ms' }}>
+                  <button
+                    onClick={async () => {
+                      await handleConfirmBooking();
+                      setShowPaymentModal(false);
+                      setShowFeedbackModal(true);
+                    }}
+                    style={{
+                      width: '100%', padding: '1rem', borderRadius: '12px', background: '#0f172a', color: 'white', fontWeight: 600, border: 'none', cursor: 'pointer', fontSize: '1rem', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    Done
                   </button>
                 </div>
-              )}
-
-              {paymentStep === 'card_form' && (
-                <div className="payment-step-container">
-                  <h3 className="payment-section-title" style={{ marginBottom: '1rem', textAlign: 'center', fontSize: '1rem', fontWeight: 600 }}>Enter Card Details</h3>
-
-                  {/* Card visual - Compact */}
-                  <div className="card-visual" style={{
-                    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-                    borderRadius: '12px',
-                    padding: '1rem 1.25rem',
-                    color: 'white',
-                    marginBottom: '1.5rem',
-                    boxShadow: '0 8px 15px -5px rgba(15, 23, 42, 0.3)',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                      <div style={{ width: 32, height: 22, background: 'rgba(255,255,255,0.2)', borderRadius: 4 }}></div>
-                      <span style={{ fontSize: '0.8rem', fontStyle: 'italic', fontWeight: 700, opacity: 0.8 }}>VISA</span>
-                    </div>
-                    <div style={{ fontSize: '1.1rem', letterSpacing: '0.1em', marginBottom: '1rem', fontFamily: 'monospace' }}>•••• •••• •••• 4242</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', opacity: 0.8 }}>
-                      <span>CARD HOLDER</span>
-                      <span>EXPIRES</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600 }}>
-                      <span>NANDANA PRAMOD</span>
-                      <span>12/28</span>
-                    </div>
-                  </div>
-
-                  <div className="card-form" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                    <div className="card-input-group">
-                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.3rem', display: 'block' }}>Card Number</label>
-                      <div style={{ position: 'relative' }}>
-                        <input type="text" placeholder="0000 0000 0000 0000" className="card-input" maxLength={19} style={{ width: '100%', padding: '0.6rem 0.8rem 0.6rem 2.2rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-                        <span style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem' }}>💳</span>
-                      </div>
-                    </div>
-
-                    <div className="card-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div className="card-input-group">
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.3rem', display: 'block' }}>Expiry Date</label>
-                        <input type="text" placeholder="MM/YY" className="card-input" maxLength={5} style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-                      </div>
-                      <div className="card-input-group">
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.3rem', display: 'block' }}>CVV</label>
-                        <div style={{ position: 'relative' }}>
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                    <button className="back-link" onClick={() => setShowPaymentModal(false)} style={{ flex: 1, padding: '0.8rem', borderRadius: '10px', background: '#fff1f2', border: '1px solid #fecdd3', color: '#e11d48', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-                      <IconX size={16} /> Cancel
-                    </button>
-                    <button
-                      className="payment-confirm-btn"
-                      onClick={finalizeBooking}
-                      style={{ flex: 2, padding: '0.8rem', fontSize: '0.95rem', fontWeight: 700, borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)', cursor: 'pointer' }}
-                    >
-                      Pay ₹{selectedLab.price + (selectedTests.length * 150)}
-                    </button>
-                  </div>
-                  <button className="back-link" onClick={() => setPaymentStep('select')} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: '1rem', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.8rem' }}>
-                    &larr; Choose different method
-                  </button>
-                </div>
-              )}
-
-              <div className="payment-secure-badge" style={{ textAlign: 'center', marginTop: '1.5rem', padding: '0.4rem 0.8rem', background: '#f0fdf4', borderRadius: '99px', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#16a34a', border: '1px solid #bbf7d0', width: 'fit-content', margin: '0 auto' }}>
-                <IconShield size={12} /> 100% Secure & Safe
               </div>
-            </div>
-          </div>
+            ) : (
+              // --- SPLIT LAYOUT FOR SELECTION & PROCESSING ---
+              <div className="payment-modal-container" style={{
+                display: 'flex',
+                width: paymentStep === 'processing' ? '450px' : '900px',
+                height: paymentStep === 'processing' ? 'auto' : '580px',
+                minHeight: paymentStep === 'processing' ? '400px' : '580px',
+                background: 'white',
+                borderRadius: '24px',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                overflow: 'hidden',
+                fontFamily: "'Inter', sans-serif",
+                transition: 'all 0.3s ease-in-out'
+              }}>
+                {/* Left Half: Image */}
+                {paymentStep !== 'processing' && (
+                  <div className="payment-image-side" style={{
+                    flex: 1,
+                    backgroundImage: `url(${microscopeBg})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    position: 'relative'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      padding: '2.5rem',
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)'
+                    }}>
+                      <div style={{ color: 'white' }}>
+                        <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9, fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase' }}>MediBot Healthcare</p>
+                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '1.8rem', fontWeight: 700, lineHeight: 1.2 }}>Secure Payment Gateway</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Right Half: Content */}
+                <div className="payment-content-side" style={{
+                  flex: 1.2, // Give content slightly more space
+                  padding: '3.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                }}>
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setShowPaymentModal(false)}
+                    style={{
+                      position: 'absolute',
+                      top: '1.5rem',
+                      right: '1.5rem',
+                      background: '#f1f5f9',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '36px',
+                      height: '36px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#64748b',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+                  >
+                    <IconX size={20} />
+                  </button>
+
+                  {/* --- PHASE 1: SELECTION --- */}
+                  {paymentStep === 'select' && (
+                    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+                      <div style={{ marginBottom: '2.5rem' }}>
+                        <h2 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em' }}>Payments</h2>
+                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '1.1rem', color: '#64748b' }}>Choose a payment method to proceed.</p>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
+                        {['Pay at Lab', 'UPI', 'Net Banking'].map(method => (
+                          <div
+                            key={method}
+                            onClick={() => setPaymentMethod(method)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.2rem 1.5rem', borderRadius: '16px',
+                              border: paymentMethod === method ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                              background: paymentMethod === method ? '#eff6ff' : 'white',
+                              color: paymentMethod === method ? '#1d4ed8' : '#334155',
+                              cursor: 'pointer', transition: 'all 0.2s', fontSize: '1.05rem', fontWeight: 600,
+                              boxShadow: paymentMethod === method ? '0 10px 15px -3px rgba(37, 99, 235, 0.1)' : '0 2px 4px rgba(0,0,0,0.02)',
+                              transform: paymentMethod === method ? 'scale(1.01)' : 'scale(1)'
+                            }}
+                          >
+                            <span style={{ fontSize: '1.4rem' }}>
+                              {method === 'Pay at Lab' && '💵'}
+                              {method === 'UPI' && '📱'}
+                              {method === 'Net Banking' && '🏦'}
+                            </span>
+                            <span>{method}</span>
+                            {paymentMethod === method && <div style={{ marginLeft: 'auto', color: '#2563eb' }}><IconCheckCircle size={22} /></div>}
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (paymentMethod === 'Pay at Lab') {
+                            setPaymentStep('processing');
+                            setTimeout(() => { setPaymentStep('success'); }, 4500);
+                          } else if (paymentMethod === 'UPI') {
+                            setPaymentStep('upi_selection');
+                          } else if (paymentMethod === 'Net Banking') {
+                            setPaymentStep('netbanking_selection');
+                          }
+                        }}
+                        style={{
+                          width: '100%', padding: '1.1rem', borderRadius: '14px', background: '#2563eb', color: 'white', border: 'none',
+                          fontSize: '1.1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)', transition: 'transform 0.1s'
+                        }}
+                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                      >
+                        Proceed to Pay
+                      </button>
+                    </div>
+                  )}
+
+                  {/* --- PHASE 2: UPI SELECTION --- */}
+                  {paymentStep === 'upi_selection' && (
+                    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+                      <h3 style={{ fontSize: '1.8rem', color: '#0f172a', marginBottom: '1.5rem', fontWeight: 700 }}>Select UPI App</h3>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2.5rem' }}>
+                        {[
+                          { name: 'Google Pay', icon: <IconGooglePay /> },
+                          { name: 'PhonePe', icon: <IconPhonePeShape /> },
+                          { name: 'Paytm', icon: <IconPaytm /> },
+                          { name: 'BHIM UPI', icon: <IconBHIM /> }
+                        ].map(app => (
+                          <div key={app.name} onClick={() => setSelectedUpiApp(app.name)}
+                            style={{
+                              padding: '1.1rem', borderRadius: '14px', border: selectedUpiApp === app.name ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                              background: selectedUpiApp === app.name ? '#eff6ff' : 'white', cursor: 'pointer', textAlign: 'center', fontWeight: 600, color: '#334155',
+                              transition: 'all 0.2s', boxShadow: selectedUpiApp === app.name ? '0 4px 12px rgba(37,99,235,0.1)' : 'none',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem'
+                            }}
+                          >
+                            {app.icon}
+                            <span style={{ color: app.name === 'PhonePe' ? '#5F259F' : 'inherit' }}>{app.name}</span>
+                          </div>
+                        ))}
+                        <div style={{ gridColumn: '1 / -1', padding: '1rem', borderRadius: '14px', border: '1px dashed #cbd5e1', background: '#f8fafc', color: '#64748b', textAlign: 'center', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
+                          <IconGrid size={18} /> Other UPI Apps
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button onClick={() => setPaymentStep('select')} style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}>Back</button>
+                        <button onClick={() => {
+                          setPaymentStep('processing');
+                          setTimeout(() => setPaymentStep('success'), 4500);
+                        }} disabled={!selectedUpiApp} style={{ flex: 1.5, padding: '1rem', borderRadius: '12px', border: 'none', background: selectedUpiApp ? '#2563eb' : '#cbd5e1', color: 'white', fontWeight: 700, cursor: selectedUpiApp ? 'pointer' : 'not-allowed', fontSize: '1rem', boxShadow: selectedUpiApp ? '0 8px 20px rgba(37,99,235,0.3)' : 'none' }}>
+                          Proceed to pay ₹{selectedLab ? (selectedLab.price + (selectedTests.length * 150)) : '0'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- PHASE 2.5: NET BANKING SELECTION --- */}
+                  {paymentStep === 'netbanking_selection' && (
+                    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+                      <h3 style={{ fontSize: '1.8rem', color: '#0f172a', marginBottom: '1.5rem', fontWeight: 700 }}>Select Bank</h3>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2.5rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                        {[
+                          { name: 'SBI', icon: <IconSBI /> },
+                          { name: 'HDFC', icon: <IconHDFC /> },
+                          { name: 'ICICI', icon: <IconICICI /> },
+                          { name: 'Axis Bank', icon: <IconAxis /> },
+                          { name: 'Kotak', icon: <IconKotak /> },
+                          { name: 'Canara Bank', icon: <IconCanara /> },
+                          { name: 'Union Bank', icon: <IconUnion /> },
+                          { name: 'Other Banks', icon: <IconGrid /> },
+                        ].map(bank => (
+                          <div key={bank.name} onClick={() => { setSelectedBank(bank); setPaymentStep('card_form'); }}
+                            style={{
+                              padding: '1rem', borderRadius: '14px', border: '1px solid #e2e8f0',
+                              background: 'white', cursor: 'pointer', textAlign: 'left', fontWeight: 600, color: '#334155',
+                              transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                              display: 'flex', alignItems: 'center', gap: '1rem'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.background = '#f8fafc'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}
+                          >
+                            {bank.icon}
+                            <span>{bank.name}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button onClick={() => setPaymentStep('select')} style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}>Back</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- PHASE 3: CARD FORM (NET BANKING LOGIN) --- */}
+                  {paymentStep === 'card_form' && (
+                    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          {selectedBank && selectedBank.icon}
+                          <h3 style={{ fontSize: '1.8rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>{selectedBank ? selectedBank.name : 'Net Banking'}</h3>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#15803d', background: '#dcfce7', padding: '0.3rem 0.6rem', borderRadius: '8px', border: '1px solid #bbf7d0', fontWeight: 600 }}>
+                          <IconShield size={12} /> Secured by SSL
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '2.5rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', marginLeft: '0.2rem' }}>User ID / Customer ID</label>
+                          <input type="text" placeholder="Enter your Customer ID" style={{ width: '100%', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem', background: '#f8fafc', transition: 'all 0.2s', outline: 'none' }} onFocus={e => { e.target.style.background = 'white'; e.target.style.borderColor = '#2563eb'; }} onBlur={e => { e.target.style.background = '#f8fafc'; e.target.style.borderColor = '#e2e8f0'; }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', marginLeft: '0.2rem' }}>Password / PIN</label>
+                          <input type="password" placeholder="••••••••" style={{ width: '100%', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem', background: '#f8fafc', transition: 'all 0.2s', outline: 'none' }} onFocus={e => { e.target.style.background = 'white'; e.target.style.borderColor = '#2563eb'; }} onBlur={e => { e.target.style.background = '#f8fafc'; e.target.style.borderColor = '#e2e8f0'; }} />
+                        </div>
+
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', color: '#475569', cursor: 'pointer', width: 'fit-content' }}>
+                          <input type="checkbox" style={{ width: 16, height: 16, accentColor: '#2563eb', cursor: 'pointer' }} /> Remember User ID
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button onClick={() => setPaymentStep('netbanking_selection')} style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}>Back</button>
+                        <button onClick={() => {
+                          setPaymentStep('processing');
+                          setTimeout(() => setPaymentStep('success'), 4500);
+                        }} style={{ flex: 1.5, padding: '1rem', borderRadius: '12px', border: 'none', background: '#2563eb', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem', boxShadow: '0 8px 20px rgba(37,99,235,0.3)' }}>
+                          Login & Pay
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- PHASE 4: PROCESSING --- */}
+                  {paymentStep === 'processing' && (
+                    <div style={{ textAlign: 'center', animation: 'fadeIn 0.4s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', position: 'relative' }}>
+
+                      {/* Decorative Background Elements */}
+                      <div className="pulse-circle"></div>
+                      <div className="pulse-circle delay-1"></div>
+
+                      <div className="modern-loader-container">
+                        <svg className="circular-loader" viewBox="25 25 50 50">
+                          <circle className="loader-path" cx="50" cy="50" r="20" fill="none" strokeWidth="3" strokeMiterlimit="10" />
+                        </svg>
+                        <div className="shield-icon-wrapper">
+                          <IconShield size={22} />
+                        </div>
+                      </div>
+
+                      <style>{`
+                        .modern-loader-container {
+                          position: relative;
+                          width: 80px;
+                          height: 80px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          margin-bottom: 2rem;
+                          z-index: 10;
+                        }
+                        
+                        .circular-loader {
+                          width: 100%;
+                          height: 100%;
+                          animation: rotate 2s linear infinite;
+                          position: absolute;
+                        }
+                        
+                        .loader-path {
+                          stroke: #2563eb;
+                          stroke-linecap: round;
+                          animation: dash 1.5s ease-in-out infinite;
+                        }
+
+                        .shield-icon-wrapper {
+                          color: #2563eb;
+                          background: white;
+                          padding: 10px;
+                          border-radius: 50%;
+                          box-shadow: 0 4px 12px rgba(37,99,235,0.1);
+                          animation: pulse-shield 1.5s ease-in-out infinite;
+                          position: relative;
+                          z-index: 11;
+                        }
+
+                        @keyframes rotate {
+                          100% { transform: rotate(360deg); }
+                        }
+                        
+                        @keyframes dash {
+                          0% { stroke-dasharray: 1, 200; stroke-dashoffset: 0; }
+                          50% { stroke-dasharray: 89, 200; stroke-dashoffset: -35px; }
+                          100% { stroke-dasharray: 89, 200; stroke-dashoffset: -124px; }
+                        }
+
+                        @keyframes pulse-shield {
+                          0%, 100% { transform: scale(1); }
+                          50% { transform: scale(1.1); }
+                        }
+
+                        .pulse-circle {
+                          position: absolute;
+                          width: 120px;
+                          height: 120px;
+                          border-radius: 50%;
+                          background: rgba(37, 99, 235, 0.05);
+                          animation: ripple 2s infinite ease-out;
+                          top: 40%;
+                          left: 50%;
+                          transform: translate(-50%, -50%);
+                        }
+                        
+                        .delay-1 { animation-delay: 0.6s; }
+
+                        @keyframes ripple {
+                          0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
+                          100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+                        }
+                      `}</style>
+
+                      <h3 style={{ color: '#0f172a', margin: '0 0 0.5rem 0', fontSize: '1.6rem', fontWeight: 700, zIndex: 10 }}>Processing...</h3>
+                      <p style={{ color: '#64748b', fontSize: '1rem', zIndex: 10, maxWidth: '80%', lineHeight: '1.5' }}>
+                        Completing your secure payment.<br />Please do not close this window.
+                      </p>
+
+                      <div style={{ marginTop: '2rem', display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.85rem', color: '#94a3b8' }}>
+                        <IconShield size={14} /> 256-bit SSL Encrypted
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+            }
+          </div >
         )
       }
 

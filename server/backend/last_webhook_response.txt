@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?><Response><Message>Prescription Received!
+Category: Blood Test
+Detected Tests:
+CBC Test
+
+We have saved this for review. Login to track status:
+http://localhost:5173/login</Message></Response>

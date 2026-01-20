@@ -1860,7 +1860,7 @@ const LabAdminDashboard = () => {
         const enhancedReports = reports.map(r => ({
             ...r,
             ref: r.ref || `APT-${(r.id || '').split('-')[1] || Math.floor(Math.random() * 1000)}`,
-            fileType: r.fileType || 'PDF',
+            fileType: r.fileType || 'Uploads',
             staff: r.staff || 'Lab Admin',
             verified: r.status === 'Verified'
         }));
@@ -1987,7 +1987,7 @@ const LabAdminDashboard = () => {
                                         <tr>
                                             <th>Report Info</th>
                                             <th>Test Details</th>
-                                            <th>File</th>
+                                            <th>Uploads</th>
                                             <th>Verification</th>
                                             <th>Status</th>
                                             <th style={{ textAlign: 'right' }}>Actions</th>
@@ -2002,7 +2002,7 @@ const LabAdminDashboard = () => {
                                                             width: 40, height: 40, background: '#e0f2fe', color: '#0369a1',
                                                             borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
                                                         }}>
-                                                            {report.fileType || 'PDF'}
+                                                            <Icons.FileText />
                                                         </div>
                                                         <div className="info">
                                                             <span className="name">{report.patient}</span>
@@ -2016,8 +2016,12 @@ const LabAdminDashboard = () => {
                                                 </td>
                                                 {/* 6. File Column Enhancement */}
                                                 <td>
-                                                    <div className="med-file-pill" title="Click to preview report" onClick={() => window.open(report.fileUrl || '#', '_blank')}>
-                                                        <Icons.FileText size={14} /> {report.fileType}
+                                                    <div className="med-file-pill" title="Click to upload/view report" onClick={() => {
+                                                        const pId = report.patientId || report.patient_id || report.id;
+                                                        setUploadData({ patient_id: pId || '', test_name: report.test || '', file: null });
+                                                        setShowUploadModal(true);
+                                                    }}>
+                                                        <Icons.UploadCloud size={14} /> Upload
                                                     </div>
                                                 </td>
                                                 {/* 8. Verification Flow */}
@@ -2808,19 +2812,21 @@ const LabAdminDashboard = () => {
                             </button>
                         </div>
 
-                        <div style={{ marginBottom: '1.25rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--med-text-body)' }}>Select Patient</label>
-                            <select
-                                value={uploadData.patient_id}
-                                onChange={e => setUploadData({ ...uploadData, patient_id: e.target.value })}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--med-border)', fontSize: '0.95rem', outline: 'none' }}
-                            >
-                                <option value="">-- Choose Patient --</option>
-                                {patients.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>
-                                ))}
-                            </select>
-                        </div>
+                        {!uploadData.patient_id && (
+                            <div style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--med-text-body)' }}>Select Patient</label>
+                                <select
+                                    value={uploadData.patient_id}
+                                    onChange={e => setUploadData({ ...uploadData, patient_id: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--med-border)', fontSize: '0.95rem', outline: 'none' }}
+                                >
+                                    <option value="">-- Choose Patient --</option>
+                                    {patients.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         <div style={{ marginBottom: '1.25rem' }}>
                             <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--med-text-body)' }}>Test Name</label>
@@ -2835,7 +2841,7 @@ const LabAdminDashboard = () => {
                         </div>
 
                         <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--med-text-body)' }}>Report File (PDF)</label>
+                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--med-text-body)' }}>Report File (Uploads)</label>
                             <div style={{ border: '2px dashed #cbd5e1', borderRadius: '8px', padding: '1.5rem', textAlign: 'center', background: 'var(--med-bg)', cursor: 'pointer' }}>
                                 <input type="file"
                                     id="report-file-upload"
@@ -2846,7 +2852,7 @@ const LabAdminDashboard = () => {
                                 <label htmlFor="report-file-upload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                     <Icons.UploadCloud size={32} color="#64748b" />
                                     <span style={{ color: 'var(--med-text-muted)', fontSize: '0.9rem' }}>
-                                        {uploadData.file ? uploadData.file.name : "Click to select PDF file"}
+                                        {uploadData.file ? uploadData.file.name : "Click to select file"}
                                     </span>
                                 </label>
                             </div>

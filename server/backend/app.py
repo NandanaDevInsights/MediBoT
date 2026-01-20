@@ -29,6 +29,12 @@ from validators import validate_email, validate_password
 import threading
 import google.generativeai as genai
 from twilio.rest import Client
+import requests
+import io
+from google.cloud import vision
+from twilio.twiml.messaging_response import MessagingResponse
+import uuid
+import time
 
 load_dotenv()
 
@@ -1549,6 +1555,38 @@ def cancel_appointment():
     finally:
         conn.close()
 
+@app.delete("/api/user/appointments/<int:id>")
+def delete_user_appointment(id):
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+
+    user_id = session["user_id"]
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Verify ownership
+        cur.execute("SELECT id FROM appointments WHERE id=%s AND user_id=%s", (id, user_id))
+        if not cur.fetchone():
+            return jsonify({"message": "Appointment not found or access denied"}), 404
+            
+        # Delete from appointments
+        cur.execute("DELETE FROM appointments WHERE id=%s", (id,))
+        
+        # Also clean up from bookings table if linked (optional, but good for consistency)
+        # We don't have a direct link ID, but we can try slightly safe delete if needed?
+        # For now, let's just delete the main record.
+        
+        conn.commit()
+        cur.close()
+        
+        return jsonify({"message": "Booking removed successfully"}), 200
+    except Exception as e:
+        print(f"[ERROR] Delete appointment failed: {e}")
+        return jsonify({"message": "Failed to delete booking"}), 500
+    finally:
+        conn.close()
+
 @app.get("/api/admin/patients")
 def get_admin_patients():
     current_role = session.get("role")
@@ -2596,6 +2634,29 @@ def get_notifications():
     finally:
         conn.close()
 
+@app.delete("/api/user/notifications/<int:id>")
+def delete_notification(id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"message": "Not authenticated"}), 401
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        # Verify ownership
+        cur.execute("SELECT id FROM notifications WHERE id=%s AND user_id=%s", (id, user_id))
+        if not cur.fetchone():
+             return jsonify({"message": "Notification not found"}), 404
+             
+        cur.execute("DELETE FROM notifications WHERE id=%s", (id,))
+        conn.commit()
+        return jsonify({"message": "Deleted"}), 200
+    except Exception as e:
+        print(f"[ERROR] Delete notification failed: {e}")
+        return jsonify({"message": "Failed to delete"}), 500
+    finally:
+        conn.close()
+
 
 @app.post("/api/admin/upload-report")
 def upload_report():
@@ -2735,7 +2796,231 @@ def chat_bot():
         print(f"Chat Error: {e}")
         return jsonify({"response": "Sorry, I am having trouble answering that right now."}), 500
 
+# ----------------------------
+# OCR FLASK INTEGRATION
+# ----------------------------
+def ensure_prescriptions_table():
+    """Ensure the prescriptions table exists with all columns."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS prescriptions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                mobile_number VARCHAR(20),
+                image_url TEXT,
+                extracted_text TEXT,
+                test_type VARCHAR(100),
+                file_path TEXT,
+                status VARCHAR(50) DEFAULT 'Pending',
+                file_type VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                user_id INT, 
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+        """)
+        
+        # Check columns
+        expected_columns = {
+            "mobile_number": "VARCHAR(20)",
+            "image_url": "TEXT",
+            "extracted_text": "TEXT",
+            "test_type": "VARCHAR(100)",
+            "file_path": "TEXT",
+            "status": "VARCHAR(50)",
+            "file_type": "VARCHAR(50)",
+            "user_id": "INT" 
+        }
+
+        for col, dtype in expected_columns.items():
+            try:
+                cursor.execute(f"SELECT {col} FROM prescriptions LIMIT 1")
+                cursor.fetchall()
+            except Exception:
+                print(f"[INFO] Adding missing column: {col}")
+                try:
+                    cursor.execute(f"ALTER TABLE prescriptions ADD COLUMN {col} {dtype}")
+                except Exception as ex:
+                    print(f"Failed to add {col}: {ex}")
+
+        conn.commit()
+        cursor.close()
+        print("[INFO] Prescriptions table ready.")
+    except Exception as e:
+        print(f"[ERROR] Prescriptions table init failed: {e}")
+    finally:
+        conn.close()
+
+
+@app.route("/webhook/whatsapp", methods=["POST"])
+def whatsapp_webhook():
+    print("[INFO] Webhook HIT - Processing Prescription")
+    
+    resp = MessagingResponse()
+
+    # 1. Check if image is sent
+    num_media = int(request.form.get("NumMedia", 0))
+    sender_number = request.form.get("From", "Unknown")
+
+    if num_media == 0:
+        resp.message("Please send a prescription image.")
+        return str(resp)
+
+    # 2. Get image URL
+    media_url = request.form.get("MediaUrl0")
+    print(f"[INFO] Image URL: {media_url}")
+
+    try:
+        # 3. Download image
+        filename = f"rx_{int(time.time())}_{uuid.uuid4().hex[:8]}.jpg"
+        static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "prescriptions")
+        os.makedirs(static_dir, exist_ok=True)
+        
+        image_path = os.path.join(static_dir, filename)
+        
+        TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
+        TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+        
+        headers = {'User-Agent': 'TwilioBot'}
+        # Try auth first if creds exist
+        if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+             download_resp = requests.get(media_url, auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN), headers=headers)
+        else:
+             download_resp = requests.get(media_url, headers=headers)
+
+        if download_resp.status_code in [400, 401, 403]:
+            # Fallback
+            download_resp = requests.get(media_url, headers=headers)
+        
+        if download_resp.status_code == 200:
+            with open(image_path, "wb") as f:
+                f.write(download_resp.content)
+            print(f"[INFO] Image downloaded: {image_path}")
+        else:
+            resp.message("Could not download image.")
+            return str(resp)
+
+        # 4. OCR
+        extracted_text = None
+        current_ocr_service = "None"
+
+        # Try Google Vision
+        try:
+            basedir = os.path.dirname(os.path.abspath(__file__))
+            key_path = os.path.join(basedir, "google_key.json")
+            if os.path.exists(key_path):
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
+                client = vision.ImageAnnotatorClient()
+                with io.open(image_path, 'rb') as image_file:
+                    content = image_file.read()
+                image = vision.Image(content=content)
+                response = client.text_detection(image=image)
+                texts = response.text_annotations
+                if texts:
+                    extracted_text = texts[0].description
+                    current_ocr_service = "Google Vision"
+        except Exception as e:
+            print(f"Google Vision failed: {e}")
+
+        # Fallback to OCR.Space
+        if not extracted_text:
+            try:
+                API_KEY = os.environ.get("OCR_SPACE_API_KEY", "helloworld")
+                ocr_resp = requests.post(
+                    'https://api.ocr.space/parse/image',
+                    files={image_path: open(image_path, 'rb')},
+                    data={'apikey': API_KEY, 'language': 'eng', 'OCREngine': 2},
+                    timeout=20
+                )
+                if ocr_resp.status_code == 200:
+                    res = ocr_resp.json()
+                    if res.get('ParsedResults'):
+                        extracted_text = res['ParsedResults'][0]['ParsedText']
+                        current_ocr_service = "OCR.Space"
+            except Exception as e:
+                print(f"OCR.Space failed: {e}")
+
+        if not extracted_text:
+            resp.message("Could not read text from image.")
+            return str(resp)
+
+        # 5. Process Text
+        raw_text = extracted_text
+        cleaned_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+        
+        # Test Keywords
+        test_keywords = ["blood", "cbc", "hemoglobin", "sugar", "glucose", "thyroid", "tsh", "lipid", "creatinine", "kidney", "liver", "urine", "stool", "vitamin", "x-ray", "scan"]
+        exclude_keywords = ["road", "street", "hospital", "clinic", "pathology", "phone", "email", "www", "date", "name", "age", "sex", "patient", "dr.", "doctor"]
+
+        filtered_lines = []
+        for line in cleaned_lines:
+             l = line.lower()
+             if any(k in l for k in test_keywords) and not any(e in l for e in exclude_keywords):
+                 filtered_lines.append(line)
+        
+        if not filtered_lines and len(cleaned_lines) > 0:
+             # Fallback snippet
+             filtered_lines = cleaned_lines[:5]
+
+        display_text = "\n".join(filtered_lines[:10])
+
+        # Detect Type
+        text_lower = raw_text.lower()
+        test_type = "General Lab Test"
+        if "blood" in text_lower or "cbc" in text_lower: test_type = "Blood Test"
+        elif "urine" in text_lower: test_type = "Urine Test"
+        elif "thyroid" in text_lower: test_type = "Thyroid Test"
+        elif "sugar" in text_lower or "glucose" in text_lower: test_type = "Diabetes Test"
+        
+        # 6. Save to DB
+        conn = get_connection()
+        try:
+             cur = conn.cursor()
+             
+             # Try to link to user
+             clean_mobile = sender_number.replace('whatsapp:', '').replace(' ', '')[-10:]
+             user_id = None
+             
+             # Look up user by phone in user_profiles
+             cur.execute("""
+                SELECT user_id FROM user_profiles 
+                WHERE contact_number LIKE %s 
+                LIMIT 1
+             """, (f"%{clean_mobile}",))
+             row = cur.fetchone()
+             if row:
+                 user_id = row[0]
+             
+             file_url = f"http://localhost:5000/static/prescriptions/{filename}"
+             
+             cur.execute("""
+                INSERT INTO prescriptions (mobile_number, image_url, extracted_text, test_type, file_path, status, file_type, user_id)
+                VALUES (%s, %s, %s, %s, %s, 'Pending', 'image/jpeg', %s)
+             """, (sender_number, media_url, extracted_text, test_type, file_url, user_id))
+             conn.commit()
+             cur.close()
+        except Exception as e:
+             print(f"DB Save error: {e}")
+        finally:
+             conn.close()
+
+        # 7. Reply
+        website_link = "http://localhost:5173/login"
+        resp.message(
+            f"Prescription Received!\n"
+            f"Category: {test_type}\n"
+            f"Detected Tests:\n{display_text}\n\n"
+            f"We have saved this for review. Login to track status:\n{website_link}"
+        )
+
+    except Exception as e:
+        print(f"Webhook Error: {e}")
+        resp.message("Error processing request.")
+
+    return str(resp)
+
 
 if __name__ == '__main__':
   print(" * MediBot Python Backend Starting on Port 5000 *")
+  ensure_prescriptions_table()
   app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
