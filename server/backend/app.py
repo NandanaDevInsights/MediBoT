@@ -2315,36 +2315,57 @@ def add_staff():
 def get_staff():
     conn = get_connection()
     try:
-        cur = conn.cursor()
-        # Select all relevant columns
-        cur.execute("""
-            SELECT 
-                id, name, role, status, image_url, staff_id, department, phone, email, shift, working_days
-            FROM lab_staff
-        """)
+        cur = conn.cursor(dictionary=True)
+        # Select all columns to ensure "all need things" are fetched
+        # Using staff_id for ordering as it is the primary key in the current schema
+        cur.execute("SELECT * FROM lab_staff ORDER BY staff_id DESC")
         rows = cur.fetchall()
         
         staff = []
         for r in rows:
-            # Safe handling for workingDays which might be non-serializable
-            w_days = r[10]
-            if isinstance(w_days, set):
+            # Safe handling for fields that might be non-serializable or need conversion
+            w_days = r.get('working_days', '')
+            if isinstance(w_days, (set, list)):
                 w_days = list(w_days)
             elif isinstance(w_days, bytes):
                 w_days = w_days.decode('utf-8')
-                
+
+            # Determine shift fallback
+            shift_val = r.get('shift')
+            if not shift_val:
+                if r.get('morning_shift'): shift_val = "Morning"
+                elif r.get('evening_shift'): shift_val = "Evening"
+                elif r.get('night_shift'): shift_val = "Night"
+                else: shift_val = r.get('daily_working_hours') or "General"
+
+            # Map DB columns to Frontend expected names with fallbacks for legacy schemas
             staff.append({
-                "id": r[0],
-                "name": r[1],
-                "role": r[2],
-                "status": r[3],
-                "image": r[4],
-                "staffId": r[5],
-                "department": r[6],
-                "phone": r[7],
-                "email": r[8],
-                "shift": r[9],
-                "workingDays": w_days
+                "id": r.get('id') or r.get('staff_id'),
+                "name": r.get('name') or r.get('full_name') or 'Unknown Staff',
+                "role": r.get('role') or r.get('role_designation') or 'Staff',
+                "status": r.get('status') or 'Available',
+                "image": r.get('image_url') or r.get('profile_photo'),
+                "staffId": r.get('staff_id'),
+                "department": r.get('department'),
+                "phone": r.get('phone') or r.get('phone_number') or '-',
+                "email": r.get('email') or '-',
+                "shift": shift_val,
+                "workingDays": w_days,
+                "qualification": r.get('qualification'),
+                "gender": r.get('gender'),
+                "dob": r.get('dob') or r.get('date_of_birth'),
+                "address": r.get('address'),
+                "employmentType": r.get('employment_type'),
+                "joiningDate": r.get('joining_date') or r.get('date_of_joining'),
+                "experience": r.get('experience') or r.get('experience_years'),
+                "workingHours": r.get('working_hours') or r.get('daily_working_hours'),
+                "homeCollection": bool(r.get('home_collection')),
+                "specializations": r.get('specializations'),
+                "documents": r.get('documents') or r.get('document_files'),
+                "emergencyName": r.get('emergency_name') or r.get('emergency_contact_name'),
+                "emergencyRelation": r.get('emergency_relation') or r.get('emergency_contact_relationship'),
+                "emergencyPhone": r.get('emergency_phone') or r.get('emergency_contact_phone'),
+                "internalNotes": r.get('internal_notes')
             })
             
         return jsonify(staff), 200
@@ -3011,55 +3032,7 @@ def chat_bot():
         print(f"[ERROR] Chat Bot Outer Exception: {outer_e}")
         return jsonify({"response": "An unexpected error occurred."}), 500
 
-# --- Lab Admin Staff Routes ---
-@app.route('/api/admin/staff', methods=['GET'])
-def get_lab_staff():
-    """Fetch all staff from lab_staff table"""
-    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
-        return jsonify({"message": "Unauthorized"}), 403
-    
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT 
-                staff_id, full_name, role_designation, phone_number, 
-                email, daily_working_hours, status, specializations,
-                date_of_joining, department
-            FROM lab_staff
-            ORDER BY date_of_joining DESC
-        """)
-        rows = cur.fetchall()
-        cur.close()
-        
-        staff_list = []
-        for row in rows:
-            # Determine shift from working hours or use "General" as default
-            shift_text = row[5] if row[5] else "General"
-            
-            staff_list.append({
-                "id": row[0],  # staff_id
-                "name": row[1] if row[1] else "Unknown Staff",  # full_name
-                "role": row[2] if row[2] else "Staff",  # role_designation
-                "contact": row[3],  # phone_number
-                "phone": row[3],  # phone_number (duplicate for compatibility)
-                "email": row[4],
-                "shift": shift_text,  #daily_working_hours
-                "status": row[6] if row[6] else "Active",
-                "specialization": row[7],
-                "hireDate": str(row[8]) if row[8] else None,  # date_of_joining
-                "department": row[9],
-                "staffId": row[0]  # staff_id for display
-            })
-        
-        return jsonify(staff_list), 200
-    except Exception as e:
-        print(f"[ERROR] Failed to fetch staff: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"message": "Failed to fetch staff", "error": str(e)}), 500
-    finally:
-        conn.close()
+# Duplicate route removed to avoid conflict - using the one at line 2314
 
 # --- Razorpay Payment Routes ---
 @app.route('/api/create-payment-order', methods=['POST'])

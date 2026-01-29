@@ -3789,157 +3789,148 @@ input:checked+.med-toggle-slider:before {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
-/* --- Payments Ticket UI --- */
-.med-payments-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-bottom: 40px;
+
+/* --- Payments Ticket UI (Compact & Attractive) --- */
+/* --- Modern Bill Modal & Financial UI --- */
+.bill-modal {
+    max-width: 95vw;
+    animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.med-payment-ticket {
-    display: flex;
-    background: var(--med-surface);
-    border-radius: 20px;
-    overflow: hidden;
-    position: relative;
-    border: 1px solid var(--med-border);
-    transition: all 0.3s ease;
-    min-height: 120px;
+@keyframes modalSlideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
-.med-payment-ticket.cancelled {
-    filter: blur(2.5px) grayscale(0.8);
-    opacity: 0.6;
-    pointer-events: none;
-    user-select: none;
+.bill-modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.med-payment-ticket.cancelled::after {
-    content: "CANCELLED";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-15deg);
-    font-size: 3rem;
-    font-weight: 900;
-    color: rgba(239, 68, 68, 0.15);
-    z-index: 10;
-    pointer-events: none;
-}
-
-.med-payment-ticket::after {
-    content: '';
-    position: absolute;
-    left: 78%;
-    top: -10px;
-    bottom: -10px;
-    width: 2px;
-    border-left: 2px dashed var(--med-border);
-    z-index: 1;
-}
-
-.med-payment-ticket::before {
-    content: '';
-    position: absolute;
-    left: 78%;
-    top: -10px;
-    width: 20px;
-    height: 20px;
-    background: var(--med-bg);
-    border-radius: 50%;
-    transform: translateX(-50%);
-    box-shadow: inset 0 -3px 5px rgba(0,0,0,0.05);
-    z-index: 2;
-}
-
-.med-payment-ticket-bottom-cut {
-    position: absolute;
-    left: 78%;
-    bottom: -10px;
-    width: 20px;
-    height: 20px;
-    background: var(--med-bg);
-    border-radius: 50%;
-    transform: translateX(-50%);
-    box-shadow: inset 0 3px 5px rgba(0,0,0,0.05);
-    z-index: 2;
-}
-
-.med-ticket-main {
-    flex: 3;
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-}
-
-.med-ticket-stub {
-    flex: 1;
-    background: rgba(14, 165, 233, 0.02);
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    border-left: 1px solid var(--med-border);
-    z-index: 3;
-}
-
-.med-ticket-info {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.med-ticket-patient {
-    font-size: 1.15rem;
+.bill-modal-body table th {
     font-weight: 700;
-    color: var(--med-text-main);
-}
-
-.med-ticket-test {
-    font-size: 0.9rem;
-    color: var(--med-primary);
-    font-weight: 600;
-}
-
-.med-ticket-meta {
-    font-size: 0.75rem;
-    color: var(--med-text-muted);
-}
-
-.med-ticket-status {
-    padding: 4px 12px;
-    border-radius: 99px;
-    font-size: 0.7rem;
-    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
-.med-ticket-status.status-paid { background: #dcfce7; color: #15803d; }
-.med-ticket-status.status-pending { background: #fee2e2; color: #991b1b; }
-.med-ticket-status.status-unpaid { background: #f1f5f9; color: #475569; }
-
-.med-btn-bill {
-    background: var(--med-primary);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
+.bill-modal-body table td {
+    border-bottom: 1px solid var(--med-border);
 }
 
-.med-btn-bill:hover {
-    background: var(--med-primary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);
+.bill-modal-body table tfoot td {
+    border-top: 2px solid var(--med-primary);
+}
+
+.med-payment-amount-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--med-primary);
+}
+
+.med-transaction-tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--med-bg);
+    border: 1px solid var(--med-border);
+}
+
+/* Printing logic */
+@media print {
+    .med-dashboard-container>*:not(.med-modal-overlay) {
+        display: none !important;
+    }
+
+    .med-modal-overlay {
+        background: white !important;
+        position: static !important;
+    }
+
+    .bill-modal {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+    }
+
+    .med-btn {
+        display: none !important;
+    }
+}
+
+/* --- Attractive Dropdown & Filter UI --- */
+.med-custom-filter-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--med-bg);
+    border: 1px solid var(--med-border-dark);
+    border-radius: 10px;
+    padding: 0 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.med-custom-filter-wrap:hover {
+    border-color: var(--med-primary);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+}
+
+.med-custom-filter-wrap .filter-icon {
+    color: var(--med-primary);
+    margin-right: 8px;
+    opacity: 0.8;
+}
+
+.med-select-mini.attractive {
+    background: transparent;
+    border: none;
+    color: var(--med-text-main);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 8px 24px 8px 4px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    min-width: 130px;
+}
+
+.med-custom-filter-wrap::after {
+    content: '▼';
+    font-size: 0.7rem;
+    color: var(--med-primary);
+    position: absolute;
+    right: 12px;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.med-select-mini.attractive:focus {
+    box-shadow: none;
+}
+
+/* Fix for standard tags */
+.med-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* Feedback Card Hover */
+.med-feedback-item {
+    transition: all 0.2s ease;
+    border-radius: 12px;
+    padding: 16px !important;
+    margin: 4px -16px;
+}
+
+.med-feedback-item:hover {
+    background: #f8fafc;
+    transform: translateX(4px);
 }

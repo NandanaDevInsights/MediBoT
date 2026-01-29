@@ -121,6 +121,21 @@ const Icons = {
     ),
     Loader: (props) => (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 2v4" /><path d="m16.2 7.8 2.9-2.9" /><path d="M18 12h4" /><path d="m16.2 16.2 2.9 2.9" /><path d="M12 18v4" /><path d="m4.9 19.1 2.9-2.9" /><path d="M2 12h4" /><path d="m4.9 4.9 2.9 2.9" /></svg>
+    ),
+    Star: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+    ),
+    MessageSquare: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+    ),
+    CalendarCheck: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /><path d="m9 16 2 2 4-4" /></svg>
+    ),
+    ToggleLeft: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="12" x="2" y="6" rx="6" /><circle cx="8" cy="12" r="2" /></svg>
+    ),
+    ToggleRight: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="12" x="2" y="6" rx="6" /><circle cx="16" cy="12" r="2" /></svg>
     )
 };
 
@@ -165,6 +180,7 @@ const LabAdminDashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [appointmentFilter, setAppointmentFilter] = useState('All'); // Status: All, Pending, Completed, etc.
     const [dateFilter, setDateFilter] = useState('Today'); // New Default: Today
+    const [paymentDateFilter, setPaymentDateFilter] = useState('All Time'); // Payment specific filter
 
     // --- Advanced Filter State ---
     const [expandedRowId, setExpandedRowId] = useState(null);
@@ -197,6 +213,10 @@ const LabAdminDashboard = () => {
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [uploadData, setUploadData] = useState({ patient_id: '', test_name: '', file: null });
     const [profileData, setProfileData] = useState({ lab_name: '', address: '', contact: '', admin_name: '', email: '' });
+
+    // --- Bill Modal State ---
+    const [showBillModal, setShowBillModal] = useState(false);
+    const [selectedPaymentBill, setSelectedPaymentBill] = useState(null);
 
     // --- UI State ---
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -237,6 +257,28 @@ const LabAdminDashboard = () => {
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [statusUpdateAppointment, setStatusUpdateAppointment] = useState(null);
     const [newStatus, setNewStatus] = useState('');
+
+    // --- Settings States ---
+    const [labSettings, setLabSettings] = useState({
+        workingHours: { start: '08:00', end: '20:00' },
+        workingDays: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false },
+        holidays: [],
+        tests: [
+            { id: 1, name: 'Complete Blood Count (CBC)', category: 'Hematology', enabled: true },
+            { id: 2, name: 'Lipid Profile', category: 'Biochemistry', enabled: true },
+            { id: 3, name: 'Thyroid Profile (T3, T4, TSH)', category: 'Hormones', enabled: true },
+            { id: 4, name: 'Liver Function Test (LFT)', category: 'Biochemistry', enabled: false },
+            { id: 5, name: 'Kidney Function Test (KFT)', category: 'Biochemistry', enabled: true },
+        ],
+        feedback: [
+            { id: 1, patient: 'Rahul Sharma', rating: 5, comment: 'Excellent service and very professional staff.', date: '2024-03-24', category: 'General' },
+            { id: 2, patient: 'Anita Desai', rating: 4, comment: 'Clean facility, reports were slightly delayed.', date: '2024-03-25', category: 'Facility' },
+            { id: 3, patient: 'Suresh Iyer', rating: 5, comment: 'Best lab in the area. Very accurate results.', date: '2024-03-26', category: 'Accuracy' },
+        ]
+    });
+
+    const [feedbackFilter, setFeedbackFilter] = useState({ rating: 'All', date: 'All' });
+    const [activeSettingsTab, setActiveSettingsTab] = useState('Feedback');
 
     // Clock
     useEffect(() => {
@@ -1030,6 +1072,87 @@ const LabAdminDashboard = () => {
     );
 
     // --- Section Content Renderers ---
+
+    const renderBillModal = () => {
+        if (!showBillModal || !selectedPaymentBill) return null;
+
+        return (
+            <div className="med-modal-overlay" onClick={() => setShowBillModal(false)} style={{ zIndex: 10000 }}>
+                <div className="med-modal-animate bill-modal" onClick={e => e.stopPropagation()} style={{
+                    background: 'var(--med-surface)', width: '500px', borderRadius: '24px',
+                    overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    border: '1px solid var(--med-border)'
+                }}>
+                    <div className="bill-modal-header" style={{
+                        padding: '24px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                        color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}>
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>Invoice Detail</h3>
+                            <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: '0.85rem' }}>Transaction #{String(selectedPaymentBill.id).toUpperCase().slice(-8)}</p>
+                        </div>
+                        <button onClick={() => setShowBillModal(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', padding: '8px', borderRadius: '50%', cursor: 'pointer', color: 'white' }}>
+                            <Icons.X size={20} />
+                        </button>
+                    </div>
+
+                    <div className="bill-modal-body" style={{ padding: '32px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                            <div>
+                                <h4 style={{ margin: '0 0 8px', color: 'var(--med-text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Billed To</h4>
+                                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: 'var(--med-text-main)' }}>{selectedPaymentBill.patient}</p>
+                                <p style={{ margin: '4px 0 0', color: 'var(--med-text-body)', fontSize: '0.9rem' }}>{selectedPaymentBill.contact || 'No contact provided'}</p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <h4 style={{ margin: '0 0 8px', color: 'var(--med-text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</h4>
+                                <p style={{ margin: 0, fontWeight: 600, color: 'var(--med-text-main)' }}>{selectedPaymentBill.date}</p>
+                                <p style={{ margin: '4px 0 0', color: 'var(--med-text-body)', fontSize: '0.9rem' }}>{selectedPaymentBill.time}</p>
+                            </div>
+                        </div>
+
+                        <div style={{ border: '1px solid var(--med-border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '24px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead style={{ background: 'var(--med-bg)' }}>
+                                    <tr>
+                                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '0.85rem', color: 'var(--med-text-muted)' }}>Description</th>
+                                        <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '0.85rem', color: 'var(--med-text-muted)' }}>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ padding: '16px', borderBottom: '1px solid var(--med-border)' }}>
+                                            <div style={{ fontWeight: 600, color: 'var(--med-text-main)' }}>{selectedPaymentBill.test}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--med-text-muted)' }}>Standard processing fee included</div>
+                                        </td>
+                                        <td style={{ padding: '16px', textAlign: 'right', fontWeight: 600, color: 'var(--med-text-main)', borderBottom: '1px solid var(--med-border)' }}>₹{selectedPaymentBill.amount || '750'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ padding: '12px 16px', color: 'var(--med-text-body)' }}>Tax (GST 5%)</td>
+                                        <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--med-text-body)' }}>₹{Math.round((selectedPaymentBill.amount || 750) * 0.05)}</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot style={{ background: 'var(--med-bg)' }}>
+                                    <tr>
+                                        <td style={{ padding: '16px', fontWeight: 700, fontSize: '1.1rem', color: 'var(--med-primary)' }}>Total Due</td>
+                                        <td style={{ padding: '16px', textAlign: 'right', fontWeight: 800, fontSize: '1.25rem', color: 'var(--med-primary)' }}>₹{Math.round((selectedPaymentBill.amount || 750) * 1.05)}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+                            <button className="med-btn med-btn-primary" style={{ flex: 1 }} onClick={() => window.print()}>
+                                <Icons.Download size={18} /> Download PDF
+                            </button>
+                            <button className="med-btn" style={{ flex: 1, border: '1px solid var(--med-border)', background: 'white' }} onClick={() => setShowBillModal(false)}>
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     const renderOverview = () => (
         <>
@@ -2009,8 +2132,12 @@ const LabAdminDashboard = () => {
                                             {/* 4. Name Column Enhancement */}
                                             <td>
                                                 <div className="med-user-cell">
-                                                    <div className="med-avatar-circle small" style={{ background: '#e0e7ff', color: '#4338ca', fontWeight: 700 }}>
-                                                        {(s.name || '?').charAt(0).toUpperCase()}
+                                                    <div className="med-avatar-circle small" style={{ background: '#e0e7ff', color: '#4338ca', fontWeight: 700, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        {s.image ? (
+                                                            <img src={s.image} alt={s.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        ) : (
+                                                            (s.name || '?').charAt(0).toUpperCase()
+                                                        )}
                                                     </div>
                                                     <div className="info">
                                                         <span className="name">{s.name || 'Unknown Staff'}</span>
@@ -2418,11 +2545,201 @@ const LabAdminDashboard = () => {
         );
     };
 
-    const renderSettings = () => (
-        <div className="med-empty-state">
-            {/* Empty as requested */}
-        </div>
-    );
+    const renderSettings = () => {
+        const avgRating = (labSettings.feedback.reduce((acc, f) => acc + f.rating, 0) / labSettings.feedback.length).toFixed(1);
+
+        const toggleTest = (id) => {
+            setLabSettings(prev => ({
+                ...prev,
+                tests: prev.tests.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t)
+            }));
+            showToast("Test status updated successfully");
+        };
+
+        const toggleDay = (day) => {
+            setLabSettings(prev => ({
+                ...prev,
+                workingDays: { ...prev.workingDays, [day]: !prev.workingDays[day] }
+            }));
+            showToast(`${day} status updated`);
+        };
+
+        return (
+            <div className="med-settings-page" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                <div className="med-premium-header">
+                    <div>
+                        <h2 className="med-page-heading">Lab Configurations</h2>
+                        <p className="med-page-subheading">Manage availability, tests, and view customer feedback</p>
+                    </div>
+                </div>
+
+                {/* Settings Navigation */}
+                <div className="med-filter-pills-row">
+                    {[
+                        { id: 'Feedback', label: 'Feedback & Ratings', icon: <Icons.Star size={18} /> },
+                        { id: 'Hours', label: 'Working Hours & Days', icon: <Icons.Clock size={18} /> },
+                        { id: 'Tests', label: 'Test Management', icon: <Icons.Flask size={18} /> }
+                    ].map(tab => (
+                        <div
+                            key={tab.id}
+                            className={`med-filter-pill-item ${activeSettingsTab === tab.id ? 'active' : ''}`}
+                            onClick={() => setActiveSettingsTab(tab.id)}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Tab Content */}
+                <div className="med-settings-content">
+                    {activeSettingsTab === 'Feedback' && (
+                        <div className="med-feedback-section" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            <div className="med-stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                                <div className="med-stat-card">
+                                    <div className="icon" style={{ background: '#fef3c7', color: '#d97706' }}><Icons.Star /></div>
+                                    <div className="info">
+                                        <div className="value">{avgRating} / 5.0</div>
+                                        <div className="label">Average Rating</div>
+                                    </div>
+                                </div>
+                                <div className="med-stat-card">
+                                    <div className="icon" style={{ background: '#ecfdf5', color: '#059669' }}><Icons.MessageSquare /></div>
+                                    <div className="info">
+                                        <div className="value">{labSettings.feedback.length}</div>
+                                        <div className="label">Total Reviews</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="med-table-card premium">
+                                <div className="med-table-header" style={{ padding: '20px', borderBottom: '1px solid var(--med-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--med-text-main)' }}>Recent Feedback</h3>
+                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                        <div className="med-custom-filter-wrap">
+                                            <Icons.Filter size={14} className="filter-icon" />
+                                            <select
+                                                className="med-select-mini attractive"
+                                                value={feedbackFilter.rating}
+                                                onChange={e => setFeedbackFilter({ ...feedbackFilter, rating: e.target.value })}
+                                            >
+                                                <option value="All">All Ratings</option>
+                                                <option value="5">5 Stars Only</option>
+                                                <option value="4">4+ Stars</option>
+                                                <option value="3">3+ Stars</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ padding: '0 20px 20px' }}>
+                                    {labSettings.feedback.map(f => (
+                                        <div key={f.id} className="med-feedback-item" style={{ borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '16px' }}>
+                                            <div className="med-avatar-mini" style={{ width: '40px', height: '40px', background: 'var(--med-primary-light)', color: 'var(--med-primary)', flexShrink: 0 }}>
+                                                {f.patient.charAt(0)}
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                    <span style={{ fontWeight: 700, color: 'var(--med-text-main)' }}>{f.patient}</span>
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--med-text-muted)' }}>{f.date}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '2px', marginBottom: '8px' }}>
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Icons.Star key={i} size={14} fill={i < f.rating ? "#f59e0b" : "none"} color={i < f.rating ? "#f59e0b" : "#cbd5e1"} />
+                                                    ))}
+                                                </div>
+                                                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--med-text-body)', lineHeight: '1.5' }}>{f.comment}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSettingsTab === 'Hours' && (
+                        <div className="med-hours-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
+                            <div className="med-section-card">
+                                <div className="med-card-header" style={{ marginBottom: '24px' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Operating Hours</h3>
+                                    <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--med-text-muted)' }}>Define when patients can book appointments</p>
+                                </div>
+                                <div className="med-form-group">
+                                    <label>Opening Time</label>
+                                    <input type="time" className="med-input-pro" value={labSettings.workingHours.start} onChange={e => setLabSettings({ ...labSettings, workingHours: { ...labSettings.workingHours, start: e.target.value } })} />
+                                </div>
+                                <div className="med-form-group" style={{ marginTop: '16px' }}>
+                                    <label>Closing Time</label>
+                                    <input type="time" className="med-input-pro" value={labSettings.workingHours.end} onChange={e => setLabSettings({ ...labSettings, workingHours: { ...labSettings.workingHours, end: e.target.value } })} />
+                                </div>
+                                <button className="med-btn med-btn-primary" style={{ marginTop: '24px', width: '100%' }}>Update Hours</button>
+                            </div>
+
+                            <div className="med-section-card">
+                                <div className="med-card-header" style={{ marginBottom: '24px' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Active Working Days</h3>
+                                    <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--med-text-muted)' }}>Toggle availability for specific days</p>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {Object.entries(labSettings.workingDays).map(([day, enabled]) => (
+                                        <div key={day} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f8fafc', borderRadius: '12px' }}>
+                                            <span style={{ fontWeight: 600 }}>{day}</span>
+                                            <div onClick={() => toggleDay(day)} style={{ cursor: 'pointer', color: enabled ? 'var(--med-primary)' : '#94a3b8' }}>
+                                                {enabled ? <Icons.ToggleRight size={32} /> : <Icons.ToggleLeft size={32} />}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSettingsTab === 'Tests' && (
+                        <div className="med-tests-section">
+                            <div className="med-table-card premium">
+                                <table className="med-table premium-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Test Name</th>
+                                            <th>Category</th>
+                                            <th>Current Status</th>
+                                            <th style={{ textAlign: 'right' }}>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {labSettings.tests.map(test => (
+                                            <tr key={test.id}>
+                                                <td style={{ fontWeight: 600 }}>{test.name}</td>
+                                                <td><span className="med-tag" style={{ background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem' }}>{test.category}</span></td>
+                                                <td>
+                                                    <span style={{
+                                                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                                        color: test.enabled ? 'var(--med-success)' : 'var(--med-error)',
+                                                        fontSize: '0.85rem', fontWeight: 600
+                                                    }}>
+                                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'currentColor' }}></div>
+                                                        {test.enabled ? 'Available' : 'Disabled'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ textAlign: 'right' }}>
+                                                    <button
+                                                        className={`med-btn ${test.enabled ? 'med-btn-danger' : 'med-btn-success'}`}
+                                                        style={{ padding: '6px 14px', fontSize: '0.8rem', minWidth: '100px' }}
+                                                        onClick={() => toggleTest(test.id)}
+                                                    >
+                                                        {test.enabled ? 'Disable' : 'Enable'}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
 
     const renderProfile = () => (
         <div className="med-form-grid">
@@ -2627,18 +2944,69 @@ const LabAdminDashboard = () => {
     };
 
     const renderPayments = () => {
-        const filteredPayments = (appointments || []).filter(a =>
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Helper to check if a date is within this week
+        const isThisWeek = (dateStr) => {
+            const date = new Date(dateStr);
+            const today = new Date();
+            const firstDay = new Date(today.setDate(today.getDate() - today.getDay()));
+            return date >= firstDay;
+        };
+
+        // Helper to check if a date is within this month
+        const isThisMonth = (dateStr) => {
+            const date = new Date(dateStr);
+            const today = new Date();
+            return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+        };
+
+        const filteredPaymentsByDate = (appointments || []).filter(a => {
+            if (paymentDateFilter === 'Today') return a.date === todayStr;
+            if (paymentDateFilter === 'This Week') return isThisWeek(a.date);
+            if (paymentDateFilter === 'This Month') return isThisMonth(a.date);
+            return true; // All Time
+        });
+
+        const filteredPayments = filteredPaymentsByDate.filter(a =>
             String(a.patient || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             String(a.id || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
 
         return (
             <div className="med-payments-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div className="med-premium-header">
+                <div className="med-premium-header" style={{ marginBottom: 0 }}>
                     <div>
                         <h2 className="med-page-heading">Financial Settlements</h2>
                         <p className="med-page-subheading">Track transactions, pending dues, and generate invoices</p>
                     </div>
+                </div>
+
+                {/* Attractive Date Filter Pills */}
+                <div className="med-filter-pills-row">
+                    {[
+                        { label: 'All Time', id: 'All Time', icon: '📅' },
+                        { label: 'Today', id: 'Today', icon: '☀️' },
+                        { label: 'This Week', id: 'This Week', icon: '📊' },
+                        { label: 'This Month', id: 'This Month', icon: '🌙' }
+                    ].map(pill => (
+                        <div
+                            key={pill.id}
+                            className={`med-filter-pill-item ${paymentDateFilter === pill.id ? 'active' : ''}`}
+                            onClick={() => setPaymentDateFilter(pill.id)}
+                        >
+                            <span style={{ marginRight: '6px' }}>{pill.icon}</span>
+                            {pill.label}
+                            <span className="pill-count">
+                                {(appointments || []).filter(a => {
+                                    if (pill.id === 'Today') return a.date === todayStr;
+                                    if (pill.id === 'This Week') return isThisWeek(a.date);
+                                    if (pill.id === 'This Month') return isThisMonth(a.date);
+                                    return true;
+                                }).length}
+                            </span>
+                        </div>
+                    ))}
                 </div>
 
                 {filteredPayments.length === 0 ? (
@@ -2650,47 +3018,76 @@ const LabAdminDashboard = () => {
                         <p style={{ color: 'var(--med-text-muted)', maxWidth: '400px', margin: '0 auto' }}>Sync data from Appointments to begin managing settlements.</p>
                     </div>
                 ) : (
-                    <div className="med-payments-grid">
-                        {filteredPayments.map(appt => (
-                            <div
-                                key={appt.id}
-                                className={`med-payment-ticket ${appt.status === 'Cancelled' ? 'cancelled' : ''}`}
-                            >
-                                <div className="med-ticket-main">
-                                    <div className="med-avatar-circle" style={{ width: '64px', height: '64px', fontSize: '1.5rem', flexShrink: 0 }}>
-                                        {appt.patient ? appt.patient.charAt(0).toUpperCase() : '?'}
-                                    </div>
-                                    <div className="med-ticket-info">
-                                        <div className="med-ticket-patient">{appt.patient || 'Unknown Patient'}</div>
-                                        <div className="med-ticket-test">🔬 {appt.test || 'General Test'}</div>
-                                        <div className="med-ticket-meta">
-                                            PAY-ID: TXN-{String(appt.id || '').toUpperCase().slice(-6)} • {appt.date} • {appt.time}
-                                        </div>
-                                    </div>
-                                    <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
-                                        <span className={`med-ticket-status ${(appt.paymentStatus || appt.status) === 'Paid' || appt.status === 'Completed' ? 'status-paid' :
-                                            appt.status === 'Cancelled' ? 'status-unpaid' : 'status-pending'
-                                            }`}>
-                                            {(appt.paymentStatus || appt.status) === 'Paid' || appt.status === 'Completed' ? '✓ Paid' :
-                                                appt.status === 'Cancelled' ? '✕ Cancelled' : '⚠ Action Required'}
-                                        </span>
-                                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--med-text-main)', fontFamily: 'monospace' }}>
-                                            ₹{appt.amount || '750'}.00
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="med-ticket-stub">
-                                    <button
-                                        className="med-btn-bill"
-                                        onClick={() => handleGenerateBill(appt)}
-                                        disabled={appt.status === 'Cancelled'}
-                                    >
-                                        <Icons.FileText size={18} /> Invoice
-                                    </button>
-                                </div>
-                                <div className="med-payment-ticket-bottom-cut"></div>
-                            </div>
-                        ))}
+                    <div className="med-table-card premium">
+                        <table className="med-table premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Transaction ID</th>
+                                    <th>Date & Time</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th style={{ textAlign: 'right' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredPayments.map(appt => (
+                                    <tr key={appt.id} className="med-table-row">
+                                        <td>
+                                            <div className="med-user-cell">
+                                                <div className="med-avatar-mini" style={{ background: '#f8fafc', color: '#64748b' }}>
+                                                    {appt.patient ? appt.patient.charAt(0).toUpperCase() : '?'}
+                                                </div>
+                                                <div className="info">
+                                                    <span className="name">{appt.patient || 'Unknown Patient'}</span>
+                                                    <span className="sub-text">{appt.test || 'General Test'}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="mono-text" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--med-primary)' }}>
+                                                #{String(appt.id || '').toUpperCase().slice(-8)}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 500 }}>{appt.date}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)' }}>{appt.time}</div>
+                                        </td>
+                                        <td>
+                                            <span style={{ fontWeight: 700, color: 'var(--med-text-main)', fontSize: '1rem' }}>₹{appt.amount || '750'}</span>
+                                        </td>
+                                        <td>
+                                            <span className={`med-status-badge ${(appt.paymentStatus || appt.status || '').toLowerCase().replace(' ', '-')}`} style={{
+                                                padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                                                background: (appt.paymentStatus === 'Paid' || appt.status === 'Completed') ? '#dcfce7' : (appt.status === 'Cancelled' ? '#fee2e2' : '#fef9c3'),
+                                                color: (appt.paymentStatus === 'Paid' || appt.status === 'Completed') ? '#15803d' : (appt.status === 'Cancelled' ? '#dc2626' : '#854d0e')
+                                            }}>
+                                                {(appt.paymentStatus === 'Paid' || appt.status === 'Completed') ? 'Paid' : (appt.status === 'Cancelled' ? 'Cancelled' : 'Pending')}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <div className="med-action-group">
+                                                <button
+                                                    className="med-btn-icon"
+                                                    title="View Bill"
+                                                    onClick={() => { setSelectedPaymentBill(appt); setShowBillModal(true); }}
+                                                >
+                                                    <Icons.Eye size={18} />
+                                                </button>
+                                                <button
+                                                    className="med-btn-icon info"
+                                                    title="Generate Invoice"
+                                                    onClick={() => handleGenerateBill(appt)}
+                                                    disabled={appt.status === 'Cancelled'}
+                                                >
+                                                    <Icons.FileText size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>
@@ -2720,6 +3117,7 @@ const LabAdminDashboard = () => {
 
             {/* Modals */}
             {renderPatientHistoryModal()}
+            {renderBillModal()}
 
             {notification && (
                 <div className="med-toast" style={{ background: notification.type === 'error' ? 'var(--med-error)' : 'var(--med-primary)' }}>
