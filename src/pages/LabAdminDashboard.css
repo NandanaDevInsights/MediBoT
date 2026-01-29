@@ -3510,3 +3510,436 @@ input:checked+.med-toggle-slider:before {
     transform: translateY(-2px);
     box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.5);
 }
+
+/* --- Attractive Filter Pills for Appointments --- */
+.med-filter-pills-row {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+    overflow-x: auto;
+    padding: 4px 0 12px 0;
+    scrollbar-width: none;
+}
+
+.med-filter-pills-row::-webkit-scrollbar {
+    display: none;
+}
+
+.med-filter-pill-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    background: var(--med-surface);
+    border: 1px solid var(--med-border);
+    border-radius: 99px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--med-text-body);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    user-select: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.med-filter-pill-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--med-primary-hover);
+    box-shadow: 0 6px 12px rgba(14, 165, 233, 0.1);
+    color: var(--med-primary-hover);
+}
+
+.med-filter-pill-item.active {
+    background: var(--med-primary);
+    border-color: var(--med-primary);
+    color: white;
+    box-shadow: 0 8px 16px rgba(14, 165, 233, 0.25);
+}
+
+.med-filter-pill-item.active .pill-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.med-filter-pill-item.active .pill-dot {
+    background: white !important;
+    transform: scale(1.2);
+}
+
+.pill-dot.blue {
+    background: #3b82f6;
+}
+
+.pill-dot.orange {
+    background: #f97316;
+}
+
+.pill-dot.green {
+    background: #10b981;
+}
+
+.pill-dot.gray {
+    background: #94a3b8;
+}
+
+.pill-count {
+    background: var(--med-bg);
+    color: var(--med-text-muted);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+
+.med-filter-pill-item:hover .pill-count {
+    background: var(--med-primary-light);
+    color: var(--med-primary);
+}
+
+.med-reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.med-report-user-card {
+    background: var(--med-surface);
+    border: 1px solid var(--med-border);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    position: relative;
+    overflow: hidden;
+}
+
+.med-report-user-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: var(--med-primary);
+}
+
+.med-upload-sign {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #dcfce7;
+    color: #166534;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(22, 101, 52, 0.1);
+}
+
+.card-header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.user-identity-block {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.card-avatar-wrapper {
+    position: relative;
+}
+
+.card-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--med-primary-light) 0%, #bae6fd 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--med-primary);
+}
+
+.user-meta h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--med-text-main);
+    margin: 0;
+}
+
+.user-id-tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--med-text-muted);
+    letter-spacing: 0.05em;
+}
+
+.card-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.stat-box {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-box .label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--med-text-muted);
+    text-transform: uppercase;
+}
+
+.stat-box .value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--med-text-main);
+}
+
+.latest-test-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--med-primary-light);
+    padding: 12px 16px;
+    border-radius: 12px;
+    border-left: 4px solid var(--med-primary);
+}
+
+.test-icon {
+    font-size: 1.2rem;
+}
+
+.test-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.test-info .title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--med-primary);
+    text-transform: uppercase;
+}
+
+.test-info .name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--med-text-main);
+}
+
+.card-footer-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.btn-report-action {
+    flex: 1;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-report-action.primary {
+    background: var(--med-surface);
+    border: 1px solid var(--med-border);
+    color: var(--med-text-main);
+}
+
+.btn-report-action.primary:hover {
+    background: var(--med-bg);
+    border-color: var(--med-primary);
+    color: var(--med-primary);
+}
+
+.btn-report-action.secondary {
+    background: var(--med-primary);
+    color: white;
+    border: none;
+}
+
+.btn-report-action.secondary:hover {
+    background: var(--med-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+/* --- Payments Ticket UI --- */
+.med-payments-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 40px;
+}
+
+.med-payment-ticket {
+    display: flex;
+    background: var(--med-surface);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--med-border);
+    transition: all 0.3s ease;
+    min-height: 120px;
+}
+
+.med-payment-ticket.cancelled {
+    filter: blur(2.5px) grayscale(0.8);
+    opacity: 0.6;
+    pointer-events: none;
+    user-select: none;
+}
+
+.med-payment-ticket.cancelled::after {
+    content: "CANCELLED";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    font-size: 3rem;
+    font-weight: 900;
+    color: rgba(239, 68, 68, 0.15);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.med-payment-ticket::after {
+    content: '';
+    position: absolute;
+    left: 78%;
+    top: -10px;
+    bottom: -10px;
+    width: 2px;
+    border-left: 2px dashed var(--med-border);
+    z-index: 1;
+}
+
+.med-payment-ticket::before {
+    content: '';
+    position: absolute;
+    left: 78%;
+    top: -10px;
+    width: 20px;
+    height: 20px;
+    background: var(--med-bg);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: inset 0 -3px 5px rgba(0,0,0,0.05);
+    z-index: 2;
+}
+
+.med-payment-ticket-bottom-cut {
+    position: absolute;
+    left: 78%;
+    bottom: -10px;
+    width: 20px;
+    height: 20px;
+    background: var(--med-bg);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: inset 0 3px 5px rgba(0,0,0,0.05);
+    z-index: 2;
+}
+
+.med-ticket-main {
+    flex: 3;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.med-ticket-stub {
+    flex: 1;
+    background: rgba(14, 165, 233, 0.02);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-left: 1px solid var(--med-border);
+    z-index: 3;
+}
+
+.med-ticket-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.med-ticket-patient {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--med-text-main);
+}
+
+.med-ticket-test {
+    font-size: 0.9rem;
+    color: var(--med-primary);
+    font-weight: 600;
+}
+
+.med-ticket-meta {
+    font-size: 0.75rem;
+    color: var(--med-text-muted);
+}
+
+.med-ticket-status {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.med-ticket-status.status-paid { background: #dcfce7; color: #15803d; }
+.med-ticket-status.status-pending { background: #fee2e2; color: #991b1b; }
+.med-ticket-status.status-unpaid { background: #f1f5f9; color: #475569; }
+
+.med-btn-bill {
+    background: var(--med-primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
+}
+
+.med-btn-bill:hover {
+    background: var(--med-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);
+}

@@ -8,113 +8,119 @@ import logoImage from '../assets/Logo.png';
 
 // --- Icons (SVGs) for Professional Look ---
 const Icons = {
-    Dashboard: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg>
+    Dashboard: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg>
     ),
-    Calendar: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg>
+    Calendar: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg>
     ),
-    TestTube: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7 6.82 21.18a2.83 2.83 0 0 1-3.99-.01v0a2.83 2.83 0 0 1 0-4L17 3" /><path d="m16 2 6 6" /><path d="M12 16H4" /></svg>
+    TestTube: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 7 6.82 21.18a2.83 2.83 0 0 1-3.99-.01v0a2.83 2.83 0 0 1 0-4L17 3" /><path d="m16 2 6 6" /><path d="M12 16H4" /></svg>
     ),
-    Users: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+    Users: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
     ),
-    FileText: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
+    FileText: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
     ),
-    Stethoscope: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.8 2.3A.3.3 0 0 1 5 2h14a.3.3 0 0 1 .2.3v3.4a3 3 0 0 1-3 3v0a3 3 0 0 1-3-3V2" /><path d="M12 2v5a7 7 0 0 1-14 0V5a3 3 0 0 1-3 3v0a3 3 0 0 1-3-3V2" /><path d="M12 7v4a5 5 0 0 0 5 5h0a5 5 0 0 0 5-5V7" /><circle cx="12" cy="20" r="2" /></svg>
+    Stethoscope: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4.8 2.3A.3.3 0 0 1 5 2h14a.3.3 0 0 1 .2.3v3.4a3 3 0 0 1-3 3v0a3 3 0 0 1-3-3V2" /><path d="M12 2v5a7 7 0 0 1-14 0V5a3 3 0 0 1-3 3v0a3 3 0 0 1-3-3V2" /><path d="M12 7v4a5 5 0 0 0 5 5h0a5 5 0 0 0 5-5V7" /><circle cx="12" cy="20" r="2" /></svg>
     ),
-    CreditCard: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></svg>
+    CreditCard: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></svg>
     ),
-    Settings: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
+    Settings: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
     ),
-    Bell: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+    Bell: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
     ),
-    Search: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+    Search: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
     ),
-    Flask: () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v7.31" /><path d="M14 2v7.31" /><path d="M8.5 2h7" /><path d="M14 9.3a6.5 6.5 0 1 1-4 0" /><path d="M5.52 16h12.96" /></svg>
+    Flask: (props) => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M10 2v7.31" /><path d="M14 2v7.31" /><path d="M8.5 2h7" /><path d="M14 9.3a6.5 6.5 0 1 1-4 0" /><path d="M5.52 16h12.96" /></svg>
     ),
-    UploadCloud: () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m16 16-4-4-4 4" /></svg>
+    UploadCloud: (props) => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m16 16-4-4-4 4" /></svg>
     ),
-    Download: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
+    Download: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
     ),
-    Eye: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+    Eye: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
     ),
-    X: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+    X: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
     ),
-    Home: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+    Home: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
     ),
-    Menu: () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12" /><line x1="3" x2="21" y1="6" y2="6" /><line x1="3" x2="21" y1="18" y2="18" /></svg>
+    Menu: (props) => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="12" y2="12" /><line x1="3" x2="21" y1="6" y2="6" /><line x1="3" x2="21" y1="18" y2="18" /></svg>
     ),
-    ChevronDown: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+    ChevronDown: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="6 9 12 15 18 9" /></svg>
     ),
-    Check: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+    Check: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="20 6 9 17 4 12" /></svg>
     ),
-    Share: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" x2="12" y1="2" y2="15" /></svg>
+    Share: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" x2="12" y1="2" y2="15" /></svg>
     ),
-    CheckCircle: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+    CheckCircle: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
     ),
-    Filter: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+    Filter: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
     ),
-    Trash: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+    Trash: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
     ),
-    Link: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+    Link: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
     ),
-    User: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+    User: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
     ),
-    Phone: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+    Phone: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
     ),
-    Activity: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+    Activity: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
     ),
-    Clock: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+    Clock: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
     ),
-    LogOut: () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
+    LogOut: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
     ),
-    ChevronUp: () => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+    ChevronUp: (props) => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="18 15 12 9 6 15" /></svg>
     ),
-    Plus: () => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" /></svg>
+    Plus: (props) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" /></svg>
     ),
-    AlertTriangle: () => (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" /></svg>
+    AlertTriangle: (props) => (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" /></svg>
     ),
-    TrendingUp: () => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+    TrendingUp: (props) => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
     ),
-    ChevronRight: () => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+    ChevronRight: (props) => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="9 18 15 12 9 6" /></svg>
     ),
-    ClockSmall: () => (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+    ClockSmall: (props) => (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
     ),
-    AlertOctagon: () => (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>
+    AlertOctagon: (props) => (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>
+    ),
+    MoreVertical: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
+    ),
+    Loader: (props) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 2v4" /><path d="m16.2 7.8 2.9-2.9" /><path d="M18 12h4" /><path d="m16.2 16.2 2.9 2.9" /><path d="M12 18v4" /><path d="m4.9 19.1 2.9-2.9" /><path d="M2 12h4" /><path d="m4.9 4.9 2.9 2.9" /></svg>
     )
 };
 
@@ -143,6 +149,7 @@ const LabAdminDashboard = () => {
     const [appointments, setAppointments] = useState([]);
     const [testOrders, setTestOrders] = useState([]);
     const [staff, setStaff] = useState([]);
+    const [loadingStaff, setLoadingStaff] = useState(false);
     const [reports, setReports] = useState([]);
     const [patients, setPatients] = useState([]);
     const [loadingPatients, setLoadingPatients] = useState(false);
@@ -157,7 +164,7 @@ const LabAdminDashboard = () => {
     // --- Search & Filter State ---
     const [searchTerm, setSearchTerm] = useState('');
     const [appointmentFilter, setAppointmentFilter] = useState('All'); // Status: All, Pending, Completed, etc.
-    const [dateFilter, setDateFilter] = useState('All Time'); // Today, All Time
+    const [dateFilter, setDateFilter] = useState('Today'); // New Default: Today
 
     // --- Advanced Filter State ---
     const [expandedRowId, setExpandedRowId] = useState(null);
@@ -226,6 +233,7 @@ const LabAdminDashboard = () => {
     });
 
     // Status Update Modal State
+    const [staffFilter, setStaffFilter] = useState('All');
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [statusUpdateAppointment, setStatusUpdateAppointment] = useState(null);
     const [newStatus, setNewStatus] = useState('');
@@ -327,16 +335,12 @@ const LabAdminDashboard = () => {
         const fetchSectionData = async () => {
             try {
                 let url = '';
-                if (activeSection === 'Appointments') url = 'http://localhost:5000/api/admin/appointments';
+                if (activeSection === 'Appointments' || activeSection === 'Payments') url = 'http://localhost:5000/api/admin/appointments';
                 if (activeSection === 'Test Orders') url = 'http://localhost:5000/api/admin/test-orders';
                 if (activeSection === 'Lab Staff') url = 'http://localhost:5000/api/admin/staff';
-                if (activeSection === 'Reports') url = 'http://localhost:5000/api/admin/reports';
-                if (activeSection === 'Settings' || activeSection === 'Profile') url = 'http://localhost:5000/api/admin/profile';
-
-                if (!url && activeSection !== 'Patients') return; // Patients has its own logic below
-
-                if (url) {
-                    const res = await fetch(url, { credentials: 'include' });
+                if (url || activeSection === 'Reports') {
+                    const fetchUrl = activeSection === 'Reports' ? 'http://localhost:5000/api/admin/patients' : url;
+                    const res = await fetch(fetchUrl, { credentials: 'include' });
                     if (res.status === 401 || res.status === 403) {
                         navigate('/admin/login');
                         return;
@@ -348,12 +352,20 @@ const LabAdminDashboard = () => {
 
                     const data = await res.json();
 
-                    if (activeSection === 'Appointments' && Array.isArray(data)) {
+                    if ((activeSection === 'Appointments' || activeSection === 'Payments') && Array.isArray(data)) {
                         setAppointments(data);
                     }
                     if (activeSection === 'Test Orders' && Array.isArray(data)) setTestOrders(data);
-                    if (activeSection === 'Lab Staff' && Array.isArray(data)) setStaff(data);
-                    if (activeSection === 'Reports' && Array.isArray(data)) setReports(data);
+                    if (activeSection === 'Lab Staff' && Array.isArray(data)) {
+                        const sanitizedStaff = data.map(s => ({
+                            ...s,
+                            workingDays: Array.isArray(s.workingDays) ? s.workingDays.join(', ') : (s.workingDays || ''),
+                            specializations: Array.isArray(s.specializations) ? s.specializations.join(', ') : (s.specializations || ''),
+                            documents: Array.isArray(s.documents) ? s.documents.join(', ') : (s.documents || '')
+                        }));
+                        setStaff(sanitizedStaff);
+                    }
+                    if (activeSection === 'Reports' && Array.isArray(data)) setPatients(data); // Reusing patients state for Booked Users view
                     if (activeSection === 'Settings' || activeSection === 'Profile') {
                         if (data.email) {
                             setProfileData({
@@ -366,11 +378,15 @@ const LabAdminDashboard = () => {
                         }
                     }
                 }
+                if (activeSection === 'Lab Staff') setLoadingStaff(false);
             } catch (err) {
                 console.error(err);
+                if (activeSection === 'Lab Staff') setLoadingStaff(false);
                 if (activeSection !== 'Settings') showToast(err.message || `Failed to load ${activeSection}`, "error");
             }
         };
+
+        if (activeSection === 'Lab Staff') setLoadingStaff(true);
 
         // Patients Logic (kept separate or merged? existing logic was complex with loading state)
         if (activeSection === 'Patients') {
@@ -1156,7 +1172,12 @@ const LabAdminDashboard = () => {
                                 )
                                 .slice(0, 3).map(appt => (
                                     <tr key={appt.id}>
-                                        <td style={{ fontWeight: 500, color: 'var(--med-text-main)' }}>{appt.patient}</td>
+                                        <td style={{ fontWeight: 500, color: 'var(--med-text-main)' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span>{appt.patient && appt.patient.includes('@') ? appt.patient.split('@')[0] : appt.patient}</span>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)', fontWeight: 400 }}>@{appt.username || 'guest'}</span>
+                                            </div>
+                                        </td>
                                         <td>{appt.test}</td>
                                         <td>{appt.time}</td>
                                         <td>
@@ -1256,10 +1277,10 @@ const LabAdminDashboard = () => {
                                         </td>
                                         <td>
                                             <div className="med-user-cell">
-                                                <div className="med-avatar-mini">{appt.patient.charAt(0)}</div>
+                                                <div className="med-avatar-mini">{(appt.username || appt.patient).charAt(0).toUpperCase()}</div>
                                                 <div className="info">
-                                                    <span className="name">{appt.patient}</span>
-                                                    <span className="sub-text">ID: {appt.id}</span>
+                                                    <span className="name">{appt.patient && appt.patient.includes('@') ? appt.patient.split('@')[0] : appt.patient}</span>
+                                                    <span className="sub-text">@{appt.username || 'guest'} • ID: {appt.id}</span>
                                                 </div>
                                                 {appt.isDelayed && (
                                                     <div className="med-delay-badge" title="Delayed by > 2 hrs">
@@ -1362,63 +1383,82 @@ const LabAdminDashboard = () => {
                         </button>
                     </div>
 
-                    {/* 2. Summary Strip (KPI Pills) */}
-                    <div className="med-kpi-strip">
-                        {/* KPI Pills logic kept same, simplified for brevity here if needed or keep full logic */}
-                        <div className={`med-kpi-pill ${dateFilter === 'Today' ? 'active' : ''}`} onClick={() => handleQuickFilter('Today')}>
-                            <div className="icon blue"><Icons.Calendar /></div>
-                            <span className="label">Today</span>
-                            <span className="count">{countToday()}</span>
+                    <div className="med-filter-pills-row">
+                        <div
+                            className={`med-filter-pill-item ${dateFilter === 'Today' ? 'active' : ''}`}
+                            onClick={() => { setDateFilter('Today'); setAppointmentFilter('All'); }}
+                        >
+                            <span className="pill-dot blue"></span>
+                            Today's Appointments
+                            <span className="pill-count">{countToday()}</span>
                         </div>
-                        <div className={`med-kpi-pill ${appointmentFilter === 'Pending' ? 'active' : ''}`} onClick={() => handleQuickFilter('Pending')}>
-                            <div className="icon orange"><Icons.ClockSmall /></div>
-                            <span className="label">Pending</span>
-                            <span className="count">{countStatus('Pending')}</span>
+
+                        <div
+                            className={`med-filter-pill-item ${dateFilter === 'Upcoming' ? 'active' : ''}`}
+                            onClick={() => { setDateFilter('Upcoming'); setAppointmentFilter('All'); }}
+                        >
+                            <span className="pill-dot orange"></span>
+                            Upcoming
+                            <span className="pill-count">{appointments.filter(a => new Date(a.date) > new Date(new Date().toISOString().split('T')[0])).length}</span>
                         </div>
-                        <div className={`med-kpi-pill ${appointmentFilter === 'Completed' ? 'active' : ''}`} onClick={() => handleQuickFilter('Completed')}>
-                            <div className="icon green"><Icons.CheckCircle /></div>
-                            <span className="label">Completed</span>
-                            <span className="count">{countStatus('Completed')}</span>
-                        </div>
-                        <div className="med-kpi-pill last" onClick={() => { setAppointmentFilter('All'); setDateFilter('All Time'); }}>
-                            <span className="label">View All</span>
+
+                        <div
+                            className={`med-filter-pill-item ${dateFilter === 'History' ? 'active' : ''}`}
+                            onClick={() => { setDateFilter('History'); setAppointmentFilter('All'); }}
+                        >
+                            <span className="pill-dot green"></span>
+                            History
+                            <span className="pill-count">{appointments.filter(a => new Date(a.date) < new Date(new Date().toISOString().split('T')[0]) || a.status === 'Completed').length}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* 3. Modern Search & Filter Design */}
-                <div className="med-filter-bar-container">
-                    <div className="med-filter-main-row">
-                        <div className="med-search-box-modern">
-                            <Icons.Search />
-                            <input
-                                placeholder="Search by Patient Name or ID..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                {/* 3. Today's Status Summary Chart */}
+                <div style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div className="med-mini-chart-card">
+                        <div className="chart-header">
+                            <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--med-text-muted)' }}>Today's Status Flow</h4>
                         </div>
-                        <div className="med-filter-actions">
-                            {/* Keep filter actions if needed */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+                            <div style={{ flex: 1, height: '10px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden', display: 'flex' }}>
+                                <div style={{ width: `${(todayAppointments.filter(a => a.status === 'Pending').length / (todayAppointments.length || 1)) * 100}%`, background: '#f59e0b' }} title="Pending"></div>
+                                <div style={{ width: `${(todayAppointments.filter(a => a.status === 'Confirmed').length / (todayAppointments.length || 1)) * 100}%`, background: '#3b82f6' }} title="Confirmed"></div>
+                                <div style={{ width: `${(todayAppointments.filter(a => a.status === 'Completed').length / (todayAppointments.length || 1)) * 100}%`, background: '#10b981' }} title="Completed"></div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                            <div className="chart-legend-item"><span className="dot orange"></span> Pending: {todayAppointments.filter(a => a.status === 'Pending').length}</div>
+                            <div className="chart-legend-item"><span className="dot blue"></span> Confirmed: {todayAppointments.filter(a => a.status === 'Confirmed').length}</div>
+                            <div className="chart-legend-item"><span className="dot green"></span> Completed: {todayAppointments.filter(a => a.status === 'Completed').length}</div>
                         </div>
                     </div>
                 </div>
 
-                {/* 4. Split Tables */}
-                {(dateFilter === 'Today' || dateFilter === 'All Time') && (
+                {/* 5. Tables based on filter */}
+                {dateFilter === 'Today' && (
                     <>
                         <h3 style={{ margin: '0 0 16px 4px', color: 'var(--med-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Icons.Calendar size={20} /> Today's Appointments
+                            <Icons.Calendar size={20} /> Today's Schedule
                         </h3>
                         {renderAppointmentTable(todayAppointments, "Today", "No appointments for today")}
                     </>
                 )}
 
-                {(dateFilter !== 'Today') && (
+                {dateFilter === 'Upcoming' && (
                     <>
-                        <h3 style={{ margin: '32px 0 16px 4px', color: 'var(--med-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Icons.ClockSmall size={20} /> Previous / Upcoming Appointments
+                        <h3 style={{ margin: '0 0 16px 4px', color: 'var(--med-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Icons.TrendingUp size={20} /> Upcoming Appointments
                         </h3>
-                        {renderAppointmentTable(historyAppointments, "History", "No other appointments found")}
+                        {renderAppointmentTable(appointments.filter(a => new Date(a.date) > new Date(new Date().toISOString().split('T')[0])), "Upcoming", "No upcoming appointments found")}
+                    </>
+                )}
+
+                {dateFilter === 'History' && (
+                    <>
+                        <h3 style={{ margin: '0 0 16px 4px', color: 'var(--med-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Icons.ClockSmall size={20} /> Appointment History
+                        </h3>
+                        {renderAppointmentTable(appointments.filter(a => new Date(a.date) < new Date(new Date().toISOString().split('T')[0]) || a.status === 'Completed'), "History", "No past appointments found")}
                     </>
                 )}
             </div>
@@ -1467,22 +1507,22 @@ const LabAdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* 2. Test Orders Summary Bar (KPI Strip) */}
-                <div className="med-kpi-strip">
+                {/* 2. Test Orders Filter Pills */}
+                <div className="med-filter-pills-row">
                     {[
                         { label: 'Total Orders', status: 'All', color: 'blue', icon: '📊' },
                         { label: 'Pending', status: 'Pending', color: 'orange', icon: '⏳' },
-                        { label: 'In Process', status: 'In Process', color: 'info', icon: '🔄' },
+                        { label: 'In Process', status: 'In Process', color: 'blue', icon: '🔄' },
                         { label: 'Completed', status: 'Completed', color: 'green', icon: '✅' }
                     ].map(kpi => (
                         <div
                             key={kpi.label}
-                            className={`med-kpi-pill ${orderFilter === kpi.status ? 'active' : ''}`}
+                            className={`med-filter-pill-item ${orderFilter === kpi.status ? 'active' : ''}`}
                             onClick={() => setOrderFilter(kpi.status)}
                         >
-                            <div className={`icon ${kpi.color}`} style={{ fontSize: '1.2rem', fontWeight: 'normal' }}>{kpi.icon}</div>
-                            <span className="label">{kpi.label}</span>
-                            <span className="count">{countOrderStatus(kpi.status)}</span>
+                            <span className={`pill-dot ${kpi.color}`}></span>
+                            <span style={{ marginRight: '4px' }}>{kpi.icon}</span> {kpi.label}
+                            <span className="pill-count">{countOrderStatus(kpi.status)}</span>
                         </div>
                     ))}
                 </div>
@@ -1638,170 +1678,112 @@ const LabAdminDashboard = () => {
         );
     };
 
-    const renderPatients = () => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* 1. Header & Layout Enhancement */}
-            <div className="med-premium-header" style={{ marginBottom: '0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    const renderPatients = () => {
+        const filteredPatients = patients.filter(p =>
+            ((p.name || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
+            ((p.email || '').toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+
+        return (
+            <div className="med-reports-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div className="med-premium-header">
                     <div>
-                        <h2 className="med-page-heading">Patient Records</h2>
-                        <p className="med-page-subheading">Manage patient details, uploads, and medical history</p>
+                        <h2 className="med-page-heading">Diagnostic Intelligence</h2>
+                        <p className="med-page-subheading">Manage and monitor registered patient ecosystems</p>
                     </div>
-                    <button
-                        className="med-btn"
-                        style={{
-                            background: 'var(--med-surface)',
-                            color: 'var(--med-primary)',
-                            border: '1px solid var(--med-border)',
-                            borderRadius: '10px',
-                            fontWeight: 600,
-                            padding: '10px 20px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 12px -2px rgba(0, 0, 0, 0.1)'; }}
-                        onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)'; }}
-                        onClick={() => {
-                            setActiveSection('Overview');
-                            setTimeout(() => setActiveSection('Patients'), 50);
-                        }}
-                    >
-                        <Icons.TrendingUp style={{ transform: 'rotate(45deg)' }} /> Refresh List
-                    </button>
-                </div>
-            </div>
-
-            {/* 8. Search, Filter & Sorting */}
-            <div className="med-filter-bar-container">
-                <div className="med-filter-main-row">
-                    <div className="med-search-box-modern">
-                        <Icons.Search />
-                        <input
-                            placeholder="Search by Name, Email, or ID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="med-filter-actions">
-                        <div style={{ position: 'relative' }}>
-                            {/* Simple Filter Dropdown Implementation - Visual Only for localized scope */}
-                            <button className="med-btn-icon-text">
-                                <Icons.Filter size={16} /> Filters
-                                <Icons.ChevronDown size={14} style={{ marginLeft: '4px' }} />
-                            </button>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <div className="med-card-mini" style={{ padding: '8px 16px', background: 'var(--med-surface)', border: '1px solid var(--med-border)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ color: 'var(--med-primary)' }}><Icons.Users size={18} /></div>
+                            <div>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--med-text-muted)', textTransform: 'uppercase' }}>Active Records</div>
+                                <div style={{ fontSize: '1rem', fontWeight: 700 }}>{filteredPatients.length}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {loadingPatients ? (
-                <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--med-text-muted)' }}>
-                    <div className="spinner" style={{
-                        width: '40px', height: '40px', border: '3px solid #e2e8f0',
-                        borderTopColor: 'var(--med-primary)', borderRadius: '50%',
-                        animation: 'spin 1s linear infinite', margin: '0 auto 1rem'
-                    }}></div>
-                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-                    <p style={{ fontWeight: 500 }}>Loading patient records...</p>
-                </div>
-            ) : patients.length === 0 ? (
-                <div className="med-empty-state" style={{
-                    background: 'var(--med-surface)', border: '1px dashed #cbd5e1', borderRadius: '16px',
-                    padding: '60px', textAlign: 'center'
-                }}>
-                    <div style={{
-                        width: '80px', height: '80px', background: 'var(--med-bg)', borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px'
-                    }}>
-                        <Icons.Users size={40} style={{ color: 'var(--med-text-muted)' }} />
+                {loadingPatients ? (
+                    <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--med-text-muted)' }}>
+                        <div className="spinner" style={{
+                            width: '40px', height: '40px', border: '3px solid #e2e8f0',
+                            borderTopColor: 'var(--med-primary)', borderRadius: '50%',
+                            animation: 'spin 1s linear infinite', margin: '0 auto 1rem'
+                        }}></div>
+                        <p style={{ fontWeight: 500 }}>Synchronizing intelligence...</p>
                     </div>
-                    <h3 style={{ margin: '0 0 8px', color: 'var(--med-text-main)' }}>No patient records found</h3>
-                    <p style={{ margin: '0 0 24px', color: 'var(--med-text-muted)' }}>Get started by adding your first patient to the system.</p>
-                </div>
-            ) : (
-                <div className="med-patients-container">
-                    {/* 2. Patient Card–Style Table Rows */}
-                    <table className="med-table med-patient-card-table" style={{ borderCollapse: 'separate', borderSpacing: '0 12px' }}>
-                        <thead style={{ visibility: 'hidden', height: 0 }}>
-                            <tr>
-                                <th style={{ width: '80px' }}>ID</th>
-                                <th>Identity</th>
-                                <th>Contact</th>
-                                <th>Uploads</th>
-                                <th>History</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {patients
-                                .filter(p =>
-                                    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                    p.email.toLowerCase().includes(searchTerm.toLowerCase())
-                                )
-                                .map(p => (
+                ) : filteredPatients.length === 0 ? (
+                    <div className="med-empty-state" style={{ background: 'var(--med-surface)', padding: '60px', textAlign: 'center', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ width: 80, height: 80, background: 'var(--med-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                            <Icons.FileText size={40} color="#94a3b8" />
+                        </div>
+                        <h3 style={{ fontSize: '1.2rem', color: 'var(--med-text-main)', marginBottom: '8px' }}>Workspace is empty</h3>
+                        <p style={{ color: 'var(--med-text-muted)' }}>No registered patients match your current filters.</p>
+                    </div>
+                ) : (
+                    <div className="med-patients-container">
+                        <table className="med-table med-patient-card-table" style={{ borderCollapse: 'separate', borderSpacing: '0 12px', width: '100%' }}>
+                            <thead style={{ display: 'none' }}>
+                                <tr>
+                                    <th style={{ width: '80px' }}>ID</th>
+                                    <th>Identity</th>
+                                    <th>Latest Test</th>
+                                    <th>Contact</th>
+                                    <th style={{ textAlign: 'right' }}>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredPatients.map(p => (
                                     <tr key={p.id} className="med-patient-card-row" style={{
                                         background: 'var(--med-surface)',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 0 rgba(0,0,0,0.02)',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
                                         borderRadius: '16px',
                                         overflow: 'hidden',
                                         transition: 'all 0.2s ease'
                                     }}>
-                                        <td className="mono-text" style={{ padding: '20px', borderRadius: '16px 0 0 16px', borderLeft: '4px solid transparent' }}>
+                                        <td style={{ padding: '20px', borderRadius: '16px 0 0 16px' }}>
                                             <span style={{
-                                                background: 'var(--med-bg)', padding: '4px 8px', borderRadius: '6px',
-                                                fontSize: '0.8rem', fontWeight: 600, color: 'var(--med-text-muted)'
+                                                background: 'var(--med-bg)', padding: '4px 10px', borderRadius: '6px',
+                                                fontSize: '0.85rem', fontWeight: 600, color: 'var(--med-text-muted)'
                                             }}>#{p.id}</span>
                                         </td>
-                                        {/* 3. Enhanced Patient Identity Section */}
                                         <td style={{ padding: '20px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                                {/* Avatar */}
                                                 <div style={{
                                                     width: 48, height: 48, borderRadius: '50%',
                                                     background: 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    color: 'var(--med-text-body)', fontSize: '1.2rem', fontWeight: 700,
-                                                    boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)'
+                                                    color: 'var(--med-text-body)', fontSize: '1.2rem', fontWeight: 700
                                                 }}>
                                                     {p.profile_pic ? (
                                                         <img src={p.profile_pic} alt={p.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                                                     ) : (
-                                                        <span>{p.name.charAt(0).toUpperCase()}</span>
+                                                        <span>{(p.name || '?').charAt(0).toUpperCase()}</span>
                                                     )}
                                                 </div>
-
                                                 <div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--med-text-main)' }}>{p.name}</span>
-                                                        {/* Optional Badges */}
-                                                        {/* Mock logic for badges */}
-                                                        <span className="med-badge" style={{
-                                                            fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px',
-                                                            background: '#dbeafe', color: '#2563eb', fontWeight: 700
-                                                        }}>NEW</span>
-                                                    </div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--med-text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        {p.email}
-                                                        <span style={{ width: '3px', height: '3px', background: '#cbd5e1', borderRadius: '50%' }}></span>
-                                                        {p.age && p.age !== 'N/A' ? `${p.age} Y/O` : 'Age N/A'}
-                                                        <span style={{ width: '3px', height: '3px', background: '#cbd5e1', borderRadius: '50%' }}></span>
-                                                        {p.gender || 'N/A'}
+                                                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--med-text-main)' }}>{p.name}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--med-text-muted)', marginTop: '4px' }}>
+                                                        {p.age && p.age !== 'N/A' ? `${p.age} Y/O` : 'Age N/A'} • {p.gender || 'N/A'}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
-
-                                        {/* 4. Visual Contact Indicators */}
+                                        <td style={{ padding: '20px' }}>
+                                            <div className="med-test-tag" style={{
+                                                padding: '6px 12px', background: 'rgba(14, 165, 233, 0.1)',
+                                                color: 'var(--med-primary)', borderRadius: '8px', fontSize: '0.9rem',
+                                                fontWeight: 600, display: 'inline-block'
+                                            }}>
+                                                {p.latest_test || 'General Consult'}
+                                            </div>
+                                        </td>
                                         <td style={{ padding: '20px' }}>
                                             {p.phone !== 'N/A' ? (
                                                 <div className="med-contact-pill" style={{
                                                     display: 'inline-flex', alignItems: 'center', gap: '8px',
                                                     padding: '8px 12px', borderRadius: '8px', background: 'var(--med-bg)',
                                                     border: '1px solid var(--med-border)', color: 'var(--med-text-main)', fontSize: '0.9rem', fontWeight: 500
-                                                }} title="Contact via WhatsApp">
+                                                }}>
                                                     <div style={{ color: '#25D366' }}><Icons.Phone size={16} /></div>
                                                     {p.phone}
                                                 </div>
@@ -1809,266 +1791,130 @@ const LabAdminDashboard = () => {
                                                 <span style={{ color: 'var(--med-text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>No Contact</span>
                                             )}
                                         </td>
-
-                                        {/* 6. History Column Upgrade - Consolidated Action */}
                                         <td style={{ padding: '20px', borderRadius: '0 16px 16px 0', textAlign: 'right' }}>
-                                            <button
-                                                className="med-btn-hover-lift"
-                                                onClick={() => handleViewHistory(p)}
-                                                style={{
-                                                    background: 'var(--med-surface)',
-                                                    border: '1px solid var(--med-border)',
-                                                    color: 'var(--med-text-main)',
-                                                    padding: '10px 20px',
-                                                    borderRadius: '12px',
-                                                    fontWeight: 600,
-                                                    fontSize: '0.9rem',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px',
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
-                                                }}
-                                                onMouseOver={(e) => {
-                                                    e.currentTarget.style.borderColor = 'var(--med-primary)';
-                                                    e.currentTarget.style.color = 'var(--med-primary)';
-                                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                                    e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.05)';
-                                                }}
-                                                onMouseOut={(e) => {
-                                                    e.currentTarget.style.borderColor = '#e2e8f0';
-                                                    e.currentTarget.style.color = '#334155';
-                                                    e.currentTarget.style.transform = 'translateY(0)';
-                                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.03)';
-                                                }}
-                                            >
+                                            <button className="med-btn-hover-lift" onClick={() => handleViewHistory(p)} style={{
+                                                background: 'var(--med-surface)', border: '1px solid var(--med-border)',
+                                                color: 'var(--med-text-main)', padding: '10px 20px', borderRadius: '12px',
+                                                fontWeight: 600, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                                transition: 'all 0.2s'
+                                            }}>
                                                 <Icons.ClockSmall size={18} /> View History
                                             </button>
                                         </td>
                                     </tr>
                                 ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </div>
-    );
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
 
     const renderReports = () => {
-        // Mock data enhancement if real data is missing fields (for display purposes)
-        const enhancedReports = reports.map(r => ({
-            ...r,
-            ref: r.ref || `APT-${(r.id || '').split('-')[1] || Math.floor(Math.random() * 1000)}`,
-            fileType: r.fileType || 'Uploads',
-            staff: r.staff || 'Lab Admin',
-            verified: r.status === 'Verified'
-        }));
-
-        const filteredReports = enhancedReports.filter(r =>
-            (activeReportFilter === 'All' || r.status === activeReportFilter) &&
-            (r.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                r.test.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (r.id && r.id.toLowerCase().includes(searchTerm.toLowerCase())))
+        // Step 1: Identify patients who have at least one "Confirmed" appointment
+        const confirmedUserRefs = new Set(
+            appointments
+                .filter(a => a.status === 'Confirmed')
+                .map(a => a.username || a.patient)
         );
 
-        // Group by Date
-        const groupedReports = filteredReports.reduce((acc, report) => {
-            const date = report.date || 'Unknown Date';
-            if (!acc[date]) acc[date] = [];
-            acc[date].push(report);
-            return acc;
-        }, {});
-
-        // Helper for KPI Counts
-        const countReportStatus = (status) => {
-            if (status === 'All') return enhancedReports.length;
-            return enhancedReports.filter(r => r.status === status).length;
-        };
+        // Step 2: Filter patients based on confirmed status and search term
+        const filteredReports = patients.filter(p => {
+            const isConfirmed = confirmedUserRefs.has(p.username) || confirmedUserRefs.has(p.name) || confirmedUserRefs.has(p.email);
+            const matchesSearch = ((p.name || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
+                ((p.email || '').toLowerCase().includes(searchTerm.toLowerCase()));
+            return isConfirmed && matchesSearch;
+        });
 
         return (
             <div className="med-reports-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* 1. Header & Visual Hierarchy */}
-                <div className="med-premium-header" style={{ marginBottom: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <h2 className="med-page-heading">Reports Management</h2>
-                            <p className="med-page-subheading">Manage, verify, and share patient diagnostic reports.</p>
-                        </div>
-                        <button
-                            className="med-btn-gradient"
-                            onClick={() => {
-                                setUploadData({ patient_id: '', test_name: '', file: null });
-                                setShowUploadModal(true);
-                            }}
-                            title="Upload and assign patient report"
-                        >
-                            <Icons.UploadCloud size={20} /> Upload Report
-                        </button>
+                <div className="med-premium-header">
+                    <div>
+                        <h2 className="med-page-heading">Reports & Test History</h2>
+                        <p className="med-page-subheading">Review diagnostic records and upload patient results</p>
                     </div>
                 </div>
 
-                {/* 2. Summary Insight Bar (KPI Strip) */}
-                <div className="med-kpi-strip">
-                    {[
-                        { label: 'Total Reports', status: 'All', color: 'blue', icon: <Icons.FileText /> },
-                        { label: 'Pending', status: 'Pending', color: 'orange', icon: <Icons.ClockSmall /> },
-                        { label: 'Verified', status: 'Verified', color: 'green', icon: <Icons.CheckCircle /> },
-                        { label: 'Shared', status: 'Shared', color: 'info', icon: <Icons.Share /> }
-                    ].map(kpi => (
-                        <div
-                            key={kpi.label}
-                            className={`med-kpi-pill ${activeReportFilter === kpi.status ? 'active' : ''}`}
-                            onClick={() => setActiveReportFilter(kpi.status)}
-                        >
-                            <div className={`icon ${kpi.color}`}>{kpi.icon || <Icons.FileText />}</div>
-                            <span className="label">{kpi.label}</span>
-                            <span className="count">{countReportStatus(kpi.status)}</span>
+                {filteredReports.length === 0 ? (
+                    <div className="med-empty-state" style={{ background: 'var(--med-surface)', padding: '80px 40px', textAlign: 'center', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ width: 100, height: 100, background: 'var(--med-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                            <Icons.FileText size={48} color="#94a3b8" />
                         </div>
-                    ))}
-                </div>
-
-                {/* 3. Modern Filter & Search Experience */}
-                <div className="med-filter-bar-container">
-                    <div className="med-filter-main-row">
-                        <div className="med-search-box-modern">
-                            <Icons.Search />
-                            <input
-                                placeholder="Search by Patient, ID, or Test..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="med-filter-actions">
-                            <button className="med-btn-icon-text">
-                                <Icons.Filter size={16} /> Advanced Filters
-                                <Icons.ChevronDown size={14} style={{ marginLeft: '4px' }} />
-                            </button>
-                        </div>
-                    </div>
-                    {/* Active Chips Mockup */}
-                    {activeReportFilter !== 'All' && (
-                        <div className="med-active-filters">
-                            <div className="med-filter-chip">Status: {activeReportFilter} <Icons.X size={12} onClick={() => setActiveReportFilter('All')} /></div>
-                        </div>
-                    )}
-                </div>
-
-                {/* 4. Table Design Upgrade - Grouped by Date */}
-                {Object.keys(groupedReports).length === 0 ? (
-                    <div className="med-empty-state-content" style={{ padding: '60px', textAlign: 'center', background: 'var(--med-surface)', borderRadius: '16px', border: '1px dashed #e2e8f0' }}>
-                        <div style={{
-                            width: 80, height: 80, background: 'var(--med-bg)', borderRadius: '50%',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
-                        }}>
-                            <Icons.FileText size={40} color="#94a3b8" />
-                        </div>
-                        <h3 style={{ fontSize: '1.2rem', color: 'var(--med-text-main)', marginBottom: '8px' }}>No reports available</h3>
-                        <p style={{ color: 'var(--med-text-muted)', marginBottom: '24px' }}>Upload your first diagnostic report to get started.</p>
-                        <button className="med-btn-gradient" onClick={() => setShowUploadModal(true)} style={{ minWidth: '200px', justifyContent: 'center' }}>
-                            <Icons.Plus /> Upload First Report
-                        </button>
+                        <h3 style={{ fontSize: '1.4rem', color: 'var(--med-text-main)', marginBottom: '12px' }}>No records found</h3>
+                        <p style={{ color: 'var(--med-text-muted)', maxWidth: '400px', margin: '0 auto' }}>Navigate to Appointments to book users or wait for new registrations to appear here.</p>
                     </div>
                 ) : (
-                    Object.keys(groupedReports).sort((a, b) => new Date(b) - new Date(a)).map(date => (
-                        <div key={date} style={{ marginBottom: '32px' }}>
-                            <h4 style={{
-                                fontSize: '0.95rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '12px',
-                                display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '8px'
-                            }}>
-                                <Icons.Calendar size={16} />
-                                {new Date(date).toDateString() === new Date().toDateString() ? 'Today' : date}
-                            </h4>
-
-                            <div className="med-table-card premium">
-                                <table className="med-table premium-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Report Info</th>
-                                            <th>Test Details</th>
-                                            <th>Uploads</th>
-                                            <th>Verification</th>
-                                            <th>Status</th>
-                                            <th style={{ textAlign: 'right' }}>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {groupedReports[date].map(report => (
-                                            <tr key={report.id} className="med-table-row">
-                                                <td>
-                                                    <div className="med-user-cell">
-                                                        <div style={{
-                                                            width: 40, height: 40, background: '#e0f2fe', color: '#0369a1',
-                                                            borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
-                                                        }}>
-                                                            <Icons.FileText />
-                                                        </div>
-                                                        <div className="info">
-                                                            <span className="name">{report.patient}</span>
-                                                            <span className="sub-text">#{report.id}</span>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span style={{ fontWeight: 500, color: 'var(--med-text-main)' }}>{report.test}</span>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--med-text-muted)' }}>Ref: {report.ref}</div>
-                                                </td>
-                                                {/* 6. File Column Enhancement */}
-                                                <td>
-                                                    <div className="med-file-pill" title="Click to upload/view report" onClick={() => {
-                                                        const pId = report.patientId || report.patient_id || report.id;
-                                                        setUploadData({ patient_id: pId || '', test_name: report.test || '', file: null });
-                                                        setShowUploadModal(true);
-                                                    }}>
-                                                        <Icons.UploadCloud size={14} /> Upload
-                                                    </div>
-                                                </td>
-                                                {/* 8. Verification Flow */}
-                                                <td>
-                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
-                                                            <div style={{ width: 24, height: 24, background: 'var(--med-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700 }}>
-                                                                {report.staff.charAt(0)}
-                                                            </div>
-                                                            <span>{report.staff.split(' ')[0]}</span>
-                                                        </div>
-                                                        {report.status === 'Verified' && (
-                                                            <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                                                                <Icons.CheckCircle size={10} /> Verified
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                {/* 5. Status Badges */}
-                                                <td>
-                                                    <span className={`med-status-badge ${report.status.toLowerCase().replace(' ', '-')}`}>
-                                                        {report.status}
+                    <div className="med-reports-grid">
+                        {filteredReports.map(p => (
+                            <div key={p.id} className="med-report-user-card">
+                                <div className="card-header-main">
+                                    <div className="user-identity-block">
+                                        <div className="card-avatar-wrapper">
+                                            <div className="card-avatar">
+                                                {p.profile_pic ? (
+                                                    <img src={p.profile_pic} alt={p.name} style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }} />
+                                                ) : (p.name || '?').charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="status-indicator" title="Patient Online"></div>
+                                        </div>
+                                        <div className="user-meta">
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <h3>{p.name}</h3>
+                                                {p.uploaded_data_count > 0 && (
+                                                    <span className="med-upload-sign" title="Report Uploaded">
+                                                        <Icons.CheckCircle size={14} />
                                                     </span>
-                                                </td>
-                                                {/* 7. Smart Actions */}
-                                                <td style={{ textAlign: 'right' }}>
-                                                    <div className="med-action-group">
-                                                        {report.status === 'Pending' && (
-                                                            <>
-                                                                <button className="med-btn-icon success" title="Verify Report" onClick={() => showToast(`Report ${report.id} Verified`, "success")}><Icons.CheckCircle /></button>
-                                                                <button className="med-btn-icon" title="Edit Details"><Icons.Settings /></button>
-                                                            </>
-                                                        )}
-                                                        {report.status === 'Verified' && (
-                                                            <button className="med-btn-icon info" title="Share Report" onClick={() => showToast(`Sharing Report ${report.id}`)}><Icons.Share /></button>
-                                                        )}
-                                                        <button className="med-btn-icon" title="Preview" onClick={() => window.open(report.fileUrl || '#', '_blank')}><Icons.Eye /></button>
-                                                        <button className="med-btn-icon danger" title="Delete"><Icons.Trash /></button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                )}
+                                            </div>
+                                            <span className="user-id-tag">PATIENT ID #{p.id}</span>
+                                        </div>
+                                    </div>
+                                    <button className="med-btn-icon" style={{ opacity: 0.5 }}><Icons.MoreVertical /></button>
+                                </div>
+
+                                <div className="card-stats-grid">
+                                    <div className="stat-box">
+                                        <span className="label">Total Reports</span>
+                                        <span className="value">{p.uploaded_data_count || 0} Files</span>
+                                    </div>
+                                    <div className="stat-box">
+                                        <span className="label">Identity</span>
+                                        <span className="value">{(p.age && p.age !== 'N/A') ? p.age : '??'}Y • {p.gender || 'N/A'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="latest-test-banner">
+                                    <span className="test-icon">🔬</span>
+                                    <div className="test-info">
+                                        <span className="title">Latest Booking Type</span>
+                                        <span className="name">{p.latest_test || 'General Consultation'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="card-footer-actions">
+                                    <button
+                                        className="btn-report-action primary"
+                                        onClick={() => handleViewHistory(p)}
+                                    >
+                                        <Icons.ClockSmall size={18} /> View History
+                                    </button>
+                                    <button
+                                        className="btn-report-action secondary"
+                                        title="Upload Result"
+                                        style={{ background: 'var(--med-primary)', color: 'white', border: 'none' }}
+                                        onClick={() => {
+                                            setUploadData({ patient_id: p.id, test_name: p.latest_test || 'General Test', file: null });
+                                            setShowUploadModal(true);
+                                        }}
+                                    >
+                                        <Icons.UploadCloud size={18} /> Upload Result
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
             </div>
         );
@@ -2096,51 +1942,68 @@ const LabAdminDashboard = () => {
                     </button>
                 </div>
 
-                {/* 2. Staff Overview Summary (KPI Cards) */}
-                <div className="med-kpi-strip">
-                    {staffKpis.map((kpi, index) => (
-                        <div key={index} className="med-kpi-pill">
-                            <div className={`icon ${kpi.color}`}>
-                                {kpi.icon === 'Users' && <Icons.Users />}
-                                {kpi.icon === 'Activity' && <Icons.Activity />}
-                                {kpi.icon === 'Clock' && <Icons.Clock />}
-                                {kpi.icon === 'X' && <Icons.X />}
-                            </div>
-                            <span className="label">{kpi.label}</span>
-                            <span className="count">{kpi.value}</span>
+                {/* 2. Staff Filter Pills Row */}
+                <div className="med-filter-pills-row">
+                    {[
+                        { label: 'Total Staff', status: 'All', color: 'blue' },
+                        { label: 'Active', status: 'Active', color: 'green' },
+                        { label: 'Leave', status: 'Leave', color: 'orange' },
+                        { label: 'Inactive', status: 'Inactive', color: 'gray' }
+                    ].map(kpi => (
+                        <div
+                            key={kpi.label}
+                            className={`med-filter-pill-item ${staffFilter === kpi.status ? 'active' : ''}`}
+                            onClick={() => setStaffFilter(kpi.status)}
+                        >
+                            <span className={`pill-dot ${kpi.color}`}></span>
+                            {kpi.label}
+                            <span className="pill-count">
+                                {kpi.status === 'All' ? staff.length : staff.filter(s => (s.status === 'Available' ? 'Active' : s.status) === kpi.status).length}
+                            </span>
                         </div>
                     ))}
                 </div>
 
                 {/* 3. Table Design Upgrade */}
-                <div className="med-table-card premium">
-                    <table className="med-table premium-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>Department</th>
-                                <th>Contact</th>
-                                <th>Shift</th>
-                                <th>Status</th>
-                                <th style={{ textAlign: 'right' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {(!Array.isArray(staff) || staff.length === 0) ? (
-                                // 11. Empty State
+                {loadingStaff ? (
+                    <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--med-text-muted)' }}>
+                        <div className="spinner" style={{
+                            width: '40px', height: '40px', border: '3px solid #e2e8f0',
+                            borderTopColor: 'var(--med-primary)', borderRadius: '50%',
+                            animation: 'spin 1s linear infinite', margin: '0 auto 1rem'
+                        }}></div>
+                        <p style={{ fontWeight: 500 }}>Retrieving staff deployment data...</p>
+                    </div>
+                ) : (!Array.isArray(staff) || staff.length === 0) ? (
+                    <div className="med-table-card premium" style={{ padding: '60px', textAlign: 'center' }}>
+                        <div style={{ width: 80, height: 80, background: 'var(--med-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                            <Icons.Users size={40} color="#94a3b8" />
+                        </div>
+                        <h3 style={{ fontSize: '1.2rem', color: 'var(--med-text-main)', marginBottom: '8px' }}>No staff members added yet</h3>
+                        <p style={{ color: 'var(--med-text-muted)' }}>Add your first lab technician or admin to begin.</p>
+                    </div>
+                ) : (
+                    <div className="med-table-card premium">
+                        <table className="med-table premium-table">
+                            <thead>
                                 <tr>
-                                    <td colSpan="4" style={{ textAlign: 'center', padding: '60px' }}>
-                                        <div className="med-empty-state-content">
-                                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>👩‍⚕️</div>
-                                            <h3 style={{ fontSize: '1.2rem', color: 'var(--med-text-main)', marginBottom: '8px' }}>No staff members added yet</h3>
-                                            <p style={{ color: 'var(--med-text-muted)' }}>Add your first lab technician or admin.</p>
-                                        </div>
-                                    </td>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Department</th>
+                                    <th>Contact</th>
+                                    <th>Shift</th>
+                                    <th>Status</th>
+                                    <th style={{ textAlign: 'right' }}>Actions</th>
                                 </tr>
-                            ) : (
-                                staff
-                                    .filter(s => (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+                            </thead>
+                            <tbody>
+                                {staff
+                                    .filter(s => {
+                                        const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+                                        const actualStatus = s.status === 'Available' ? 'Active' : s.status;
+                                        const matchesFilter = staffFilter === 'All' || actualStatus === staffFilter;
+                                        return matchesSearch && matchesFilter;
+                                    })
                                     .map(s => (
                                         <tr key={s.id} className="med-table-row">
                                             {/* 4. Name Column Enhancement */}
@@ -2204,352 +2067,354 @@ const LabAdminDashboard = () => {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
                 {/* 9. Professional Add Member Modal - Fully Upgraded */}
-                {showAddStaffModal && (
-                    <div className="med-modal-wrapper-pro">
-                        <div className="med-modal-content-pro">
-                            {/* Header */}
-                            <div className="med-modal-header-pro">
-                                <div className="med-modal-title-row">
-                                    <div className="med-icon-box">
-                                        <Icons.Users />
+                {
+                    showAddStaffModal && (
+                        <div className="med-modal-wrapper-pro">
+                            <div className="med-modal-content-pro">
+                                {/* Header */}
+                                <div className="med-modal-header-pro">
+                                    <div className="med-modal-title-row">
+                                        <div className="med-icon-box">
+                                            <Icons.Users />
+                                        </div>
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--med-text-main)' }}>Add New Staff Member</h3>
+                                            <p style={{ margin: '4px 0 0 0', color: 'var(--med-text-muted)', fontSize: '0.9rem' }}>Create profile, assign role, and set permissions.</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--med-text-main)' }}>Add New Staff Member</h3>
-                                        <p style={{ margin: '4px 0 0 0', color: 'var(--med-text-muted)', fontSize: '0.9rem' }}>Create profile, assign role, and set permissions.</p>
-                                    </div>
+                                    <button onClick={() => setShowAddStaffModal(false)} className="med-btn-icon"><Icons.X /></button>
                                 </div>
-                                <button onClick={() => setShowAddStaffModal(false)} className="med-btn-icon"><Icons.X /></button>
-                            </div>
 
-                            {/* Scrollable Body */}
-                            <div className="med-modal-body-scroll">
+                                {/* Scrollable Body */}
+                                <div className="med-modal-body-scroll">
 
-                                {/* 1. Basic Personal Information */}
-                                <div className="med-pro-form-section">
-                                    <div className="med-section-header">
-                                        <div className="med-section-number">1</div>
-                                        <div className="med-section-title">
-                                            <h4>Basic Personal Information</h4>
-                                            <p className="med-section-subtitle">Identify the staff member clearly (Required)</p>
+                                    {/* 1. Basic Personal Information */}
+                                    <div className="med-pro-form-section">
+                                        <div className="med-section-header">
+                                            <div className="med-section-number">1</div>
+                                            <div className="med-section-title">
+                                                <h4>Basic Personal Information</h4>
+                                                <p className="med-section-subtitle">Identify the staff member clearly (Required)</p>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '32px' }}>
+                                            {/* Avatar Upload */}
+                                            <div style={{ flexShrink: 0 }}>
+                                                <label className="med-label-pro">Profile Photo</label>
+                                                <div className="med-avatar-preview"
+                                                    style={{ backgroundImage: newStaff.photoPreview ? `url(${newStaff.photoPreview})` : 'none' }}
+                                                    onClick={() => document.getElementById('staff-pfp-upload').click()}
+                                                >
+                                                    {!newStaff.photoPreview && <Icons.User style={{ opacity: 0.3 }} />}
+                                                    <input
+                                                        type="file"
+                                                        id="staff-pfp-upload"
+                                                        hidden
+                                                        accept="image/*"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files[0];
+                                                            if (file) {
+                                                                const url = URL.createObjectURL(file);
+                                                                setNewStaff({ ...newStaff, photo: file, photoPreview: url });
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div style={{ textAlign: 'center', marginTop: '8px' }}>
+                                                    <small style={{ color: 'var(--med-primary)', cursor: 'pointer', fontWeight: 600 }}>Upload</small>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                <div style={{ gridColumn: 'span 2' }}>
+                                                    <label className="med-label-pro">Full Name <span style={{ color: 'red' }}>*</span></label>
+                                                    <input className="med-input-pro" placeholder="e.g. Dr. Sarah Miller" value={newStaff.name} onChange={e => setNewStaff({ ...newStaff, name: e.target.value })} />
+                                                </div>
+                                                <div>
+                                                    <label className="med-label-pro">Gender</label>
+                                                    <select className="med-input-pro" value={newStaff.gender} onChange={e => setNewStaff({ ...newStaff, gender: e.target.value })}>
+                                                        <option>Male</option>
+                                                        <option>Female</option>
+                                                        <option>Other</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="med-label-pro">Date of Birth</label>
+                                                    <input type="date" className="med-input-pro" value={newStaff.dob} onChange={e => setNewStaff({ ...newStaff, dob: e.target.value })} />
+                                                </div>
+                                                <div>
+                                                    <label className="med-label-pro">Phone Number <span style={{ color: 'red' }}>*</span></label>
+                                                    <input type="tel" className="med-input-pro" placeholder="+91 98765 43210" value={newStaff.phone} onChange={e => setNewStaff({ ...newStaff, phone: e.target.value })} />
+                                                </div>
+                                                <div>
+                                                    <label className="med-label-pro">Email Address <span style={{ color: 'red' }}>*</span></label>
+                                                    <input type="email" className="med-input-pro" placeholder="staff@medibot.com" value={newStaff.email} onChange={e => setNewStaff({ ...newStaff, email: e.target.value })} />
+                                                </div>
+                                                <div style={{ gridColumn: 'span 2' }}>
+                                                    <label className="med-label-pro">Address</label>
+                                                    <input className="med-input-pro" placeholder="Full residential address" value={newStaff.address} onChange={e => setNewStaff({ ...newStaff, address: e.target.value })} />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '32px' }}>
-                                        {/* Avatar Upload */}
-                                        <div style={{ flexShrink: 0 }}>
-                                            <label className="med-label-pro">Profile Photo</label>
-                                            <div className="med-avatar-preview"
-                                                style={{ backgroundImage: newStaff.photoPreview ? `url(${newStaff.photoPreview})` : 'none' }}
-                                                onClick={() => document.getElementById('staff-pfp-upload').click()}
-                                            >
-                                                {!newStaff.photoPreview && <Icons.User style={{ opacity: 0.3 }} />}
+                                    {/* 2. Employment Details */}
+                                    <div className="med-pro-form-section">
+                                        <div className="med-section-header">
+                                            <div className="med-section-number">2</div>
+                                            <div className="med-section-title">
+                                                <h4>Employment Details</h4>
+                                                <p className="med-section-subtitle">Define staff position and responsibilities</p>
+                                            </div>
+                                        </div>
+                                        <div className="med-grid-3">
+                                            <div>
+                                                <label className="med-label-pro">Staff ID</label>
+                                                <input className="med-input-pro" value={newStaff.staffId} disabled style={{ background: 'var(--med-bg)' }} />
+                                            </div>
+                                            <div>
+                                                <label className="med-label-pro">Role / Designation <span style={{ color: 'red' }}>*</span></label>
+                                                <select className="med-input-pro" value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })}>
+                                                    <option value="">Select Role</option>
+                                                    <option>Lab Technician</option>
+                                                    <option>Phlebotomist</option>
+                                                    <option>Pathologist</option>
+                                                    <option>Receptionist</option>
+                                                    <option>Admin</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="med-label-pro">Department</label>
+                                                <input className="med-input-pro" placeholder="e.g. Hematology" value={newStaff.department} onChange={e => setNewStaff({ ...newStaff, department: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="med-label-pro">Employment Type</label>
+                                                <select className="med-input-pro" value={newStaff.type} onChange={e => setNewStaff({ ...newStaff, type: e.target.value })}>
+                                                    <option>Full-time</option>
+                                                    <option>Part-time</option>
+                                                    <option>Contract</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="med-label-pro">Date of Joining</label>
+                                                <input type="date" className="med-input-pro" value={newStaff.joiningDate} onChange={e => setNewStaff({ ...newStaff, joiningDate: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="med-label-pro">Experience (Yrs)</label>
+                                                <input type="number" className="med-input-pro" placeholder="0" value={newStaff.experience} onChange={e => setNewStaff({ ...newStaff, experience: e.target.value })} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+
+                                    {/* 4. Shift & Availability */}
+                                    <div className="med-pro-form-section">
+                                        <div className="med-section-header">
+                                            <div className="med-section-number">3</div>
+                                            <div className="med-section-title">
+                                                <h4>Shift & Availability</h4>
+                                                <p className="med-section-subtitle">Enable scheduling and workload management</p>
+                                            </div>
+                                        </div>
+                                        <div className="med-shift-selector">
+                                            {['Morning', 'Evening', 'Night'].map(s => (
+                                                <div key={s} className={`med-shift-option ${newStaff.shift === s ? 'active' : ''}`} onClick={() => setNewStaff({ ...newStaff, shift: s })}>
+                                                    {s} Shift
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div style={{ marginTop: '16px' }}>
+                                            <label className="med-label-pro">Working Days</label>
+                                            <div className="med-day-selector">
+                                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                                                    <div key={day}
+                                                        className={`med-day-chip ${newStaff.workingDays.includes(day) ? 'active' : ''}`}
+                                                        onClick={() => {
+                                                            const newDays = newStaff.workingDays.includes(day)
+                                                                ? newStaff.workingDays.filter(d => d !== day)
+                                                                : [...newStaff.workingDays, day];
+                                                            setNewStaff({ ...newStaff, workingDays: newDays });
+                                                        }}
+                                                    >
+                                                        {day.charAt(0)}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="med-grid-2" style={{ marginTop: '20px' }}>
+                                            <div>
+                                                <label className="med-label-pro">Daily Working Hours</label>
+                                                <input className="med-input-pro" value={newStaff.workingHours} onChange={e => setNewStaff({ ...newStaff, workingHours: e.target.value })} />
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px' }}>
+                                                <label className="med-label-pro" style={{ marginBottom: 0 }}>Home Collection?</label>
+                                                <label className="med-toggle-switch">
+                                                    <input type="checkbox" checked={newStaff.homeCollection} onChange={e => setNewStaff({ ...newStaff, homeCollection: e.target.checked })} />
+                                                    <span className="med-toggle-slider round"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 5. Skills */}
+                                    <div className="med-pro-form-section">
+                                        <div className="med-section-header">
+                                            <div className="med-section-number">4</div>
+                                            <div className="med-section-title">
+                                                <h4>Skills & Specialization</h4>
+                                                <p className="med-section-subtitle">Assign correct tests and responsibilities</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="med-label-pro">Specializations</label>
+                                            <div className="med-tag-input">
+                                                {newStaff.specializations.map((spec, i) => (
+                                                    <div key={i} className="med-tag-chip">
+                                                        {spec} <button onClick={() => {
+                                                            const newSpecs = [...newStaff.specializations];
+                                                            newSpecs.splice(i, 1);
+                                                            setNewStaff({ ...newStaff, specializations: newSpecs });
+                                                        }}>×</button>
+                                                    </div>
+                                                ))}
                                                 <input
-                                                    type="file"
-                                                    id="staff-pfp-upload"
-                                                    hidden
-                                                    accept="image/*"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files[0];
-                                                        if (file) {
-                                                            const url = URL.createObjectURL(file);
-                                                            setNewStaff({ ...newStaff, photo: file, photoPreview: url });
+                                                    style={{ border: 'none', outline: 'none', flex: 1, minWidth: '100px', fontSize: '0.9rem' }}
+                                                    placeholder="Type & press Enter (e.g. Biochemistry)"
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter' && e.target.value) {
+                                                            setNewStaff({ ...newStaff, specializations: [...newStaff.specializations, e.target.value] });
+                                                            e.target.value = '';
                                                         }
                                                     }}
                                                 />
                                             </div>
-                                            <div style={{ textAlign: 'center', marginTop: '8px' }}>
-                                                <small style={{ color: 'var(--med-primary)', cursor: 'pointer', fontWeight: 600 }}>Upload</small>
-                                            </div>
                                         </div>
+                                    </div>
 
-                                        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                            <div style={{ gridColumn: 'span 2' }}>
-                                                <label className="med-label-pro">Full Name <span style={{ color: 'red' }}>*</span></label>
-                                                <input className="med-input-pro" placeholder="e.g. Dr. Sarah Miller" value={newStaff.name} onChange={e => setNewStaff({ ...newStaff, name: e.target.value })} />
-                                            </div>
-                                            <div>
-                                                <label className="med-label-pro">Gender</label>
-                                                <select className="med-input-pro" value={newStaff.gender} onChange={e => setNewStaff({ ...newStaff, gender: e.target.value })}>
-                                                    <option>Male</option>
-                                                    <option>Female</option>
-                                                    <option>Other</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="med-label-pro">Date of Birth</label>
-                                                <input type="date" className="med-input-pro" value={newStaff.dob} onChange={e => setNewStaff({ ...newStaff, dob: e.target.value })} />
-                                            </div>
-                                            <div>
-                                                <label className="med-label-pro">Phone Number <span style={{ color: 'red' }}>*</span></label>
-                                                <input type="tel" className="med-input-pro" placeholder="+91 98765 43210" value={newStaff.phone} onChange={e => setNewStaff({ ...newStaff, phone: e.target.value })} />
-                                            </div>
-                                            <div>
-                                                <label className="med-label-pro">Email Address <span style={{ color: 'red' }}>*</span></label>
-                                                <input type="email" className="med-input-pro" placeholder="staff@medibot.com" value={newStaff.email} onChange={e => setNewStaff({ ...newStaff, email: e.target.value })} />
-                                            </div>
-                                            <div style={{ gridColumn: 'span 2' }}>
-                                                <label className="med-label-pro">Address</label>
-                                                <input className="med-input-pro" placeholder="Full residential address" value={newStaff.address} onChange={e => setNewStaff({ ...newStaff, address: e.target.value })} />
+                                    {/* 6. Documents (Optional) */}
+                                    <div className="med-pro-form-section">
+                                        <div className="med-section-header">
+                                            <div className="med-section-number">5</div>
+                                            <div className="med-section-title">
+                                                <h4>Documents Upload</h4>
+                                                <p className="med-section-subtitle">Compliance and verification</p>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                        <div className="med-drop-zone"
+                                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                                    const droppedFiles = Array.from(e.dataTransfer.files);
+                                                    setNewStaff(prev => ({ ...prev, documents: [...prev.documents, ...droppedFiles] }));
+                                                }
+                                            }}
+                                        >
+                                            <Icons.UploadCloud size={32} color="#cbd5e1" />
+                                            <p style={{ margin: '12px 0 4px', color: 'var(--med-text-body)', fontWeight: 600 }}>Drag & drop files here</p>
+                                            <p style={{ margin: 0, color: 'var(--med-text-muted)', fontSize: '0.8rem' }}>ID Proof, Certificates, Medical License</p>
 
-                                {/* 2. Employment Details */}
-                                <div className="med-pro-form-section">
-                                    <div className="med-section-header">
-                                        <div className="med-section-number">2</div>
-                                        <div className="med-section-title">
-                                            <h4>Employment Details</h4>
-                                            <p className="med-section-subtitle">Define staff position and responsibilities</p>
-                                        </div>
-                                    </div>
-                                    <div className="med-grid-3">
-                                        <div>
-                                            <label className="med-label-pro">Staff ID</label>
-                                            <input className="med-input-pro" value={newStaff.staffId} disabled style={{ background: 'var(--med-bg)' }} />
-                                        </div>
-                                        <div>
-                                            <label className="med-label-pro">Role / Designation <span style={{ color: 'red' }}>*</span></label>
-                                            <select className="med-input-pro" value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })}>
-                                                <option value="">Select Role</option>
-                                                <option>Lab Technician</option>
-                                                <option>Phlebotomist</option>
-                                                <option>Pathologist</option>
-                                                <option>Receptionist</option>
-                                                <option>Admin</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="med-label-pro">Department</label>
-                                            <input className="med-input-pro" placeholder="e.g. Hematology" value={newStaff.department} onChange={e => setNewStaff({ ...newStaff, department: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="med-label-pro">Employment Type</label>
-                                            <select className="med-input-pro" value={newStaff.type} onChange={e => setNewStaff({ ...newStaff, type: e.target.value })}>
-                                                <option>Full-time</option>
-                                                <option>Part-time</option>
-                                                <option>Contract</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="med-label-pro">Date of Joining</label>
-                                            <input type="date" className="med-input-pro" value={newStaff.joiningDate} onChange={e => setNewStaff({ ...newStaff, joiningDate: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="med-label-pro">Experience (Yrs)</label>
-                                            <input type="number" className="med-input-pro" placeholder="0" value={newStaff.experience} onChange={e => setNewStaff({ ...newStaff, experience: e.target.value })} />
-                                        </div>
-                                    </div>
-                                </div>
-
-
-
-                                {/* 4. Shift & Availability */}
-                                <div className="med-pro-form-section">
-                                    <div className="med-section-header">
-                                        <div className="med-section-number">3</div>
-                                        <div className="med-section-title">
-                                            <h4>Shift & Availability</h4>
-                                            <p className="med-section-subtitle">Enable scheduling and workload management</p>
-                                        </div>
-                                    </div>
-                                    <div className="med-shift-selector">
-                                        {['Morning', 'Evening', 'Night'].map(s => (
-                                            <div key={s} className={`med-shift-option ${newStaff.shift === s ? 'active' : ''}`} onClick={() => setNewStaff({ ...newStaff, shift: s })}>
-                                                {s} Shift
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div style={{ marginTop: '16px' }}>
-                                        <label className="med-label-pro">Working Days</label>
-                                        <div className="med-day-selector">
-                                            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                                                <div key={day}
-                                                    className={`med-day-chip ${newStaff.workingDays.includes(day) ? 'active' : ''}`}
-                                                    onClick={() => {
-                                                        const newDays = newStaff.workingDays.includes(day)
-                                                            ? newStaff.workingDays.filter(d => d !== day)
-                                                            : [...newStaff.workingDays, day];
-                                                        setNewStaff({ ...newStaff, workingDays: newDays });
-                                                    }}
-                                                >
-                                                    {day.charAt(0)}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="med-grid-2" style={{ marginTop: '20px' }}>
-                                        <div>
-                                            <label className="med-label-pro">Daily Working Hours</label>
-                                            <input className="med-input-pro" value={newStaff.workingHours} onChange={e => setNewStaff({ ...newStaff, workingHours: e.target.value })} />
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px' }}>
-                                            <label className="med-label-pro" style={{ marginBottom: 0 }}>Home Collection?</label>
-                                            <label className="med-toggle-switch">
-                                                <input type="checkbox" checked={newStaff.homeCollection} onChange={e => setNewStaff({ ...newStaff, homeCollection: e.target.checked })} />
-                                                <span className="med-toggle-slider round"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 5. Skills */}
-                                <div className="med-pro-form-section">
-                                    <div className="med-section-header">
-                                        <div className="med-section-number">4</div>
-                                        <div className="med-section-title">
-                                            <h4>Skills & Specialization</h4>
-                                            <p className="med-section-subtitle">Assign correct tests and responsibilities</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="med-label-pro">Specializations</label>
-                                        <div className="med-tag-input">
-                                            {newStaff.specializations.map((spec, i) => (
-                                                <div key={i} className="med-tag-chip">
-                                                    {spec} <button onClick={() => {
-                                                        const newSpecs = [...newStaff.specializations];
-                                                        newSpecs.splice(i, 1);
-                                                        setNewStaff({ ...newStaff, specializations: newSpecs });
-                                                    }}>×</button>
-                                                </div>
-                                            ))}
                                             <input
-                                                style={{ border: 'none', outline: 'none', flex: 1, minWidth: '100px', fontSize: '0.9rem' }}
-                                                placeholder="Type & press Enter (e.g. Biochemistry)"
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Enter' && e.target.value) {
-                                                        setNewStaff({ ...newStaff, specializations: [...newStaff.specializations, e.target.value] });
-                                                        e.target.value = '';
+                                                type="file"
+                                                id="staff-docs-upload"
+                                                multiple
+                                                hidden
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files.length > 0) {
+                                                        const selectedFiles = Array.from(e.target.files);
+                                                        setNewStaff(prev => ({ ...prev, documents: [...prev.documents, ...selectedFiles] }));
                                                     }
                                                 }}
                                             />
+                                            <button className="med-btn-small secondary" style={{ marginTop: '16px' }} onClick={() => document.getElementById('staff-docs-upload').click()}>
+                                                Browse Files
+                                            </button>
+
+                                            {/* File List Preview */}
+                                            {newStaff.documents.length > 0 && (
+                                                <div style={{ width: '100%', marginTop: '16px', textAlign: 'left' }}>
+                                                    {newStaff.documents.map((file, index) => (
+                                                        <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--med-bg)', padding: '8px 12px', borderRadius: '8px', marginBottom: '8px', fontSize: '0.85rem' }}>
+                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                <Icons.FileText size={14} color="#64748b" />
+                                                                {file.name}
+                                                            </span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // prevent bubbling if needed
+                                                                    setNewStaff(prev => ({ ...prev, documents: prev.documents.filter((_, i) => i !== index) }));
+                                                                }}
+                                                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}
+                                                            >
+                                                                <Icons.Trash size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* 6. Documents (Optional) */}
-                                <div className="med-pro-form-section">
-                                    <div className="med-section-header">
-                                        <div className="med-section-number">5</div>
-                                        <div className="med-section-title">
-                                            <h4>Documents Upload</h4>
-                                            <p className="med-section-subtitle">Compliance and verification</p>
-                                        </div>
-                                    </div>
-                                    <div className="med-drop-zone"
-                                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                                                const droppedFiles = Array.from(e.dataTransfer.files);
-                                                setNewStaff(prev => ({ ...prev, documents: [...prev.documents, ...droppedFiles] }));
-                                            }
-                                        }}
-                                    >
-                                        <Icons.UploadCloud size={32} color="#cbd5e1" />
-                                        <p style={{ margin: '12px 0 4px', color: 'var(--med-text-body)', fontWeight: 600 }}>Drag & drop files here</p>
-                                        <p style={{ margin: 0, color: 'var(--med-text-muted)', fontSize: '0.8rem' }}>ID Proof, Certificates, Medical License</p>
-
-                                        <input
-                                            type="file"
-                                            id="staff-docs-upload"
-                                            multiple
-                                            hidden
-                                            onChange={(e) => {
-                                                if (e.target.files && e.target.files.length > 0) {
-                                                    const selectedFiles = Array.from(e.target.files);
-                                                    setNewStaff(prev => ({ ...prev, documents: [...prev.documents, ...selectedFiles] }));
-                                                }
-                                            }}
-                                        />
-                                        <button className="med-btn-small secondary" style={{ marginTop: '16px' }} onClick={() => document.getElementById('staff-docs-upload').click()}>
-                                            Browse Files
-                                        </button>
-
-                                        {/* File List Preview */}
-                                        {newStaff.documents.length > 0 && (
-                                            <div style={{ width: '100%', marginTop: '16px', textAlign: 'left' }}>
-                                                {newStaff.documents.map((file, index) => (
-                                                    <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--med-bg)', padding: '8px 12px', borderRadius: '8px', marginBottom: '8px', fontSize: '0.85rem' }}>
-                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                            <Icons.FileText size={14} color="#64748b" />
-                                                            {file.name}
-                                                        </span>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation(); // prevent bubbling if needed
-                                                                setNewStaff(prev => ({ ...prev, documents: prev.documents.filter((_, i) => i !== index) }));
-                                                            }}
-                                                            style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}
-                                                        >
-                                                            <Icons.Trash size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                    {/* 7. Emergency Contact */}
+                                    <div className="med-pro-form-section">
+                                        <div className="med-section-header">
+                                            <div className="med-section-number">6</div>
+                                            <div className="med-section-title">
+                                                <h4>Emergency Contact</h4>
+                                                <p className="med-section-subtitle">Safety & HR compliance (Optional)</p>
                                             </div>
-                                        )}
+                                        </div>
+                                        <div className="med-grid-3">
+                                            <div>
+                                                <label className="med-label-pro">Contact Name</label>
+                                                <input className="med-input-pro" value={newStaff.emergencyName} onChange={e => setNewStaff({ ...newStaff, emergencyName: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="med-label-pro">Relationship</label>
+                                                <input className="med-input-pro" value={newStaff.emergencyRelation} onChange={e => setNewStaff({ ...newStaff, emergencyRelation: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="med-label-pro">Phone Number</label>
+                                                <input className="med-input-pro" value={newStaff.emergencyPhone} onChange={e => setNewStaff({ ...newStaff, emergencyPhone: e.target.value })} />
+                                            </div>
+                                        </div>
                                     </div>
+
+
                                 </div>
 
-                                {/* 7. Emergency Contact */}
-                                <div className="med-pro-form-section">
-                                    <div className="med-section-header">
-                                        <div className="med-section-number">6</div>
-                                        <div className="med-section-title">
-                                            <h4>Emergency Contact</h4>
-                                            <p className="med-section-subtitle">Safety & HR compliance (Optional)</p>
-                                        </div>
+                                {/* Footer Actions */}
+                                <div className="med-modal-footer-pro">
+                                    <button className="med-btn-outlined danger" onClick={() => setShowAddStaffModal(false)}>Cancel</button>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <button type="button" className="med-btn-gradient" onClick={handleAddStaff} disabled={isSavingStaff}>
+                                            {isSavingStaff ? (
+                                                <>
+                                                    <Icons.Loader size={16} className="spin" /> Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Icons.CheckCircle size={16} /> Save & Activate Staff
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
-                                    <div className="med-grid-3">
-                                        <div>
-                                            <label className="med-label-pro">Contact Name</label>
-                                            <input className="med-input-pro" value={newStaff.emergencyName} onChange={e => setNewStaff({ ...newStaff, emergencyName: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="med-label-pro">Relationship</label>
-                                            <input className="med-input-pro" value={newStaff.emergencyRelation} onChange={e => setNewStaff({ ...newStaff, emergencyRelation: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="med-label-pro">Phone Number</label>
-                                            <input className="med-input-pro" value={newStaff.emergencyPhone} onChange={e => setNewStaff({ ...newStaff, emergencyPhone: e.target.value })} />
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                            </div>
-
-                            {/* Footer Actions */}
-                            <div className="med-modal-footer-pro">
-                                <button className="med-btn-outlined danger" onClick={() => setShowAddStaffModal(false)}>Cancel</button>
-                                <div style={{ display: 'flex', gap: '12px' }}>
-                                    <button type="button" className="med-btn-gradient" onClick={handleAddStaff} disabled={isSavingStaff}>
-                                        {isSavingStaff ? (
-                                            <>
-                                                <Icons.Loader size={16} className="spin" /> Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Icons.CheckCircle size={16} /> Save & Activate Staff
-                                            </>
-                                        )}
-                                    </button>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )
+                }
+            </div >
         );
     };
 
@@ -2756,7 +2621,81 @@ const LabAdminDashboard = () => {
         );
     };
 
+    const handleGenerateBill = (appointment) => {
+        showToast(`Generating bill for ${appointment.patient || 'Patient'}...`, "success");
+        // Integration point for PDF generation
+    };
 
+    const renderPayments = () => {
+        const filteredPayments = (appointments || []).filter(a =>
+            String(a.patient || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            String(a.id || '').toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        return (
+            <div className="med-payments-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div className="med-premium-header">
+                    <div>
+                        <h2 className="med-page-heading">Financial Settlements</h2>
+                        <p className="med-page-subheading">Track transactions, pending dues, and generate invoices</p>
+                    </div>
+                </div>
+
+                {filteredPayments.length === 0 ? (
+                    <div className="med-empty-state" style={{ background: 'var(--med-surface)', padding: '80px 40px', textAlign: 'center', borderRadius: '24px' }}>
+                        <div style={{ width: 100, height: 100, background: 'var(--med-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                            <Icons.CreditCard size={48} color="#94a3b8" />
+                        </div>
+                        <h3 style={{ fontSize: '1.4rem', color: 'var(--med-text-main)', marginBottom: '12px' }}>No transactions found</h3>
+                        <p style={{ color: 'var(--med-text-muted)', maxWidth: '400px', margin: '0 auto' }}>Sync data from Appointments to begin managing settlements.</p>
+                    </div>
+                ) : (
+                    <div className="med-payments-grid">
+                        {filteredPayments.map(appt => (
+                            <div
+                                key={appt.id}
+                                className={`med-payment-ticket ${appt.status === 'Cancelled' ? 'cancelled' : ''}`}
+                            >
+                                <div className="med-ticket-main">
+                                    <div className="med-avatar-circle" style={{ width: '64px', height: '64px', fontSize: '1.5rem', flexShrink: 0 }}>
+                                        {appt.patient ? appt.patient.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                    <div className="med-ticket-info">
+                                        <div className="med-ticket-patient">{appt.patient || 'Unknown Patient'}</div>
+                                        <div className="med-ticket-test">🔬 {appt.test || 'General Test'}</div>
+                                        <div className="med-ticket-meta">
+                                            PAY-ID: TXN-{String(appt.id || '').toUpperCase().slice(-6)} • {appt.date} • {appt.time}
+                                        </div>
+                                    </div>
+                                    <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
+                                        <span className={`med-ticket-status ${(appt.paymentStatus || appt.status) === 'Paid' || appt.status === 'Completed' ? 'status-paid' :
+                                            appt.status === 'Cancelled' ? 'status-unpaid' : 'status-pending'
+                                            }`}>
+                                            {(appt.paymentStatus || appt.status) === 'Paid' || appt.status === 'Completed' ? '✓ Paid' :
+                                                appt.status === 'Cancelled' ? '✕ Cancelled' : '⚠ Action Required'}
+                                        </span>
+                                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--med-text-main)', fontFamily: 'monospace' }}>
+                                            ₹{appt.amount || '750'}.00
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="med-ticket-stub">
+                                    <button
+                                        className="med-btn-bill"
+                                        onClick={() => handleGenerateBill(appt)}
+                                        disabled={appt.status === 'Cancelled'}
+                                    >
+                                        <Icons.FileText size={18} /> Invoice
+                                    </button>
+                                </div>
+                                <div className="med-payment-ticket-bottom-cut"></div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
 
     return (
@@ -2775,13 +2714,7 @@ const LabAdminDashboard = () => {
                     {activeSection === 'Settings' && renderSettings()}
                     {activeSection === 'Profile' && renderProfile()}
 
-                    {activeSection === 'Payments' && (
-                        <div className="med-empty-state">
-                            <div className="icon-bg"><Icons.CreditCard /></div>
-                            <h3>Payments Module</h3>
-                            <p>Payment integration coming soon.</p>
-                        </div>
-                    )}
+                    {activeSection === 'Payments' && renderPayments()}
                 </div>
             </main>
 

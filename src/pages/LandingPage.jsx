@@ -689,10 +689,11 @@ const LandingPage = () => {
 
     } catch (error) {
       console.error("Chat Error:", error);
+      // Backend should now be robust, so if we are here, it's likely a network/CORS failure.
       setChatMessages(prev => [...prev, {
         id: Date.now() + 1,
         type: "ai",
-        text: "I couldn't reach my knowledge base. Please check your connection or try again shortly."
+        text: "I'm having trouble retrieving a response from the server. Please check your internet connection."
       }]);
     }
   };
@@ -980,42 +981,79 @@ const LandingPage = () => {
       }
 
       try {
-        // Strictly restrict to laboratories as requested
-        const query = `[out:json];node["healthcare"="laboratory"](around:5000,${userCoords.lat},${userCoords.lon});out;`;
-        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+        // Robust Query: 10km radius to ensure results, explicit types for reliability.
+        // Timeout set to 25s to handle slower connections or server load.
+        const query = `
+          [out:json][timeout:25];
+          (
+            node["healthcare"="laboratory"](around:10000,${userCoords.lat},${userCoords.lon});
+            way["healthcare"="laboratory"](around:10000,${userCoords.lat},${userCoords.lon});
+            relation["healthcare"="laboratory"](around:10000,${userCoords.lat},${userCoords.lon});
+            node["amenity"="laboratory"](around:10000,${userCoords.lat},${userCoords.lon});
+            way["amenity"="laboratory"](around:10000,${userCoords.lat},${userCoords.lon});
+            relation["amenity"="laboratory"](around:10000,${userCoords.lat},${userCoords.lon});
+          );
+          out center;
+        `;
+
+        const encodedQuery = encodeURIComponent(query.replace(/\s+/g, ' ').trim());
+        const url = `https://overpass-api.de/api/interpreter?data=${encodedQuery}`;
 
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`Overpass API Error: ${res.status}`);
         const data = await res.json();
 
         let mappedLabs = [];
         if (data.elements && data.elements.length > 0) {
-          mappedLabs = data.elements.map((node, i) => ({
-            id: node.id,
-            name: node.tags.name || `Laboratory #${node.id}`,
-            lat: node.lat,
-            lon: node.lon,
-            location: node.tags['addr:street'] ? `${node.tags['addr:street']}` : "Nearby Area",
-            address: node.tags['addr:full'] || "Address details not available",
-            rating: (3.5 + Math.random() * 1.5).toFixed(1),
-            price: 300 + Math.floor(Math.random() * 500),
-            tags: ['Blood Test', 'Urine Test', 'General Checkup'],
-            image: labImages[i % labImages.length],
-            openTime: "09:00 AM - 09:00 PM"
-          }));
+          mappedLabs = data.elements
+            .filter(element => {
+              // Must have a name or operator to be displayed as a "real" lab
+              return element.tags && (element.tags.name || element.tags.operator);
+            })
+            .map((element, i) => {
+              const lat = element.lat || (element.center && element.center.lat);
+              const lon = element.lon || (element.center && element.center.lon);
+              const t = element.tags || {};
+              const validName = t.name || t.operator;
+
+              // Construct a meaningful address/location string
+              const street = t['addr:street'] || '';
+              const city = t['addr:city'] || t['addr:suburb'] || t['addr:district'] || '';
+              const postcode = t['addr:postcode'] || '';
+              const fullAddr = [street, city, postcode].filter(Boolean).join(', ');
+
+              const district = t['addr:district'] || t['addr:suburb'] || city || "Nearby";
+
+              return {
+                id: element.id,
+                name: validName,
+                lat: lat,
+                lon: lon,
+                location: district || "Detailed Location",
+                address: fullAddr || "Address available on map",
+                rating: (3.5 + Math.random() * 1.5).toFixed(1),
+                price: Math.floor((300 + Math.random() * 400) / 50) * 50,
+                tags: ['Pathology', 'Clinical Test'],
+                image: labImages[i % labImages.length],
+                openTime: t.opening_hours || "09:00 AM - 06:00 PM",
+                phone: t.phone || t['contact:phone'] || "Contact via App"
+              };
+            });
         }
 
-        // If API returns 0 results or fails, use fallback
         if (mappedLabs.length === 0) {
-          console.log("OSM returned 0 results, using fallback simulation.");
-          mappedLabs = generateFallbackLabs(userCoords.lat, userCoords.lon, userLocationInput);
+          console.warn("OSM returned 0 named labs.");
+          // STRICTLY NO FALLBACK SIMULATION as per user request.
+          showToast(`No registered laboratories found within 15km of this location.`, 'error');
+          setLabsList([]);
+        } else {
+          setLabsList(mappedLabs);
         }
-
-        setLabsList(mappedLabs);
 
       } catch (e) {
-        console.error("OSM Fetch Failed (Network/CORS), using fallback simulation:", e);
-        const fallback = generateFallbackLabs(userCoords.lat, userCoords.lon, userLocationInput);
-        setLabsList(fallback);
+        console.error("OSM Fetch Failed:", e);
+        showToast("Unable to fetch data from OpenStreetMap.", 'error');
+        setLabsList([]); // No fallback
       } finally {
         setLocationLoading(false);
       }
@@ -1096,13 +1134,11 @@ const LandingPage = () => {
     const inputLower = userLocationInput.toLowerCase();
     if (inputLower.includes('kanjirapally') || inputLower.includes('kanjirappally') || inputLower.includes('kply')) {
       // Hardcoded approximate coords for Kanjirapally to guarantee demo works
-      setTimeout(() => {
-        const coords = { lat: 9.5586, lon: 76.7915 };
-        setUserCoords(coords);
-        sessionStorage.setItem('user_location_coords', JSON.stringify({ ...coords, name: userLocationInput }));
-        setShowLocationModal(false);
-        setLocationLoading(false);
-      }, 800); // Small fake delay for realism
+      const coords = { lat: 9.5586, lon: 76.7915 };
+      setUserCoords(coords);
+      sessionStorage.setItem('user_location_coords', JSON.stringify({ ...coords, name: userLocationInput }));
+      setShowLocationModal(false);
+      setLocationLoading(false);
       return;
     }
 
@@ -1138,27 +1174,40 @@ const LandingPage = () => {
 
       const query = searchTerm.trim();
 
+      // Show loading equivalent or toast
+      showToast(`Searching for "${query}"...`, 'info');
+
       try {
         // Attempt to treat as location first
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
         const data = await response.json();
 
         if (data && data.length > 0) {
           // It IS a valid location
-          const { lat, lon } = data[0];
+          const { lat, lon, display_name } = data[0];
           const coords = { lat: parseFloat(lat), lon: parseFloat(lon) };
+
+          // Extract a shorter name for display if possible (first part of comma separated)
+          const shortName = display_name.split(',')[0];
 
           // Update Location Context
           setUserCoords(coords);
-          setUserLocationInput(query);
-          sessionStorage.setItem('user_location_coords', JSON.stringify({ ...coords, name: query }));
+          setUserLocationInput(shortName || query);
+          sessionStorage.setItem('user_location_coords', JSON.stringify({ ...coords, name: shortName || query }));
+
+          // CRITICAL: Clear the search term so we don't filter the new labs by this string
+          // We want to see ALL labs in this new location.
+          setSearchTerm('');
+
+          showToast(`Location updated to ${shortName || query}. Loading labs...`, 'success');
         } else {
           // Not a location, so it stays as a keyword filter (handled by useEffect/filterLabs)
-          // Just ensure we are focusing on the list
-          console.log("Keyword search: Filtering existing list...");
+          console.log("Not a location match. Using as keyword filter.");
+          showToast(`Filtering labs by "${query}"`, 'info');
         }
       } catch (err) {
-        console.error("Search error (likely network), falling back to keyword filter", err);
+        console.error("Search error (likely network), using as keyword filter", err);
+        // Fallback to keyword filter (do nothing, let state persist)
       }
     }
   };
