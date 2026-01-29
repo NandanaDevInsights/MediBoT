@@ -1737,24 +1737,40 @@ def get_admin_stats():
     if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
          return jsonify({"message": "Unauthorized"}), 403
     
+    user_id = session.get("user_id")
     conn = get_connection()
     try:
         cur = conn.cursor()
         
+        # Get Admin's Lab Info
+        cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+        admin_lab = cur.fetchone()
+        
+        where_clause = ""
+        params = []
+        if current_role == "LAB_ADMIN" and admin_lab:
+            l_id, l_name = admin_lab
+            if l_id:
+                where_clause = " AND (lab_id = %s OR lab_name = %s)"
+                params = [l_id, l_name]
+            else:
+                where_clause = " AND lab_name = %s"
+                params = [l_name]
+
         # Appointments Today
-        cur.execute("SELECT COUNT(*) FROM appointments WHERE date(appointment_date) = curdate()")
+        cur.execute(f"SELECT COUNT(*) FROM appointments WHERE date(appointment_date) = curdate() {where_clause}", params)
         appointments_today = cur.fetchone()[0]
         
-        # Pending Orders (Prescriptions where status is Pending)
-        cur.execute("SELECT COUNT(*) FROM prescriptions WHERE status = 'Pending'")
+        # Pending Orders (Prescriptions)
+        cur.execute(f"SELECT COUNT(*) FROM prescriptions WHERE status = 'Pending' {where_clause}", params)
         pending_orders = cur.fetchone()[0]
         
-        # Reports Generated (Actual reports uploaded by lab)
-        cur.execute("SELECT COUNT(*) FROM reports")
+        # Reports Generated
+        cur.execute(f"SELECT COUNT(*) FROM reports WHERE 1=1 {where_clause}", params)
         reports_generated = cur.fetchone()[0]
         
         # Staff
-        cur.execute("SELECT COUNT(*) FROM lab_staff WHERE status = 'Available'")
+        cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE status = 'Available' {where_clause}", params)
         staff_count = cur.fetchone()[0]
 
         # Graph Data: Last 7 Days Appointments
@@ -1762,22 +1778,21 @@ def get_admin_stats():
         today = datetime.date.today()
         dates = [today - datetime.timedelta(days=i) for i in range(6, -1, -1)]
         
-        # Fetch counts
-        cur.execute("""
+        graph_query = f"""
             SELECT DATE(appointment_date), COUNT(*) 
             FROM appointments 
-            WHERE appointment_date >= %s 
+            WHERE appointment_date >= %s {where_clause}
             GROUP BY DATE(appointment_date)
-        """, (today - datetime.timedelta(days=7),))
+        """
+        graph_params = [today - datetime.timedelta(days=7)] + params
+        cur.execute(graph_query, graph_params)
         rows = cur.fetchall()
         
-        # Map to dict using string key "YYYY-MM-DD"
         counts_map = {str(r[0]): r[1] for r in rows}
         
         daily_stats = []
         for d in dates:
             d_str = str(d)
-            # Label format: "Mon" or "Mon 12"
             label = d.strftime("%a") 
             daily_stats.append({
                 "name": label,
@@ -1789,7 +1804,7 @@ def get_admin_stats():
             "appointmentsToday": appointments_today,
             "pendingOrders": pending_orders,
             "reportsGenerated": reports_generated,
-            "revenue": "$1,250", # Mock for now
+            "revenue": "₹0", 
             "activeStaff": staff_count,
             "dailyStats": daily_stats
         }), 200
@@ -1860,13 +1875,17 @@ def manage_appointments():
                         row = cur.fetchone()
                         if row: lab_id = row[0]
 
-            # Insert Appointment with lab_id
+            # Insert Appointment with lab_id and new patient detail columns
             cur.execute("""
-                INSERT INTO appointments (user_id, lab_id, lab_name, patient_name, doctor_name, test_type, appointment_date, appointment_time, location, status, contact_number, source)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s)
+                INSERT INTO appointments (
+                    user_id, lab_id, lab_name, patient_name, doctor_name, 
+                    test_type, appointment_date, appointment_time, location, status, 
+                    contact_number, source, age, gender, email
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s)
             """, (
                 user_id,
-                lab_id, # Can be None if completely failed, but lab_name is stored
+                lab_id, 
                 lab_name,
                 data.get("patientName") or session.get("username") or session.get("email", "Guest"), 
                 data.get("doctor", "Self"), 
@@ -1875,15 +1894,18 @@ def manage_appointments():
                 data.get("time"),
                 data.get("location"),
                 data.get("contact"),
-                "Website" if session.get("user_id") else "Guest Website" 
+                "Website" if session.get("user_id") else "Guest Website",
+                data.get("age"),
+                data.get("gender"),
+                data.get("email") or session.get("email")
             ))
             
-            # Also insert into bookings table if this is Royal Clinical Laboratory
+            # Also insert into bookings table if this is Royal Clinical Laboratory (Legacy support)
             if lab_name == "Royal Clinical Laboratory":
-                print(f"[DEBUG] Inserting booking for Royal Clinical Laboratory into bookings table with lab_id=1")
+                print(f"[DEBUG] Inserting booking for Royal Clinical Laboratory into bookings table with lab_id={lab_id}")
                 
                 # Get user email for the booking
-                user_email = session.get("email", "guest@example.com")
+                user_email = data.get("email") or session.get("email", "guest@example.com")
                 patient_name_value = data.get("patientName") or user_email.split('@')[0]
                 
                 # Prepare test information
@@ -1898,19 +1920,22 @@ def manage_appointments():
                     cur.execute("""
                         INSERT INTO bookings 
                         (patient_name, patient_id, email, phone_number, lab_id, 
-                         test_category, selected_test, preferred_date, preferred_time, booking_status)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                         test_category, selected_test, preferred_date, preferred_time, booking_status,
+                         age, gender)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
                         patient_name_value,
                         str(user_id) if user_id else "GUEST",  # patient_id as string
                         user_email,
                         phone_number,
-                        1,  # Fixed lab_id = 1 for Royal Clinical Laboratory
+                        lab_id, 
                         test_category,
                         selected_test,
                         data.get("date"),
                         data.get("time"),
-                        "Pending"
+                        "Pending",
+                        data.get("age"),
+                        data.get("gender")
                     ))
                     print(f"[DEBUG] Successfully inserted into bookings table")
                 except Exception as booking_err:
@@ -1936,7 +1961,8 @@ def manage_appointments():
         
         query = """
             SELECT a.id, a.patient_name, a.test_type, a.appointment_date, a.appointment_time, a.status, a.lab_name, a.location, 
-                   a.contact_number, a.technician, a.sample_type, a.payment_status, a.report_status, a.source, u.username
+                   a.contact_number, a.technician, a.sample_type, a.payment_status, a.report_status, a.source, u.username,
+                   a.age, a.gender, a.email
             FROM appointments a
             LEFT JOIN users u ON a.user_id = u.id
         """
@@ -1946,35 +1972,26 @@ def manage_appointments():
         if current_role == "LAB_ADMIN":
             user_id = session.get("user_id")
             # Find Admin's Lab Name/ID
-            cur.execute("SELECT lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+            cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
             admin_lab_row = cur.fetchone()
             
-            if admin_lab_row and admin_lab_row[0]:
-                admin_lab_name = admin_lab_row[0]
-                
-                # Check if this lab exists in laboratories table to get ID?
-                # Actually, simpler to filter appointments by lab_id OR lab_name
-                # Let's get the ID if possible for robustness
-                cur.execute("SELECT id FROM laboratories WHERE name=%s", (admin_lab_name,))
-                lab_id_row = cur.fetchone()
+            if admin_lab_row:
+                l_id, l_name = admin_lab_row
                 
                 where_clauses = []
-                if lab_id_row:
+                if l_id:
                     where_clauses.append("lab_id=%s")
-                    params.append(lab_id_row[0])
+                    params.append(l_id)
                 
-                # Also match by name string to catch older bookings or loose matches
-                where_clauses.append("lab_name=%s")
-                params.append(admin_lab_name)
-                
-                # Combine: (lab_id = X OR lab_name = Y)
+                if l_name:
+                    where_clauses.append("lab_name=%s")
+                    params.append(l_name)
+                    
                 if where_clauses:
                      query += " WHERE (" + " OR ".join(where_clauses) + ")"
                 else:
-                     # Admin has name but no match found? Show nothing?
                      query += " WHERE 1=0" 
             else:
-                # Admin has no assigned lab?
                 query += " WHERE 1=0"
 
         query += " ORDER BY created_at DESC"
@@ -1992,14 +2009,17 @@ def manage_appointments():
                 "date": str(r[3]),
                 "time": str(r[4]),
                 "status": r[5],
-                "location": r[7] if len(r) > 7 else "",
-                "contact": r[8] if len(r) > 8 else "N/A",
-                "technician": r[9] if len(r) > 9 else "Unassigned",
-                "sampleType": r[10] if len(r) > 10 else "N/A",
-                "paymentStatus": r[11] if len(r) > 11 else "Pending",
-                "reportStatus": r[12] if len(r) > 12 else "Not Uploaded",
-                "source": r[13] if len(r) > 13 else "Website",
-                "username": r[14] if len(r) > 14 else ""
+                "location": r[7],
+                "contact": r[8],
+                "technician": r[9] or "Unassigned",
+                "sampleType": r[10] or "N/A",
+                "paymentStatus": r[11] or "Pending",
+                "reportStatus": r[12] or "Not Uploaded",
+                "source": r[13] or "Website",
+                "username": r[14] or "",
+                "age": r[15],
+                "gender": r[16],
+                "email": r[17]
             })
         return jsonify(appointments), 200
     except Exception as e:
@@ -2126,29 +2146,50 @@ def update_appointment_status(id):
 
 @app.get("/api/admin/test-orders")
 def get_test_orders():
-    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+    current_role = session.get("role")
+    if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
         return jsonify({"message": "Unauthorized"}), 403
         
+    user_id = session.get("user_id")
     conn = get_connection()
     try:
         cur = conn.cursor()
-        # Fetch prescriptions as orders
-        cur.execute("""
+        
+        # Get Admin's Lab Info
+        where_clause = ""
+        params = []
+        if current_role == "LAB_ADMIN":
+            cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+            row = cur.fetchone()
+            if row:
+                l_id, l_name = row
+                if l_id:
+                    where_clause = " WHERE (p.lab_id = %s OR 1=1)" # Temp: prescriptions might not have lab_id yet
+                    # Actually, prescriptions are global unless assigned. 
+                    # For now, let's keep them global or filter if lab_id matches.
+                    # As per user request "add that booking AND all required data only to THAT laboratory admin dashboard"
+                    # We should probably only show prescriptions assigned to this lab.
+                    where_clause = " WHERE p.lab_id = %s"
+                    params = [l_id]
+                else:
+                    where_clause = " WHERE 1=0" # No lab assigned
+
+        query = f"""
             SELECT p.id, u.id, u.email, p.mobile_number, p.test_type, p.file_path, p.status, u.username
             FROM prescriptions p
             LEFT JOIN users u ON p.user_id = u.id
+            {where_clause}
             ORDER BY p.created_at DESC
-        """)
+        """
+        cur.execute(query, params)
         rows = cur.fetchall()
         
         orders = []
         for r in rows:
-            # r: 0:pid, 1:uid, 2:email, 3:mobile, 4:test, 5:path, 6:status, 7:username
             uid = r[1]
             email = r[2]
             mobile = r[3]
             username = r[7]
-            # Prioritize Username > Email Prefix > Mobile > Guest (No full emails)
             patient_display = username if username else (email.split("@")[0] if email else (mobile if mobile else "Guest"))
             
             orders.append({
@@ -2156,12 +2197,13 @@ def get_test_orders():
                 "patientId": uid,
                 "patient": patient_display,
                 "tests": [r[4]] if r[4] else ["General"],
-                "sample": "Blood/Urine", # Mock
+                "sample": "Blood/Urine", 
                 "status": r[6]
             })
         return jsonify(orders), 200
-    finally:
-        conn.close()
+    except Exception as e:
+        print(f"[ERROR] Fetch Orders failed: {e}")
+        return jsonify({"message": "Server error"}), 500
 
 
 def ensure_lab_staff_extended_schema():
@@ -2292,11 +2334,21 @@ def add_staff():
             data.get('emergencyName'),
             data.get('emergencyRelation'),
             data.get('emergencyPhone'),
-            data.get('internalNotes')
+            data.get('internalNotes'),
+            data.get('lab_id') # Ensure lab_id is passed from frontend or found here
         )
         
+        # If lab_id not in data, try to get from session admin profile
+        if not data.get('lab_id'):
+            cur.execute("SELECT lab_id FROM lab_admin_profile WHERE user_id=%s", (session.get("user_id"),))
+            lab_row = cur.fetchone()
+            if lab_row:
+                params = list(params)
+                params[-1] = lab_row[0]
+                params = tuple(params)
+
         try:
-            cur.execute(query, params)
+            cur.execute(query.replace("emergency_phone, internal_notes", "emergency_phone, internal_notes, lab_id").replace("%s)", "%s, %s)"), params)
             conn.commit()
             return jsonify({"message": "Staff Added Successfully"}), 201
         except Exception as sql_err:
@@ -2313,12 +2365,30 @@ def add_staff():
 
 @app.get("/api/admin/staff")
 def get_staff():
+    current_role = session.get("role")
+    if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+        
+    user_id = session.get("user_id")
     conn = get_connection()
     try:
         cur = conn.cursor(dictionary=True)
-        # Select all columns to ensure "all need things" are fetched
-        # Using staff_id for ordering as it is the primary key in the current schema
-        cur.execute("SELECT * FROM lab_staff ORDER BY staff_id DESC")
+        
+        where_clause = ""
+        params = []
+        if current_role == "LAB_ADMIN":
+            cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+            row = cur.fetchone()
+            if row:
+                l_id = row['lab_id']
+                l_name = row['lab_name']
+                if l_id:
+                    where_clause = " WHERE lab_id = %s OR (lab_id IS NULL AND 1=0)"
+                    params = [l_id]
+                else:
+                    where_clause = " WHERE 1=0"
+
+        cur.execute(f"SELECT * FROM lab_staff {where_clause} ORDER BY staff_id DESC", params)
         rows = cur.fetchall()
         
         staff = []
@@ -2448,26 +2518,46 @@ def admin_profile():
              return jsonify({}), 404
         else:
              data = request.get_json()
+             lab_name = data.get('lab_name')
+             
+             # Try to find lab_id for this lab_name
+             lab_id = None
+             if lab_name:
+                 cur.execute("SELECT id FROM laboratories WHERE name=%s LIMIT 1", (lab_name,))
+                 lab_row = cur.fetchone()
+                 if lab_row:
+                     lab_id = lab_row[0]
+                 else:
+                     # Create lab if not exists? Or just leave null for now. 
+                     # Usually we want to create it so we have a persistent ID.
+                     try:
+                         cur.execute("INSERT INTO laboratories (name, address) VALUES (%s, %s)", (lab_name, data.get('address', '')))
+                         lab_id = cur.lastrowid
+                     except: pass
+
              # Upsert
              cur.execute("""
-                INSERT INTO lab_admin_profile (user_id, lab_name, address, contact_number, admin_name)
-                VALUES (%s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE lab_name=%s, address=%s, contact_number=%s, admin_name=%s
+                INSERT INTO lab_admin_profile (user_id, lab_name, address, contact_number, admin_name, lab_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE lab_name=%s, address=%s, contact_number=%s, admin_name=%s, lab_id=%s
              """, (
                  user_id, 
-                 data.get('lab_name'), 
+                 lab_name, 
                  data.get('address'), 
                  data.get('contact'), 
                  data.get('admin_name'),
-                 data.get('lab_name'), 
+                 lab_id,
+                 lab_name, 
                  data.get('address'), 
                  data.get('contact'),
-                 data.get('admin_name')
+                 data.get('admin_name'),
+                 lab_id
              ))
              conn.commit()
-             return jsonify({"message": "Profile Saved"}), 200
+             return jsonify({"message": "Profile Saved", "lab_id": lab_id}), 200
     finally:
         conn.close()
+
 
 @app.post("/api/logout")
 def logout():
@@ -2476,24 +2566,173 @@ def logout():
     # Clear cookie manually just in case
     resp.set_cookie('session', '', expires=0)
     return resp, 200
-@app.get("/api/admin/reports")
-def get_all_reports():
-    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
-        return jsonify({"message": "Unauthorized"}), 403
+
+# --- User Appointment Management Endpoints ---
+@app.post("/api/user/appointments/cancel")
+def cancel_user_appointment():
+    """Cancel an appointment (changes status to 'Cancelled')"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    data = request.get_json() or {}
+    appointment_id = data.get("appointment_id")
+    
+    if not appointment_id:
+        return jsonify({"message": "Appointment ID required"}), 400
+    
+    # Remove 'A-' prefix if present
+    if isinstance(appointment_id, str) and appointment_id.startswith('A-'):
+        appointment_id = appointment_id.replace('A-', '')
     
     conn = get_connection()
     try:
         cur = conn.cursor()
+        
+        # Verify the appointment belongs to this user
+        cur.execute("SELECT id, status FROM appointments WHERE id=%s AND user_id=%s", (appointment_id, user_id))
+        appt = cur.fetchone()
+        
+        if not appt:
+            return jsonify({"message": "Appointment not found or access denied"}), 404
+        
+        # Update status to Cancelled
+        cur.execute("UPDATE appointments SET status='Cancelled' WHERE id=%s", (appointment_id,))
+        conn.commit()
+        
+        return jsonify({"message": "Booking cancelled successfully"}), 200
+    except Exception as e:
+        print(f"[ERROR] Cancel appointment failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
+@app.get("/api/user/appointments")
+def get_user_appointments():
+    """Get all appointments for the logged-in user"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify([]), 200  # Return empty array if not logged in
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Fetch all appointments for this user
         cur.execute("""
+            SELECT id, lab_name, patient_name, test_type, appointment_date, appointment_time, 
+                   status, location, contact_number, created_at
+            FROM appointments 
+            WHERE user_id=%s 
+            ORDER BY created_at DESC
+        """, (user_id,))
+        
+        rows = cur.fetchall()
+        bookings = []
+        
+        for r in rows:
+            # Parse tests - handle both string and potential array formats
+            tests_raw = r[3] or ""
+            if tests_raw:
+                # Split by comma and clean up
+                tests = [t.strip() for t in tests_raw.split(',') if t.strip()]
+            else:
+                tests = []
+            
+            bookings.append({
+                "id": f"A-{r[0]}",  # Add prefix for consistency
+                "labName": r[1] or "Unknown Lab",
+                "patient": r[2] or "Guest",
+                "tests": tests,
+                "date": str(r[4]) if r[4] else "Not set",
+                "time": str(r[5]) if r[5] else "Not set",
+                "status": r[6] or "Pending",
+                "location": r[7] or "Not specified",
+                "contact": r[8] or "N/A",
+                "created_at": r[9].isoformat() if r[9] else None
+            })
+        
+        return jsonify(bookings), 200
+    except Exception as e:
+        print(f"[ERROR] Get user appointments failed: {e}")
+        return jsonify([]), 200  # Return empty array on error to prevent frontend crashes
+    finally:
+        conn.close()
+
+@app.delete("/api/user/appointments/<appointment_id>")
+def delete_user_appointment(appointment_id):
+    """Permanently delete an appointment from user's history"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    # Remove 'A-' prefix if present
+    if isinstance(appointment_id, str) and appointment_id.startswith('A-'):
+        appointment_id = appointment_id.replace('A-', '')
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Verify the appointment belongs to this user
+        cur.execute("SELECT id FROM appointments WHERE id=%s AND user_id=%s", (appointment_id, user_id))
+        appt = cur.fetchone()
+        
+        if not appt:
+            return jsonify({"message": "Appointment not found or access denied"}), 404
+        
+        # Delete the appointment
+        cur.execute("DELETE FROM appointments WHERE id=%s", (appointment_id,))
+        conn.commit()
+        
+        return jsonify({"message": "Booking removed successfully"}), 200
+    except Exception as e:
+        print(f"[ERROR] Delete appointment failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
+@app.get("/api/admin/reports")
+def get_all_reports():
+    current_role = session.get("role")
+    if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    user_id = session.get("user_id")
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Get Admin's Lab Info
+        where_clause_reports = ""
+        where_clause_appts = ""
+        params = []
+        if current_role == "LAB_ADMIN":
+            cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+            row = cur.fetchone()
+            if row:
+                l_id, l_name = row
+                if l_id:
+                    where_clause_reports = " WHERE r.lab_id = %s"
+                    where_clause_appts = " WHERE (lab_id = %s OR lab_name = %s)"
+                    params = [l_id, l_name] if where_clause_appts.count('%s') == 2 else [l_id]
+                    # Actually let's be consistent
+                    where_clause_appts = " WHERE lab_id = %s OR lab_name = %s"
+                    params = [l_id, l_name]
+                else:
+                    where_clause_reports = " WHERE 1=0"
+                    where_clause_appts = " WHERE 1=0"
+
+        cur.execute(f"""
             SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at, u.username
             FROM reports r
             LEFT JOIN users u ON r.patient_id = u.id
+            {where_clause_reports}
             ORDER BY r.uploaded_at DESC
-        """)
+        """, [params[0]] if where_clause_reports else [])
         rows = cur.fetchall()
         reports = []
         for row in rows:
-            # Check if username exists (index 6) or fallback to email
             p_name = row[6] if len(row) > 6 and row[6] else (row[1] or "Unknown")
             reports.append({
                 "id": f"R-{row[0]}",
@@ -2505,15 +2744,14 @@ def get_all_reports():
             })
             
         # Add Appointments as Pending Reports
-        cur.execute("""
+        cur.execute(f"""
             SELECT id, patient_name, test_type, appointment_date, status, user_id 
             FROM appointments 
+            {where_clause_appts}
             ORDER BY appointment_date DESC LIMIT 50
-        """)
+        """, params if where_clause_appts else [])
         appt_rows = cur.fetchall()
         for a in appt_rows:
-            # Only add if not seemingly in reports matching ID? (Hard to match exactly without link)
-            # For now just list them as "Pending Upload"
             reports.append({
                 "id": f"A-{a[0]}",
                 "patient": a[1] or "Guest",
@@ -2577,7 +2815,9 @@ def delete_notification(id):
 
 @app.post("/api/admin/upload-report")
 def upload_report():
-    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+    user_id = session.get("user_id")
+    current_role = session.get("role")
+    if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
         return jsonify({"message": "Unauthorized"}), 403
     
     # Check text fields
@@ -2602,10 +2842,16 @@ def upload_report():
         conn = get_connection()
         try:
             cur = conn.cursor()
+            
+            # Get lab_id for the admin
+            cur.execute("SELECT lab_id FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+            lab_row = cur.fetchone()
+            lab_id = lab_row[0] if lab_row else None
+
             cur.execute("""
-                INSERT INTO reports (patient_id, test_name, file_path, status)
-                VALUES (%s, %s, %s, 'Uploaded')
-            """, (patient_id, test_name, file_url))
+                INSERT INTO reports (patient_id, test_name, file_path, status, lab_id)
+                VALUES (%s, %s, %s, 'Uploaded', %s)
+            """, (patient_id, test_name, file_url, lab_id))
             
             # Auto-update prescription status
             try:
@@ -2635,13 +2881,26 @@ def get_bookings():
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("""
+        
+        where_clause = ""
+        params = []
+        if current_role == "LAB_ADMIN":
+            cur.execute("SELECT lab_id FROM lab_admin_profile WHERE user_id=%s", (session.get("user_id"),))
+            row = cur.fetchone()
+            if row and row[0]:
+                where_clause = " WHERE lab_id = %s"
+                params = [row[0]]
+            else:
+                where_clause = " WHERE 1=0"
+
+        cur.execute(f"""
             SELECT booking_id, patient_name, patient_id, age, gender, email, 
                    phone_number, lab_id, test_category, selected_test, 
                    preferred_date, preferred_time, booking_status, created_at
             FROM bookings
+            {where_clause}
             ORDER BY created_at DESC
-        """)
+        """, params)
         rows = cur.fetchall()
         
         bookings = []

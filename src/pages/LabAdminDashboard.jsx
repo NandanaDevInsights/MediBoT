@@ -352,12 +352,7 @@ const LabAdminDashboard = () => {
                 if (appsRes.ok) {
                     const data = await appsRes.json();
                     if (Array.isArray(data)) {
-                        // Strict filter for Royal Clinical Laboratory
-                        const filtered = data.filter(a =>
-                            (a.labName && a.labName.includes('Royal')) ||
-                            (a.location && a.location.toLowerCase().includes('kanjirapally'))
-                        );
-                        setAppointments(filtered);
+                        setAppointments(data);
                     }
                 }
             } catch (err) {
@@ -1453,6 +1448,14 @@ const LabAdminDashboard = () => {
                                                         <div className="detail-item">
                                                             <span className="label">Contact Info</span>
                                                             <span className="value">{appt.contact || 'N/A'}</span>
+                                                        </div>
+                                                        <div className="detail-item">
+                                                            <span className="label">Age / Gender</span>
+                                                            <span className="value">{appt.age || 'N/A'} yrs / {appt.gender || 'N/A'}</span>
+                                                        </div>
+                                                        <div className="detail-item">
+                                                            <span className="label">Email Address</span>
+                                                            <span className="value">{appt.email || 'N/A'}</span>
                                                         </div>
                                                         <div className="detail-item">
                                                             <span className="label">Sample Status</span>

@@ -445,7 +445,8 @@ const LandingPage = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showMyBookingsModal, setShowMyBookingsModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('Pay at Lab');
+  const [paymentMethod, setPaymentMethod] = useState('Pay Online'); // Default to Online for better UX
+  const [paymentStatus, setPaymentStatus] = useState('Pending');
   const [paymentStep, setPaymentStep] = useState('select'); // 'select', 'upi_scan', 'netbanking_selection', 'card_form'
   const [selectedUpiApp, setSelectedUpiApp] = useState(null);
   const [selectedBank, setSelectedBank] = useState(null);
@@ -493,7 +494,11 @@ const LandingPage = () => {
 
   const initiateRazorpayPayment = async () => {
     try {
+      // Calculate total amount
       const totalAmount = (selectedLab?.price || 0) + (selectedTests.length * 150);
+
+      // Formatted list of tests for Razorpay notes
+      const formattedTests = selectedTests.map(t => typeof t === 'object' ? t.name : t).join(', ');
 
       // Step 1: Create order on backend
       const orderResponse = await fetch('http://localhost:5000/api/create-payment-order', {
@@ -503,7 +508,7 @@ const LandingPage = () => {
           amount: totalAmount,
           notes: {
             lab: selectedLab?.name,
-            tests: selectedTests.map(t => t.name).join(', '),
+            tests: formattedTests,
             date: bookingDate,
             time: bookingTime
           }
@@ -539,8 +544,13 @@ const LandingPage = () => {
             });
 
             if (verifyRes.ok) {
-              // Payment verified successfully, confirm booking
-              await handleConfirmBooking();
+              // Payment verified successfully
+              setPaymentMethod('Online');
+              setPaymentStatus('Paid');
+
+              // Confirm booking with updated status
+              await handleConfirmBooking('Online', 'Paid');
+
               setShowPaymentModal(false);
               setShowFeedbackModal(true);
               showToast("✓ Payment successful! Booking confirmed.", 'success');
@@ -811,7 +821,7 @@ const LandingPage = () => {
     }
   };
 
-  const handleConfirmBooking = async () => {
+  const handleConfirmBooking = async (method = paymentMethod, pStatus = paymentStatus) => {
     if (!bookingDate || !bookingTime || selectedTests.length === 0) {
       alert("Please select date, time, and at least one test.");
       return;
@@ -846,6 +856,17 @@ const LandingPage = () => {
           date: newBooking.date,
           time: newBooking.time,
           tests: newBooking.tests,
+
+          // Patient Details from state
+          patientName: patientDetails.displayName || patientDetails.username || 'Guest',
+          age: patientDetails.age,
+          gender: patientDetails.gender,
+          email: userProfile?.email,
+          contact: patientDetails.contact,
+
+          // Payment Info
+          paymentMethod: method,
+          paymentStatus: pStatus
         })
       });
       if (response.ok) {
@@ -997,11 +1018,68 @@ const LandingPage = () => {
         `;
 
         const encodedQuery = encodeURIComponent(query.replace(/\s+/g, ' ').trim());
-        const url = `https://overpass-api.de/api/interpreter?data=${encodedQuery}`;
+        const mirrors = [
+          'https://overpass-api.de/api/interpreter',
+          'https://overpass.kumi.systems/api/interpreter',
+          'https://overpass.osm.ch/api/interpreter'
+        ];
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Overpass API Error: ${res.status}`);
-        const data = await res.json();
+        let data = null;
+        let lastError = null;
+
+        for (const mirror of mirrors) {
+          try {
+            const url = `${mirror}?data=${encodedQuery}`;
+            const res = await fetch(url, {
+              headers: {
+                'Accept': 'application/json',
+                // Proper User-Agent is required by OSM/Overpass usage policies
+                'User-Agent': 'MediBot/1.0 (https://medibot.example.com; contact@example.com)'
+              },
+              mode: 'cors'
+            });
+
+            if (res.ok) {
+              data = await res.json();
+              if (data) break;
+            } else {
+              console.warn(`Mirror ${mirror} failed with status: ${res.status}`);
+            }
+          } catch (mirrorErr) {
+            console.warn(`Mirror ${mirror} failed:`, mirrorErr);
+            lastError = mirrorErr;
+          }
+        }
+
+        // If Overpass fails across all mirrors, try a limited fallback via Nominatim
+        if (!data) {
+          console.log("All Overpass mirrors failed. Trying Nominatim fallback...");
+          try {
+            const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=laboratory&lat=${userCoords.lat}&lon=${userCoords.lon}&addressdetails=1&limit=30`;
+            const nomRes = await fetch(nomUrl, {
+              headers: { 'User-Agent': 'MediBot/1.0' }
+            });
+            if (nomRes.ok) {
+              const nomData = await nomRes.json();
+              data = {
+                elements: nomData.map(item => ({
+                  id: item.place_id,
+                  lat: item.lat,
+                  lon: item.lon,
+                  tags: {
+                    name: item.display_name.split(',')[0],
+                    'addr:address': item.display_name,
+                    ...item.address
+                  }
+                }))
+              };
+            }
+          } catch (nomErr) {
+            console.error("Nominatim fallback also failed:", nomErr);
+          }
+        }
+
+        if (!data) throw lastError || new Error("Unable to reach OpenStreetMap servers");
 
         let mappedLabs = [];
         if (data.elements && data.elements.length > 0) {
@@ -2507,7 +2585,9 @@ const LandingPage = () => {
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                           <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Tests</span>
-                          <strong style={{ color: 'var(--text-body)' }}>{b.tests.join(', ')}</strong>
+                          <strong style={{ color: 'var(--text-body)' }}>
+                            {Array.isArray(b.tests) ? b.tests.join(', ') : (b.tests || 'No tests specified')}
+                          </strong>
                         </div>
                         <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-body)' }}>
                           <IconMapPin size={14} />
