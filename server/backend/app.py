@@ -35,6 +35,7 @@ from google.cloud import vision
 from twilio.twiml.messaging_response import MessagingResponse
 import uuid
 import time
+import razorpay
 
 load_dotenv()
 
@@ -63,6 +64,20 @@ SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASS = os.environ.get("SMTP_PASS")
 SMTP_FROM = os.environ.get("SMTP_FROM", "no-reply@ecogrow.local")
 SMTP_USE_TLS = bool(int(os.environ.get("SMTP_USE_TLS", "0")))
+
+# Global Gemini Configuration
+try:
+    _api_key = os.environ.get("GEMINI_API_KEY")
+    if _api_key:
+        genai.configure(api_key=_api_key)
+except Exception as e:
+    print(f"[ERROR] Failed to configure Gemini: {e}")
+
+# Razorpay Client Initialization
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET")
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+
 
 
 def hash_password(password: str) -> str:
@@ -633,69 +648,6 @@ def verify_otp():
         conn.close()
 
 
-@app.get("/api/profile")
-def get_profile():
-    """Get logged-in user's profile information"""
-    user_id = session.get("user_id")
-    email = session.get("email")
-    role = session.get("role")
-    
-    if not user_id:
-        return jsonify({"message": "Not authenticated"}), 401
-    
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        
-        # Get user basic info
-        cur.execute("SELECT email, role FROM users WHERE id=%s", (user_id,))
-        user = cur.fetchone()
-        
-        if not user:
-            return jsonify({"message": "User not found"}), 404
-        
-        user_email, user_role = user
-        
-        # For LAB_ADMIN, get lab profile data
-        lab_name = None
-        address = None
-        contact = None
-        admin_name = None
-
-        
-        if user_role in ["LAB_ADMIN", "SUPER_ADMIN"]:
-            cur.execute("""
-                SELECT lab_name, address, contact_number, admin_name 
-                FROM lab_admin_profile 
-                WHERE user_id=%s
-            """, (user_id,))
-            profile = cur.fetchone()
-
-            
-            if profile:
-                lab_name, address, contact, admin_name = profile
-            
-            # If no admin_name in profile, use email username
-            if not admin_name:
-                admin_name = user_email.split('@')[0].title()
-        
-        cur.close()
-        
-        return jsonify({
-            "user_id": user_id,
-            "email": user_email,
-            "role": user_role,
-            "admin_name": admin_name or user_email.split('@')[0].title(),
-            "lab_name": lab_name,
-            "address": address,
-            "contact": contact
-        }), 200
-        
-    except Exception as e:
-        print(f"[ERROR] Profile fetch failed: {e}")
-        return jsonify({"message": "Failed to fetch profile"}), 500
-    finally:
-        conn.close()
 
 
 @app.post("/api/admin/profile")
@@ -1310,9 +1262,9 @@ def get_user_profile():
         cur = conn.cursor()
         cur.execute("SELECT id, email, role, provider, created_at, pin_code, username FROM users WHERE id=%s", (user_id,))
         row = cur.fetchone()
-        cur.close()
-
+        
         if not row:
+            cur.close()
             return jsonify({"message": "User not found"}), 404
 
         uid, email, role, provider, created_at, pin_code, username = row
@@ -1321,17 +1273,13 @@ def get_user_profile():
         if role == 'LAB_ADMIN' and not pin_code:
             import string, random
             new_pin = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-            try:
-                cur.execute("UPDATE users SET pin_code=%s WHERE id=%s", (new_pin, uid))
-                conn.commit()
-                pin_code = new_pin
-            except Exception as e:
-                print(f"[ERROR] Failed to auto-generate PIN: {e}")
+            cur.execute("UPDATE users SET pin_code=%s WHERE id=%s", (new_pin, uid))
+            conn.commit()
+            pin_code = new_pin
 
         joined_at_iso = created_at.isoformat() if created_at else None
         
         # Fetch Extended Profile from user_profiles
-        cur = conn.cursor()
         cur.execute("""
             SELECT display_name, age, gender, blood_group, contact_number, address, profile_pic_url 
             FROM user_profiles 
@@ -1350,6 +1298,25 @@ def get_user_profile():
                  "savedLocation": p_row[5],
                  "profilePic": p_row[6]
              }
+        
+        # For LAB_ADMIN, also check lab_admin_profile for data
+        lab_data = {}
+        if role in ["LAB_ADMIN", "SUPER_ADMIN"]:
+            cur.execute("""
+                SELECT lab_name, address, contact_number, admin_name 
+                FROM lab_admin_profile 
+                WHERE user_id=%s
+            """, (uid,))
+            adm_p = cur.fetchone()
+            if adm_p:
+                lab_data = {
+                    "lab_name": adm_p[0],
+                    "lab_address": adm_p[1],
+                    "admin_contact": adm_p[2],
+                    "admin_name": adm_p[3]
+                }
+        
+        cur.close()
 
         return jsonify({
             "id": uid,
@@ -1359,7 +1326,8 @@ def get_user_profile():
             "provider": provider,
             "joined_at": joined_at_iso,
             "pin_code": pin_code,
-            **profile_data
+            **profile_data,
+            **lab_data
         }), 200
 
     except Exception as e:
@@ -2757,44 +2725,7 @@ def get_bookings():
 
 
 
-@app.post("/api/chat")
-def chat_bot():
-    data = request.get_json(silent=True) or {}
-    message = data.get("message")
-    history = data.get("history", [])
 
-    if not message:
-        return jsonify({"response": "Please say something."}), 400
-    
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-         return jsonify({"response": "I am unable to connect to the AI service (Missing API Key). But I can help you navigate the app!"}), 200
-
-    try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-pro")
-        
-        # Convert frontend history to Gemini format
-        chat_history = []
-        for msg in history:
-            role = "user" if msg.get("type") == "user" else "model"
-            text = msg.get("text", "")
-            # Skip current message if it's already in history (unlikely if strictly past)
-            # Gemini expects strictly alternating parts, filtering empty
-            if text:
-                chat_history.append({"role": role, "parts": [text]})
-        
-        # Ensure history is not valid if it ends with user?
-        # start_chat history must be previous turns. 
-        # If the user just sent a message, that is the `message` arg to send_message, not in history yet.
-        
-        chat = model.start_chat(history=chat_history)
-        response = chat.send_message(message)
-        
-        return jsonify({"response": response.text}), 200
-    except Exception as e:
-        print(f"Chat Error: {e}")
-        return jsonify({"response": "Sorry, I am having trouble answering that right now."}), 500
 
 # ----------------------------
 # OCR FLASK INTEGRATION
@@ -3018,6 +2949,233 @@ def whatsapp_webhook():
         resp.message("Error processing request.")
 
     return str(resp)
+
+# --- Chatbot API (Gemini Integration) ---
+@app.route('/api/chat', methods=['POST'])
+def chat_bot():
+    try:
+        data = request.json
+        user_message = data.get('message', '')
+        history = data.get('history', [])
+
+        if not user_message:
+            return jsonify({"response": "I'm listening. What can I help you with today?"}), 200
+
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return jsonify({"response": "Chat service is temporarily offline. Please try again later."}), 503
+
+        # Use a verified model name from the environment
+        # Use a verified model name from the environment
+        try:
+            # Prioritize 1.5-flash for speed and quota efficiency
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
+        except:
+            try:
+                model = genai.GenerativeModel('models/gemini-pro')
+            except:
+                # Fallback to whatever is available or default
+                model = genai.GenerativeModel('gemini-pro')
+        
+        # Enhanced System instructions with specific project knowledge
+        system_instruction = (
+            "You are MediBot, the advanced AI assistant for the MediBot Healthcare platform. "
+            "Your role is to assist users with navigating the website, booking diagnostic tests, and understanding our services. "
+            "You have full knowledge of the website's features and workflows.\n\n"
+            "--- WEBSITE CAPABILITIES & KNOWLEDGE BASE ---\n\n"
+            "1. **CORE SERVICE**: We facilitate online booking for diagnostic labs. Users can search for labs, book appointments, and view reports online.\n"
+            "   - **Tests Available**: Blood tests, Urine tests, Stool tests, Sputum tests, and comprehensive health packages.\n"
+            "   - **Home Collection**: Many labs offer home sample collection (indicated in lab details).\n\n"
+            "2. **FINDING LABS**:\n"
+            "   - Users can search by **City/Area** (e.g., 'Kanjirapally', 'Kochi') or by **Lab Name**.\n"
+            "   - We use OpenStreetMap to find real nearby laboratories based on the user's location.\n"
+            "   - **Special Demo**: For 'Kanjirapally', we display a curated list of top-rated labs including 'Scanron Diagnostics', 'Royal Clinical Laboratory', and 'Dianova'.\n\n"
+            "3. **BOOKING PROCESS**:\n"
+            "   - **Step 1**: Find a lab and click 'Book Now'.\n"
+            "   - **Step 2**: Select tests (e.g., CBC, Lipid Profile). Default prices are approx ₹150/test + Lab Booking Fee.\n"
+            "   - **Step 3**: Choose an Appointment Date and Time.\n"
+            "   - **Step 4**: Enter Patient Details (Name, Contact).\n"
+            "   - **Step 5**: Payment. We offer two modes:\n"
+            "     a) **Pay Online**: Secure payment via Razorpay (UPI, Credit/Debit Cards, Net Banking). It's instant and secure.\n"
+            "     b) **Pay at Lab**: Book now and pay cash/card when you visit the lab.\n"
+            "   - **Confirmation**: Booking is confirmed instantly. Users receive a notification and can track it in 'My Bookings'.\n\n"
+            "4. **REPORTS & PRESCRIPTIONS**:\n"
+            "   - **My Reports**: Users can view and download their test reports (PDFs) directly from the 'Reports' tab.\n"
+            "   - **Upload Prescription**: Users can upload a doctor's prescription. Our team analyzes it and suggests the correct tests.\n"
+            "   - **WhatsApp Integration**: Users can also send a photo of their prescription to our WhatsApp bot. Our AI extracts the tests and saves them to their profile.\n\n"
+            "5. **USER PROFILE**:\n"
+            "   - Users have a unique `@username`.\n"
+            "   - They can manage their personal details (Age, Gender, Blood Group, Address) in the Profile section.\n"
+            "   - 'My Bookings' shows history and status (Pending, Confirmed, Completed).\n\n"
+            "6. **FOR LAB OWNERS**:\n"
+            "   - There is a dedicated **Lab Admin Dashboard** (accessible via `/admin-login`).\n"
+            "   - Lab Admins can manage appointments, upload reports, manage staff, and view earnings.\n\n"
+            "--- GUIDELINES ---\n"
+            " - **Be Helpful**: If a user asks how to book, guide them step-by-step.\n"
+            " - **Be Accurate**: Use the specific lab names and features mentioned above.\n"
+            " - **No Medical Advice**: If users ask for diagnosis, state that you are an AI assistant for booking and they should consult a doctor.\n"
+            " - **Payment Queries**: Confirm that 'Pay Online' uses Razorpay and is fully secure.\n"
+            " - Keep answers concise, professional, and friendly."
+        )
+
+        # Build clean history
+        formatted_history = []
+        # Prepend system instruction
+        formatted_history.append({"role": "user", "parts": [f"SYSTEM INSTRUCTION: {system_instruction}\nPlease acknowledge and stay in character."] })
+        formatted_history.append({"role": "model", "parts": ["Acknowledged. I am MediBot. I will assist with site navigation and booking services professionally."] })
+
+        for msg in history:
+            if 'type' in msg and 'text' in msg:
+                # Skip the default welcome msg from history sent by frontend
+                if "Welcome to MediBot" in msg['text']:
+                    continue
+                role = "user" if msg['type'] == 'user' else "model"
+                formatted_history.append({"role": role, "parts": [msg['text']]})
+        
+        # GEMINI STRICTNESS: 
+        # 1. History MUST alternate User/Model.
+        # 2. To use chat.send_message(user_msg), the history MUST end with a 'model' role.
+        
+        final_history = []
+        last_role = None
+        for h in formatted_history:
+            if h['role'] != last_role:
+                final_history.append(h)
+                last_role = h['role']
+        
+        # If the history currently ends with a 'user' message, we remove it 
+        # because the 'user_message' we are about to send is the NEXT user turn.
+        # This occurs when the user has sent messages that haven't been replied to yet.
+        while final_history and final_history[-1]['role'] == 'user':
+            final_history.pop()
+
+        chat = model.start_chat(history=final_history)
+        response = chat.send_message(user_message)
+        
+        return jsonify({"response": response.text}), 200
+
+    except Exception as e:
+        err_str = str(e)
+        print(f"[ERROR] Chat API failed: {e}")
+        # Log error to file
+        with open("chat_error.log", "a", encoding="utf-8") as f:
+            f.write(f"\n--- {datetime.now()} ---\n{err_str}\n")
+            import traceback
+            f.write(traceback.format_exc())
+            
+        if "ResourceExhausted" in err_str or "429" in err_str:
+            return jsonify({"response": "The chat service is currently at its limit. Please wait 30 seconds and try again."}), 200
+        
+        if "404" in err_str and "model" in err_str:
+             return jsonify({"response": "I'm having trouble connecting to my brain module. Please try again soon."}), 200
+             
+        return jsonify({"response": "I encountered an error processing your request. Please try again in a moment."}), 500
+
+
+
+# --- Lab Admin Staff Routes ---
+@app.route('/api/admin/staff', methods=['GET'])
+def get_lab_staff():
+    """Fetch all staff from lab_staff table"""
+    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT 
+                staff_id, full_name, role_designation, phone_number, 
+                email, daily_working_hours, status, specializations,
+                date_of_joining, department
+            FROM lab_staff
+            ORDER BY date_of_joining DESC
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        
+        staff_list = []
+        for row in rows:
+            # Determine shift from working hours or use "General" as default
+            shift_text = row[5] if row[5] else "General"
+            
+            staff_list.append({
+                "id": row[0],  # staff_id
+                "name": row[1] if row[1] else "Unknown Staff",  # full_name
+                "role": row[2] if row[2] else "Staff",  # role_designation
+                "contact": row[3],  # phone_number
+                "phone": row[3],  # phone_number (duplicate for compatibility)
+                "email": row[4],
+                "shift": shift_text,  #daily_working_hours
+                "status": row[6] if row[6] else "Active",
+                "specialization": row[7],
+                "hireDate": str(row[8]) if row[8] else None,  # date_of_joining
+                "department": row[9],
+                "staffId": row[0]  # staff_id for display
+            })
+        
+        return jsonify(staff_list), 200
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch staff: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"message": "Failed to fetch staff", "error": str(e)}), 500
+    finally:
+        conn.close()
+
+# --- Razorpay Payment Routes ---
+@app.route('/api/create-payment-order', methods=['POST'])
+def create_payment_order():
+    try:
+        data = request.json
+        amount = data.get('amount')  # Amount in INR
+        if not amount:
+            return jsonify({"error": "Amount is required"}), 400
+            
+        currency = 'INR'
+        notes = data.get('notes', {})
+        
+        # Razorpay expects amount in paise (1 INR = 100 Paise)
+        razorpay_order = razorpay_client.order.create({
+            'amount': int(float(amount) * 100),
+            'currency': currency,
+            'payment_capture': '1',
+            'notes': notes
+        })
+        
+        return jsonify({
+            'order_id': razorpay_order['id'],
+            'amount': razorpay_order['amount'],
+            'currency': razorpay_order['currency'],
+            'key': RAZORPAY_KEY_ID
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Razorpay Create Order Failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/verify-payment', methods=['POST'])
+def verify_payment():
+    try:
+        data = request.json
+        razorpay_payment_id = data.get('razorpay_payment_id')
+        razorpay_order_id = data.get('razorpay_order_id')
+        razorpay_signature = data.get('razorpay_signature')
+        
+        params_dict = {
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_signature': razorpay_signature
+        }
+        
+        # Verify the payment signature
+        razorpay_client.utility.verify_payment_signature(params_dict)
+        
+        return jsonify({"status": "Success", "message": "Payment verified successfully"}), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Razorpay Signature Verification Failed: {e}")
+        return jsonify({"status": "Failed", "message": "Payment verification failed"}), 400
 
 
 if __name__ == '__main__':

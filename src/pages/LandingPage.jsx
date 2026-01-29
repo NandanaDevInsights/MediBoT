@@ -4,6 +4,15 @@ import heroBg from '../assets/LabHero.jpg';
 import labHeroSplit from '../assets/LabHeroSplit.png';
 import logoImage from '../assets/Logo.png';
 import microscopeBg from '../assets/MicroscopeBg.png';
+import lab1 from '../assets/lab1.png';
+import lab2 from '../assets/lab2.png';
+import lab3 from '../assets/lab3.png';
+import lab4 from '../assets/lab4.png';
+import lab5 from '../assets/lab5.png';
+import lab6 from '../assets/lab6.png';
+import lab7 from '../assets/lab7.png';
+import lab8 from '../assets/lab8.png';
+
 import './LandingPage.css';
 import { getUserProfile, getUserReports, updateUserProfile, getUserNotifications } from '../services/api';
 
@@ -169,6 +178,13 @@ const IconTrash = ({ size = 20 }) => (
 
 
 
+const IconCreditCard = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+    <line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+);
+
 const IconGrid = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="7"></rect>
@@ -327,14 +343,14 @@ const LandingPage = () => {
   // New State for Features
   const [showNotifications, setShowNotifications] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
-  const [patientDetails, setPatientDetails] = useState({ username: '', age: '', gender: '', savedLocation: '' });
+  const [patientDetails, setPatientDetails] = useState({ username: '', displayName: '', age: '', gender: '', savedLocation: '', bloodGroup: '', contact: '' });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   // Chat Widget State
   const [showChatSidebar, setShowChatSidebar] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([
-    { id: 1, type: "ai", text: "Hello! I'm your MediBot Assistant. How can I help you today?" }
+    { id: 1, type: "ai", text: "👋 Welcome to MediBot! I'm your healthcare assistant. You can ask me how to search for labs, book a test, or where to find your medical reports. How can I help you today?" }
   ]);
 
   // Feedback Modal State
@@ -475,6 +491,110 @@ const LandingPage = () => {
     setShowPaymentModal(true);
   };
 
+  const initiateRazorpayPayment = async () => {
+    try {
+      const totalAmount = (selectedLab?.price || 0) + (selectedTests.length * 150);
+
+      // Step 1: Create order on backend
+      const orderResponse = await fetch('http://localhost:5000/api/create-payment-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: totalAmount,
+          notes: {
+            lab: selectedLab?.name,
+            tests: selectedTests.map(t => t.name).join(', '),
+            date: bookingDate,
+            time: bookingTime
+          }
+        })
+      });
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to create payment order.");
+      }
+
+      const orderData = await orderResponse.json();
+
+      // Step 2: Open Razorpay Checkout
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "MediBot Healthcare",
+        description: `Booking for ${selectedLab?.name}`,
+        order_id: orderData.order_id,
+        handler: async (response) => {
+          try {
+            // Verify payment on backend
+            const verifyRes = await fetch('http://localhost:5000/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+
+            if (verifyRes.ok) {
+              // Payment verified successfully, confirm booking
+              await handleConfirmBooking();
+              setShowPaymentModal(false);
+              setShowFeedbackModal(true);
+              showToast("✓ Payment successful! Booking confirmed.", 'success');
+            } else {
+              const errorData = await verifyRes.json().catch(() => ({}));
+              setPaymentStep('select');
+              showToast(errorData.message || "Payment verification failed. Please contact support.", 'error');
+            }
+          } catch (error) {
+            console.error("Payment verification error:", error);
+            setPaymentStep('select');
+            showToast("Error verifying payment. Please contact support.", 'error');
+          }
+        },
+        prefill: {
+          name: userProfile?.displayName || userProfile?.username || "Guest",
+          email: userProfile?.email || "",
+          contact: userProfile?.contactNumber || ""
+        },
+        theme: {
+          color: "#2563eb"
+        },
+        modal: {
+          ondismiss: function () {
+            // User closed Razorpay modal
+            setPaymentStep('select');
+            showToast("Payment cancelled", 'error');
+          }
+        }
+      };
+
+      // Check if Razorpay is loaded
+      if (!window.Razorpay) {
+        throw new Error("Razorpay SDK not loaded. Please refresh the page.");
+      }
+
+      const rzp = new window.Razorpay(options);
+
+      // Handle payment failure
+      rzp.on('payment.failed', function (response) {
+        console.error("Payment failed:", response.error);
+        setPaymentStep('select');
+        showToast(`Payment failed: ${response.error.description || 'Please try again'}`, 'error');
+      });
+
+      rzp.open();
+
+    } catch (err) {
+      console.error("Razorpay Error:", err);
+      setPaymentStep('select');
+      showToast(err.message || "Something went wrong with the payment gateway. Please try again.", 'error');
+    }
+  };
+
   const handleDeleteBooking = async (id) => {
     if (!window.confirm("Are you sure you want to remove this booking from your history?")) return;
 
@@ -559,10 +679,11 @@ const LandingPage = () => {
           text: data.response
         }]);
       } else {
+        const errorData = await response.json().catch(() => ({}));
         setChatMessages(prev => [...prev, {
           id: Date.now() + 1,
           type: "ai",
-          text: "My brain is offline momentarily. Please try again."
+          text: errorData.response || "I'm experiencing a minor brain freeze. Can you ask that again?"
         }]);
       }
 
@@ -571,7 +692,7 @@ const LandingPage = () => {
       setChatMessages(prev => [...prev, {
         id: Date.now() + 1,
         type: "ai",
-        text: "Sorry, I can't connect to the server right now."
+        text: "I couldn't reach my knowledge base. Please check your connection or try again shortly."
       }]);
     }
   };
@@ -797,12 +918,7 @@ const LandingPage = () => {
 
       setLocationLoading(true);
 
-      const labImages = [
-        'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=600',
-        'https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?auto=format&fit=crop&q=80&w=600',
-        'https://images.unsplash.com/photo-1516549655169-df83a092fc96?auto=format&fit=crop&q=80&w=600',
-        'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=600'
-      ];
+      const labImages = [lab1, lab2, lab3, lab4, lab5, lab6, lab7, lab8];
 
       // Helper to generate fallback/demo labs
       const generateFallbackLabs = (lat, lon, locationName) => {
@@ -823,6 +939,7 @@ const LandingPage = () => {
             openTime: "08:00 AM - 09:00 PM"
           });
         }
+        return demos;
       };
 
       // CHECK FOR KANJIRAPALLY DEMO DATA
@@ -1490,15 +1607,6 @@ const LandingPage = () => {
               <span>Notifications {notifications.filter(n => !n.isRead).length > 0 && `(${notifications.filter(n => !n.isRead).length})`}</span>
             </button>
 
-            <div style={{ position: 'relative' }}>
-              <button
-                className="nav-item-btn"
-                onClick={() => { setShowReminders(!showReminders); setShowNotifications(false); }}
-              >
-                <IconClock />
-                <span>Reminders</span>
-              </button>
-            </div>
 
             <button className="nav-item-btn" onClick={() => setShowMyBookingsModal(true)}>
               <IconCalendar />
@@ -1515,7 +1623,7 @@ const LandingPage = () => {
               title="View Profile"
             >
               <span className="profile-name" style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {displayName}
+                {userProfile?.username ? `@${userProfile.username}` : displayName}
               </span>
               <div className="avatar-circle" style={{
                 backgroundImage: profilePic ? `url(${profilePic})` : 'none',
@@ -1582,96 +1690,130 @@ const LandingPage = () => {
                   ))}
                 </div>
 
-                <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+                <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
                   {/* Uploaded Reports */}
                   {activeReportTab === 'Uploaded' && (
                     <>
                       {reports.length > 0 ? (
                         reports.map((report) => (
                           <div key={report.id} className="report-card" style={{
-                            background: 'white',
-                            borderRadius: '16px',
-                            padding: '1.5rem',
+                            background: 'linear-gradient(to bottom, #ffffff, #f8fafc)',
+                            borderRadius: '24px',
+                            padding: '2rem',
                             border: '1px solid #e2e8f0',
-                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.03)',
-                            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.05)',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             cursor: 'default',
                             display: 'flex',
                             flexDirection: 'column',
-                            justifyContent: 'space-between'
+                            position: 'relative',
+                            overflow: 'hidden'
                           }}
-                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.03)'; }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'translateY(-8px)';
+                              e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(37, 99, 235, 0.15)';
+                              e.currentTarget.style.borderColor = '#3b82f6';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.05)';
+                              e.currentTarget.style.borderColor = '#e2e8f0';
+                            }}
                           >
-                            <div style={{ marginBottom: '1.5rem' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                <div style={{ background: '#eff6ff', padding: '0.8rem', borderRadius: '12px', color: 'var(--primary)' }}>
-                                  <IconFileText size={24} />
+                            <div style={{
+                              position: 'absolute',
+                              top: '-20px',
+                              right: '-20px',
+                              width: '80px',
+                              height: '80px',
+                              background: 'rgba(37, 99, 235, 0.05)',
+                              borderRadius: '50%',
+                              zIndex: 0
+                            }} />
+
+                            <div style={{ position: 'relative', zIndex: 1 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <div style={{
+                                  background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                                  padding: '1rem',
+                                  borderRadius: '16px',
+                                  color: '#2563eb',
+                                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.1)'
+                                }}>
+                                  <IconUploadCloud size={24} />
                                 </div>
                                 <span style={{
                                   background: report.status === 'Verified' ? '#dcfce7' : '#fef9c3',
                                   color: report.status === 'Verified' ? '#166534' : '#854d0e',
                                   fontSize: '0.75rem',
-                                  fontWeight: 700,
-                                  padding: '0.3rem 0.8rem',
-                                  borderRadius: '20px',
+                                  fontWeight: 800,
+                                  padding: '0.4rem 1rem',
+                                  borderRadius: '100px',
                                   textTransform: 'uppercase',
-                                  letterSpacing: '0.05em'
+                                  letterSpacing: '0.05em',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                                 }}>
-                                  {report.status || 'Pending'}
+                                  {report.status || 'Processing'}
                                 </span>
                               </div>
-                              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#1e293b' }}>Prescription Upload #{report.id}</h4>
-                              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <IconCalendar size={14} /> {new Date(report.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                              </p>
-                            </div>
 
-                            <div style={{ display: 'flex', gap: '0.8rem', paddingTop: '1.5rem', borderTop: '1px solid #f1f5f9' }}>
-                              <a href={report.file_path} target="_blank" rel="noopener noreferrer" style={{
-                                flex: 1,
-                                textAlign: 'center',
-                                padding: '0.7rem',
-                                borderRadius: '8px',
-                                background: '#f8fafc',
-                                color: '#475569',
-                                fontWeight: 600,
-                                fontSize: '0.9rem',
-                                textDecoration: 'none',
-                                transition: 'background 0.2s'
-                              }}>
-                                View
-                              </a>
-                              <button
-                                onClick={() => downloadFile(report.file_path, `Prescription_${report.id}.pdf`)}
-                                style={{
+                              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', color: '#1e293b', fontWeight: 700 }}>Prescription #{report.id}</h4>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.9rem', marginBottom: '2rem' }}>
+                                <IconCalendar size={14} />
+                                <span>{new Date(report.date).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '1rem' }}>
+                                <a href={report.file_path} target="_blank" rel="noopener noreferrer" style={{
                                   flex: 1,
-                                  padding: '0.7rem',
-                                  borderRadius: '8px',
-                                  border: 'none',
-                                  background: 'var(--primary-soft)',
-                                  color: 'var(--primary-dark)',
-                                  fontWeight: 600,
-                                  fontSize: '0.9rem',
-                                  cursor: 'pointer',
+                                  textAlign: 'center',
+                                  padding: '0.8rem',
+                                  borderRadius: '14px',
+                                  background: '#f1f5f9',
+                                  color: '#475569',
+                                  fontWeight: 700,
+                                  fontSize: '0.95rem',
+                                  textDecoration: 'none',
+                                  transition: 'all 0.2s',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  gap: '0.4rem'
-                                }}
-                              >
-                                <IconDownload size={16} /> Download
-                              </button>
+                                  gap: '0.5rem'
+                                }}>
+                                  <IconEye size={18} /> View
+                                </a>
+                                <button
+                                  onClick={() => downloadFile(report.file_path, `Prescription_${report.id}.pdf`)}
+                                  style={{
+                                    flex: 1.5,
+                                    padding: '0.8rem',
+                                    borderRadius: '14px',
+                                    border: 'none',
+                                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                    color: 'white',
+                                    fontWeight: 700,
+                                    fontSize: '0.95rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
+                                  }}
+                                >
+                                  <IconDownload size={18} /> Download
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '6rem 2rem', background: 'white', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
-                          <div style={{ background: '#f1f5f9', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-                            <IconUploadCloud size={40} color="#94a3b8" />
+                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '6rem 2rem', background: '#f8fafc', borderRadius: '32px', border: '2px dashed #e2e8f0' }}>
+                          <div style={{ background: 'white', width: '100px', height: '100px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem auto', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)' }}>
+                            <IconUploadCloud size={48} color="#94a3b8" />
                           </div>
-                          <h3 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>No Prescriptions Yet</h3>
-                          <p style={{ color: '#64748b' }}>Upload your prescription to get started with your order.</p>
+                          <h3 style={{ color: '#1e293b', marginBottom: '0.75rem', fontSize: '1.5rem', fontWeight: 700 }}>No Prescriptions</h3>
+                          <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 auto' }}>Upload your medical prescriptions to keep them organized and accessible anytime.</p>
                         </div>
                       )}
                     </>
@@ -1683,38 +1825,59 @@ const LandingPage = () => {
                       {reports.filter(r => r.status === 'Completed').length > 0 ? (
                         reports.filter(r => r.status === 'Completed').map((report) => (
                           <div key={`gen-${report.id}`} className="report-card" style={{
-                            background: 'white',
-                            borderRadius: '16px',
-                            padding: '1.5rem',
-                            border: '1px solid #e2e8f0', // Green tint border
-                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.03)',
+                            background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
+                            borderRadius: '24px',
+                            padding: '2rem',
+                            border: '1px solid #dcfce7',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(22, 163, 74, 0.05)',
                             position: 'relative',
-                            overflow: 'hidden'
-                          }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#16a34a' }}></div>
+                            overflow: 'hidden',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'translateY(-8px)';
+                              e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(22, 163, 74, 0.15)';
+                              e.currentTarget.style.borderColor = '#16a34a';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(22, 163, 74, 0.05)';
+                              e.currentTarget.style.borderColor = '#dcfce7';
+                            }}
+                          >
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: '6px', height: '100%', background: 'linear-gradient(to bottom, #10b981, #059669)' }}></div>
 
-                            <div style={{ marginBottom: '1.5rem' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                <div style={{ background: '#dcfce7', padding: '0.8rem', borderRadius: '12px', color: '#16a34a' }}>
+                            <div style={{ marginBottom: '2rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <div style={{
+                                  background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                                  padding: '1rem',
+                                  borderRadius: '16px',
+                                  color: '#16a34a',
+                                  boxShadow: '0 4px 12px rgba(22, 163, 74, 0.1)'
+                                }}>
                                   <IconActivity size={24} />
                                 </div>
-                                <span style={{
+                                <div style={{
                                   background: '#16a34a',
                                   color: 'white',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 700,
-                                  padding: '0.3rem 0.8rem',
-                                  borderRadius: '20px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 900,
+                                  padding: '0.5rem 1rem',
+                                  borderRadius: '100px',
                                   textTransform: 'uppercase',
-                                  letterSpacing: '0.05em',
-                                  display: 'flex', alignItems: 'center', gap: '4px'
+                                  letterSpacing: '0.1em',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  boxShadow: '0 4px 10px rgba(22, 163, 74, 0.2)'
                                 }}>
-                                  <IconCheckCircle size={12} /> Ready
-                                </span>
+                                  <IconCheckCircle size={14} /> VERIFIED
+                                </div>
                               </div>
-                              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#1e293b' }}>Lab Report #{report.id}</h4>
-                              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <IconCalendar size={14} /> {new Date(report.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.3rem', color: '#064e3b', fontWeight: 800 }}>Clinical Lab Report #{report.id}</h4>
+                              <p style={{ margin: 0, color: '#059669', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, opacity: 0.8 }}>
+                                <IconCalendar size={14} /> Issued on {new Date(report.date).toLocaleDateString(undefined, { day: '2-digit', month: 'long', year: 'numeric' })}
                               </p>
                             </div>
 
@@ -1722,33 +1885,35 @@ const LandingPage = () => {
                               onClick={() => downloadFile(report.file_path, `Lab_Result_${report.id}.pdf`)}
                               style={{
                                 width: '100%',
-                                padding: '0.8rem',
-                                borderRadius: '12px',
+                                padding: '1.2rem',
+                                borderRadius: '16px',
                                 border: 'none',
-                                background: '#16a34a',
+                                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                                 color: 'white',
-                                fontWeight: 600,
-                                fontSize: '0.95rem',
+                                fontWeight: 800,
+                                fontSize: '1rem',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '0.5rem',
-                                boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.3)',
-                                marginTop: '1rem'
+                                gap: '0.75rem',
+                                boxShadow: '0 10px 15px -3px rgba(5, 150, 105, 0.3)',
+                                transition: 'all 0.2s'
                               }}
+                              onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
+                              onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
                             >
-                              <IconDownload size={18} /> Download Full Report
+                              <IconDownload size={20} /> Download Final Report
                             </button>
                           </div>
                         ))
                       ) : (
-                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '6rem 2rem', background: 'white', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
-                          <div style={{ background: '#f1f5f9', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-                            <IconActivity size={40} color="#94a3b8" />
+                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '6rem 2rem', background: '#f0fdf4', borderRadius: '32px', border: '2px dashed #bbf7d0' }}>
+                          <div style={{ background: 'white', width: '100px', height: '100px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem auto', boxShadow: '0 10px 25px -5px rgba(22, 163, 74, 0.05)' }}>
+                            <IconActivity size={48} color="#86efac" />
                           </div>
-                          <h3 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>No Lab Results Yet</h3>
-                          <p style={{ color: '#64748b' }}>Once your tests are processed, your digital reports will appear here.</p>
+                          <h3 style={{ color: '#064e3b', marginBottom: '0.75rem', fontSize: '1.5rem', fontWeight: 700 }}>No Lab Results Yet</h3>
+                          <p style={{ color: '#059669', maxWidth: '400px', margin: '0 auto' }}>Once your clinical samples are processed, your verified digital reports will appear here automatically.</p>
                         </div>
                       )}
                     </>
@@ -1852,6 +2017,7 @@ const LandingPage = () => {
                         <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{userProfile?.username ? `@${userProfile.username}` : '--'}</div>
                       )}
                     </div>
+
 
                     <div>
                       <label className="fs-label">Email Address</label>
@@ -2641,8 +2807,7 @@ const LandingPage = () => {
 
                 <div style={{ opacity: 0, animation: 'slideUpFade 0.5s ease-out forwards 3500ms' }}>
                   <button
-                    onClick={async () => {
-                      await handleConfirmBooking();
+                    onClick={() => {
                       setShowPaymentModal(false);
                       setShowFeedbackModal(true);
                     }}
@@ -2652,7 +2817,7 @@ const LandingPage = () => {
                     onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                     onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                   >
-                    Done
+                    Close & Finish
                   </button>
                 </div>
               </div>
@@ -2733,178 +2898,253 @@ const LandingPage = () => {
                   {/* --- PHASE 1: SELECTION --- */}
                   {paymentStep === 'select' && (
                     <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
-                      <div style={{ marginBottom: '2.5rem' }}>
-                        <h2 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em' }}>Payments</h2>
-                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '1.1rem', color: '#64748b' }}>Choose a payment method to proceed.</p>
-                      </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
-                        {['Pay at Lab', 'UPI', 'Net Banking'].map(method => (
-                          <div
-                            key={method}
-                            onClick={() => setPaymentMethod(method)}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.2rem 1.5rem', borderRadius: '16px',
-                              border: paymentMethod === method ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                              background: paymentMethod === method ? '#eff6ff' : 'white',
-                              color: paymentMethod === method ? '#1d4ed8' : '#334155',
-                              cursor: 'pointer', transition: 'all 0.2s', fontSize: '1.05rem', fontWeight: 600,
-                              boxShadow: paymentMethod === method ? '0 10px 15px -3px rgba(37, 99, 235, 0.1)' : '0 2px 4px rgba(0,0,0,0.02)',
-                              transform: paymentMethod === method ? 'scale(1.01)' : 'scale(1)'
-                            }}
-                          >
-                            <span style={{ fontSize: '1.4rem' }}>
-                              {method === 'Pay at Lab' && '💵'}
-                              {method === 'UPI' && '📱'}
-                              {method === 'Net Banking' && '🏦'}
-                            </span>
-                            <span>{method}</span>
-                            {paymentMethod === method && <div style={{ marginLeft: 'auto', color: '#2563eb' }}><IconCheckCircle size={22} /></div>}
+                      {/* Bill Summary - Compact Design */}
+                      <div style={{
+                        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                        padding: '1.2rem',
+                        borderRadius: '14px',
+                        border: '1px solid #e2e8f0',
+                        marginBottom: '1.5rem',
+                        boxShadow: '0 2px 8px -2px rgba(0, 0, 0, 0.05)'
+                      }}>
+                        {/* Bill Header */}
+                        <div style={{
+                          marginBottom: '1rem',
+                          paddingBottom: '0.6rem',
+                          borderBottom: '1px solid #e2e8f0'
+                        }}>
+                          <h3 style={{
+                            margin: 0,
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            color: '#0f172a',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem'
+                          }}>
+                            <span style={{ fontSize: '1.1rem' }}>📋</span>
+                            Bill Summary
+                          </h3>
+                        </div>
+
+                        {/* Combined Details Card */}
+                        <div style={{
+                          background: 'white',
+                          padding: '0.8rem',
+                          borderRadius: '10px',
+                          marginBottom: '0.8rem',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          {/* Top Row: Lab Name & Location */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
+                            <div>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <span style={{ fontSize: '1.1rem' }}>🏥</span>
+                                {selectedLab?.name || 'Lab'}
+                              </div>
+                              {selectedLab?.location && (
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '1.5rem', marginTop: '0.1rem' }}>
+                                  📍 {selectedLab.location}
+                                </div>
+                              )}
+                            </div>
+                            {/* Date & Time Compact */}
+                            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#475569', background: '#f8fafc', padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
+                              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end' }}>
+                                📅 {bookingDate ? new Date(bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '--'}
+                              </div>
+                              <div style={{ marginTop: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end' }}>
+                                ⏰ {bookingTime || '--'}
+                              </div>
+                            </div>
                           </div>
-                        ))}
-                      </div>
 
-                      <button
-                        onClick={() => {
-                          if (paymentMethod === 'Pay at Lab') {
-                            setPaymentStep('processing');
-                            setTimeout(() => { setPaymentStep('success'); }, 4500);
-                          } else if (paymentMethod === 'UPI') {
-                            setPaymentStep('upi_selection');
-                          } else if (paymentMethod === 'Net Banking') {
-                            setPaymentStep('netbanking_selection');
-                          }
-                        }}
-                        style={{
-                          width: '100%', padding: '1.1rem', borderRadius: '14px', background: '#2563eb', color: 'white', border: 'none',
-                          fontSize: '1.1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)', transition: 'transform 0.1s'
-                        }}
-                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
-                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-                      >
-                        Proceed to Pay
-                      </button>
-                    </div>
-                  )}
-
-                  {/* --- PHASE 2: UPI SELECTION --- */}
-                  {paymentStep === 'upi_selection' && (
-                    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
-                      <h3 style={{ fontSize: '1.8rem', color: '#0f172a', marginBottom: '1.5rem', fontWeight: 700 }}>Select UPI App</h3>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2.5rem' }}>
-                        {[
-                          { name: 'Google Pay', icon: <IconGooglePay /> },
-                          { name: 'PhonePe', icon: <IconPhonePeShape /> },
-                          { name: 'Paytm', icon: <IconPaytm /> },
-                          { name: 'BHIM UPI', icon: <IconBHIM /> }
-                        ].map(app => (
-                          <div key={app.name} onClick={() => setSelectedUpiApp(app.name)}
-                            style={{
-                              padding: '1.1rem', borderRadius: '14px', border: selectedUpiApp === app.name ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                              background: selectedUpiApp === app.name ? '#eff6ff' : 'white', cursor: 'pointer', textAlign: 'center', fontWeight: 600, color: '#334155',
-                              transition: 'all 0.2s', boxShadow: selectedUpiApp === app.name ? '0 4px 12px rgba(37,99,235,0.1)' : 'none',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem'
-                            }}
-                          >
-                            {app.icon}
-                            <span style={{ color: app.name === 'PhonePe' ? '#5F259F' : 'inherit' }}>{app.name}</span>
+                          {/* Tests List - Compact */}
+                          <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.6rem' }}>
+                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                              Selected Tests ({selectedTests.length})
+                            </div>
+                            <div style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: '0.4rem'
+                            }}>
+                              {selectedTests.length > 0 ? selectedTests.map((test, idx) => (
+                                <span key={idx} style={{
+                                  fontSize: '0.75rem',
+                                  color: '#334155',
+                                  padding: '0.2rem 0.6rem',
+                                  background: '#f1f5f9',
+                                  borderRadius: '100px',
+                                  border: '1px solid #e2e8f0',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem'
+                                }}>
+                                  <span style={{ color: '#10b981', fontSize: '0.6rem' }}>●</span>
+                                  {test.name || test}
+                                </span>
+                              )) : (
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>None</span>
+                              )}
+                            </div>
                           </div>
-                        ))}
-                        <div style={{ gridColumn: '1 / -1', padding: '1rem', borderRadius: '14px', border: '1px dashed #cbd5e1', background: '#f8fafc', color: '#64748b', textAlign: 'center', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
-                          <IconGrid size={18} /> Other UPI Apps
                         </div>
-                      </div>
 
-                      <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button onClick={() => setPaymentStep('select')} style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}>Back</button>
-                        <button onClick={() => {
-                          setPaymentStep('processing');
-                          setTimeout(() => setPaymentStep('success'), 4500);
-                        }} disabled={!selectedUpiApp} style={{ flex: 1.5, padding: '1rem', borderRadius: '12px', border: 'none', background: selectedUpiApp ? '#2563eb' : '#cbd5e1', color: 'white', fontWeight: 700, cursor: selectedUpiApp ? 'pointer' : 'not-allowed', fontSize: '1rem', boxShadow: selectedUpiApp ? '0 8px 20px rgba(37,99,235,0.3)' : 'none' }}>
-                          Proceed to pay ₹{selectedLab ? (selectedLab.price + (selectedTests.length * 150)) : '0'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* --- PHASE 2.5: NET BANKING SELECTION --- */}
-                  {paymentStep === 'netbanking_selection' && (
-                    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
-                      <h3 style={{ fontSize: '1.8rem', color: '#0f172a', marginBottom: '1.5rem', fontWeight: 700 }}>Select Bank</h3>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2.5rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                        {[
-                          { name: 'SBI', icon: <IconSBI /> },
-                          { name: 'HDFC', icon: <IconHDFC /> },
-                          { name: 'ICICI', icon: <IconICICI /> },
-                          { name: 'Axis Bank', icon: <IconAxis /> },
-                          { name: 'Kotak', icon: <IconKotak /> },
-                          { name: 'Canara Bank', icon: <IconCanara /> },
-                          { name: 'Union Bank', icon: <IconUnion /> },
-                          { name: 'Other Banks', icon: <IconGrid /> },
-                        ].map(bank => (
-                          <div key={bank.name} onClick={() => { setSelectedBank(bank); setPaymentStep('card_form'); }}
-                            style={{
-                              padding: '1rem', borderRadius: '14px', border: '1px solid #e2e8f0',
-                              background: 'white', cursor: 'pointer', textAlign: 'left', fontWeight: 600, color: '#334155',
-                              transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                              display: 'flex', alignItems: 'center', gap: '1rem'
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.background = '#f8fafc'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}
-                          >
-                            {bank.icon}
-                            <span>{bank.name}</span>
+                        {/* Bill Breakdown - Compact Row */}
+                        <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1rem' }}>
+                          <div style={{
+                            flex: 1,
+                            padding: '0.6rem',
+                            background: 'white',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Service Fee</span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>₹{selectedLab?.price || 0}</span>
                           </div>
-                        ))}
+                          <div style={{
+                            flex: 1,
+                            padding: '0.6rem',
+                            background: 'white',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Tests Total</span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>₹{selectedTests.length * 150}</span>
+                          </div>
+                        </div>
+
+                        {/* Total & Pay - Compact */}
+                        <div style={{
+                          borderTop: '1px dashed #cbd5e1',
+                          paddingTop: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '1rem'
+                        }}>
+                          {/* Total Display */}
+                          <div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>TOTAL TO PAY</div>
+                            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
+                              ₹{(selectedLab?.price || 0) + (selectedTests.length * 150)}
+                            </div>
+                          </div>
+
+                          {/* Action Buttons Group */}
+                          <div style={{ display: 'flex', gap: '0.6rem', flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                            {/* Cancel Button */}
+                            <button
+                              onClick={() => setShowPaymentModal(false)}
+                              style={{
+                                padding: '0.8rem',
+                                borderRadius: '10px',
+                                background: 'transparent',
+                                color: '#94a3b8',
+                                border: 'none',
+                                fontSize: '0.9rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = '#f1f5f9'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'transparent'; }}
+                            >
+                              Cancel
+                            </button>
+
+                            {/* Pay at Lab Button */}
+                            <button
+                              onClick={async () => {
+                                setPaymentMethod('Pay at Lab');
+                                await handleConfirmBooking();
+                                setShowPaymentModal(false);
+                                setShowFeedbackModal(true);
+                              }}
+                              style={{
+                                padding: '0.8rem 1rem',
+                                borderRadius: '10px',
+                                background: 'white',
+                                color: '#0f172a',
+                                border: '1px solid #cbd5e1',
+                                fontSize: '0.9rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; }}
+                            >
+                              Pay at Lab
+                            </button>
+
+                            {/* Pay Online Button */}
+                            <button
+                              onClick={() => {
+                                initiateRazorpayPayment();
+                              }}
+                              style={{
+                                flex: 1,
+                                minWidth: '140px',
+                                maxWidth: '200px',
+                                padding: '0.8rem 1rem',
+                                borderRadius: '10px',
+                                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                color: 'white',
+                                border: 'none',
+                                fontSize: '1rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(37, 99, 235, 0.4)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
+                              }}
+                            >
+                              🔒 Pay Online
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button onClick={() => setPaymentStep('select')} style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}>Back</button>
+                      {/* Security Badges */}
+                      <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', fontWeight: 600,
+                          color: '#16a34a', background: '#f0fdf4', padding: '0.3rem 0.6rem', borderRadius: '50px'
+                        }}>
+                          <IconShield size={12} /> SSL Secure
+                        </div>
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', fontWeight: 600,
+                          color: '#2563eb', background: '#eff6ff', padding: '0.3rem 0.6rem', borderRadius: '50px'
+                        }}>
+                          <IconCheckCircle size={12} /> Razorpay
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* --- PHASE 3: CARD FORM (NET BANKING LOGIN) --- */}
-                  {paymentStep === 'card_form' && (
-                    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          {selectedBank && selectedBank.icon}
-                          <h3 style={{ fontSize: '1.8rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>{selectedBank ? selectedBank.name : 'Net Banking'}</h3>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#15803d', background: '#dcfce7', padding: '0.3rem 0.6rem', borderRadius: '8px', border: '1px solid #bbf7d0', fontWeight: 600 }}>
-                          <IconShield size={12} /> Secured by SSL
-                        </div>
-                      </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '2.5rem' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', marginLeft: '0.2rem' }}>User ID / Customer ID</label>
-                          <input type="text" placeholder="Enter your Customer ID" style={{ width: '100%', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem', background: '#f8fafc', transition: 'all 0.2s', outline: 'none' }} onFocus={e => { e.target.style.background = 'white'; e.target.style.borderColor = '#2563eb'; }} onBlur={e => { e.target.style.background = '#f8fafc'; e.target.style.borderColor = '#e2e8f0'; }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', marginLeft: '0.2rem' }}>Password / PIN</label>
-                          <input type="password" placeholder="••••••••" style={{ width: '100%', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem', background: '#f8fafc', transition: 'all 0.2s', outline: 'none' }} onFocus={e => { e.target.style.background = 'white'; e.target.style.borderColor = '#2563eb'; }} onBlur={e => { e.target.style.background = '#f8fafc'; e.target.style.borderColor = '#e2e8f0'; }} />
-                        </div>
-
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', color: '#475569', cursor: 'pointer', width: 'fit-content' }}>
-                          <input type="checkbox" style={{ width: 16, height: 16, accentColor: '#2563eb', cursor: 'pointer' }} /> Remember User ID
-                        </label>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button onClick={() => setPaymentStep('netbanking_selection')} style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}>Back</button>
-                        <button onClick={() => {
-                          setPaymentStep('processing');
-                          setTimeout(() => setPaymentStep('success'), 4500);
-                        }} style={{ flex: 1.5, padding: '1rem', borderRadius: '12px', border: 'none', background: '#2563eb', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem', boxShadow: '0 8px 20px rgba(37,99,235,0.3)' }}>
-                          Login & Pay
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  {/* Simulated steps for UPI/Net Banking removed in favor of real Razorpay checkout */}
 
                   {/* --- PHASE 4: PROCESSING --- */}
                   {paymentStep === 'processing' && (
@@ -3074,45 +3314,42 @@ const LandingPage = () => {
       {/* Floating Action Button */}
       <div className="chat-fab-container">
         {!showChatSidebar && (
-          <div className="chat-tooltip">Chat with AI</div>
+          <div className="chat-tooltip">Chat with MediBot</div>
         )}
-        <button className="chat-fab" onClick={() => setShowChatSidebar(true)}>
-          <IconMessageCircle size={32} className="chat-icon-svg" />
+        <button className="chat-fab" onClick={() => setShowChatSidebar(!showChatSidebar)}>
+          {showChatSidebar ? <IconX size={32} /> : <IconMessageCircle size={32} className="chat-icon-svg" />}
         </button>
       </div>
 
-      {/* Chat Sidebar */}
+      {/* Simple Chat Sidebar */}
       {
         showChatSidebar && (
-          <div className="chat-sidebar">
-            <div className="chat-header">
-              <span>MediBot AI Support</span>
-              <button
-                onClick={() => setShowChatSidebar(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-dark)' }}
-              >
-                <IconX size={24} />
+          <div className="simple-chat-sidebar">
+            <div className="simple-chat-header">
+              <h3>MediBot Assistant</h3>
+              <button className="simple-chat-close" onClick={() => setShowChatSidebar(false)}>
+                <IconX size={18} />
               </button>
             </div>
 
-            <div className="chat-messages">
+            <div className="simple-chat-messages">
               {chatMessages.map(msg => (
-                <div key={msg.id} className={`chat-msg ${msg.type}`}>
+                <div key={msg.id} className={`simple-msg ${msg.type}`}>
                   {msg.text}
                 </div>
               ))}
             </div>
 
-            <div className="chat-input-area">
+            <div className="simple-chat-input-area">
               <input
-                className="chat-input"
-                placeholder="Type a message..."
+                className="simple-chat-input"
+                placeholder="Ask me something..."
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
               />
-              <button className="chat-send-btn" onClick={handleChatSend}>
-                <IconSend size={18} />
+              <button className="simple-chat-send" onClick={handleChatSend}>
+                <IconSend size={20} />
               </button>
             </div>
           </div>

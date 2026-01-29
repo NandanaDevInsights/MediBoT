@@ -1,0 +1,85 @@
+Columns in lab_staff table:
+================================================================================
+staff_id
+profile_photo
+full_name
+gender
+date_of_birth
+phone_number
+email
+address
+role_designation
+department
+employment_type
+date_of_joining
+experience_years
+morning_shift
+evening_shift
+night_shift
+working_days
+daily_working_hours
+home_collection
+specializations
+document_files
+emergency_contact_name
+emergency_contact_relationship
+emergency_contact_phone
+name
+role
+status
+image_url
+qualification
+dob
+phone
+joining_date
+experience
+shift
+working_hours
+documents
+emergency_name
+emergency_relation
+emergency_phone
+internal_notes
+================================================================================
+
+Sample row:
+staff_id: STA-3183
+profile_photo: uploads/staff/sarah_miller.jpg
+full_name:  Sarah 
+gender: Female
+date_of_birth: 1992-05-14
+phone_number: +91 98765 43210
+email: sarah@medibot.com
+address: 12 Green Park, Kochi, Kerala
+role_designation: Lab Pathologist
+department: Hematology
+employment_type: Full-time
+date_of_joining: 2026-01-28
+experience_years: 5
+morning_shift: 1
+evening_shift: 0
+night_shift: 0
+working_days: MTWTFSS
+daily_working_hours: 9:00 AM - 5:00 PM
+home_collection: 1
+specializations: Hematology,Biochemistry
+document_files: uploads/docs/sarah_id.pdf,uploads/docs/sarah_license.pdf
+emergency_contact_name: John 
+emergency_contact_relationship: Husband
+emergency_contact_phone: +91 99988 77665
+name: None
+role: None
+status: Available
+image_url: None
+qualification: None
+dob: None
+phone: None
+joining_date: None
+experience: None
+shift: None
+working_hours: None
+documents: None
+emergency_name: None
+emergency_relation: None
+emergency_phone: None
+internal_notes: None

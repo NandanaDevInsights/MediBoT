@@ -14,43 +14,46 @@
 /* ... rest of the CSS ... */
 
 :root {
-    /* Professional Medical Palette - Strict Dark Mode (Black & Blue) */
-    --med-primary: #00d4ff;
-    /* Electric Cyan */
-    --med-primary-hover: #0ea5e9;
-    --med-primary-light: rgba(0, 212, 255, 0.1);
-    /* Subtle Cyan Tint */
+    /* Professional Medical Palette - Light Theme (Matching Landing Page) */
+    --med-primary: #0ea5e9;
+    /* Sky Blue 500 */
+    --med-primary-hover: #0284c7;
+    /* Sky Blue 600 */
+    --med-primary-light: #e0f2fe;
+    /* Sky Blue 50 */
 
-    --med-accent: #3b82f6;
-    /* Info Blue */
+    --med-accent: #38bdf8;
+    /* Sky Blue 400 */
+    --med-accent-dark: #0369a1;
+    /* Sky Blue 700 */
 
-    --med-bg: #0b1120;
-    /* Deep Dark Blue/Black */
-    --med-surface: #151e32;
-    /* Dark Navy Surface */
+    --med-bg: #f0f9ff;
+    /* Sky 50 - Light Background */
+    --med-surface: #ffffff;
+    /* White Surface */
 
-    --med-text-main: #bae6fd;
-    /* Light Sky Blue (instead of White) */
-    --med-text-body: #94a3b8;
-    /* Gray 400 */
+    --med-text-main: #0c4a6e;
+    /* Sky 900 - Dark Text */
+    --med-text-body: #334155;
+    /* Slate 700 */
     --med-text-muted: #64748b;
-    /* Gray 500 */
+    /* Slate 500 */
 
-    --med-border: #1e293b;
-    /* Dark Border */
-    --med-border-dark: #0f172a;
+    --med-border: #e0f2fe;
+    /* Light Border */
+    --med-border-dark: #bae6fd;
+    /* Darker Border */
 
-    --med-success: #00d4ff;
-    --med-success-text: #ccfbf1;
-    --med-warning: #38bdf8;
-    --med-error: #1d4ed8;
-    --med-info: #3b82f6;
+    --med-success: #10b981;
+    --med-success-text: #059669;
+    --med-warning: #f59e0b;
+    --med-error: #ef4444;
+    --med-info: #0ea5e9;
 
     /* Spacing & Layout */
     --sidebar-width: 250px;
     --header-height: 72px;
     --med-radius: 12px;
-    /* Sharper corners for pro look */
 }
 
 * {
@@ -177,7 +180,7 @@ body {
     height: 36px;
     border-radius: 50%;
     background: var(--med-primary);
-    color: #bae6fd;
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -213,15 +216,16 @@ body {
 /* --- Main Content Header --- */
 .med-top-header {
     height: var(--header-height);
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--med-border);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 32px;
     flex-shrink: 0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
     z-index: 100;
     position: sticky;
     top: 0;
@@ -301,8 +305,8 @@ body {
 .med-date-display {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #475569;
-    background: var(--med-bg);
+    color: var(--med-text-body);
+    background: var(--med-surface);
     padding: 8px 14px;
     border-radius: 99px;
     border: 1px solid var(--med-border);
@@ -315,13 +319,13 @@ body {
 .med-divider-v {
     width: 1px;
     height: 24px;
-    background: #cbd5e1;
+    background: var(--med-border-dark);
 }
 
 .med-icon-btn {
     background: transparent;
     border: none;
-    color: #64748b;
+    color: var(--med-text-muted);
     cursor: pointer;
     position: relative;
     display: flex;
@@ -334,8 +338,8 @@ body {
 }
 
 .med-icon-btn:hover {
-    background: #f1f5f9;
-    color: var(--med-text-main);
+    background: var(--med-primary-light);
+    color: var(--med-primary);
 }
 
 .med-icon-btn.active {
@@ -349,7 +353,7 @@ body {
     right: 10px;
     width: 8px;
     height: 8px;
-    background: var(--med-primary);
+    background: var(--med-error);
     border-radius: 50%;
     box-shadow: 0 0 0 2px var(--med-surface);
 }
@@ -364,34 +368,34 @@ body {
     border-radius: 99px;
     transition: all 0.2s ease;
     border: 1px solid var(--med-border);
-    background: var(--med-surface);
+    background: rgba(255, 255, 255, 0.5);
     user-select: none;
 }
 
 .med-profile-trigger:hover,
 .med-profile-trigger.active {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    background: var(--med-surface);
+    border-color: var(--med-border-dark);
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
 }
 
 .med-avatar-circle {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--med-primary) 0%, #0d9488 100%);
-    color: #bae6fd;
+    background: linear-gradient(135deg, var(--med-primary) 0%, var(--med-primary-hover) 100%);
+    color: white;
     font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.9rem;
-    box-shadow: 0 2px 4px rgba(15, 118, 110, 0.2);
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
 }
 
 .med-profile-arrow {
     font-size: 0.65rem;
-    color: #94a3b8;
+    color: var(--med-text-muted);
     transition: transform 0.2s;
 }
 
@@ -720,20 +724,20 @@ body {
 
 .med-btn-primary {
     background: linear-gradient(135deg, var(--med-primary) 0%, var(--med-primary-hover) 100%);
-    color: #0b1120;
+    color: white;
 }
 
 .med-btn-primary:hover {
-    background: linear-gradient(135deg, var(--med-primary-hover) 0%, #0d4a46 100%);
-    box-shadow: 0 10px 15px -3px rgba(15, 118, 110, 0.3), 0 4px 6px -2px rgba(15, 118, 110, 0.1);
+    background: linear-gradient(135deg, var(--med-primary-hover) 0%, #0369a1 100%);
+    box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3), 0 4px 6px -2px rgba(14, 165, 233, 0.2);
 }
 
 .med-btn-gradient {
-    background: linear-gradient(90deg, #0f766e 0%, #115e59 100%);
-    color: #bae6fd;
+    background: linear-gradient(90deg, var(--med-primary) 0%, var(--med-primary-hover) 100%);
+    color: white;
     padding: 10px 20px;
     border-radius: 99px;
-    box-shadow: 0 4px 6px rgba(15, 118, 110, 0.2);
+    box-shadow: 0 4px 6px rgba(14, 165, 233, 0.3);
 }
 
 .med-btn-icon {
@@ -770,7 +774,7 @@ body {
 
 .med-btn-small.primary {
     background: var(--med-primary);
-    color: #0b1120;
+    color: white;
     border: none;
 }
 
@@ -792,7 +796,7 @@ body {
 }
 
 .med-page-subheading {
-    color: #64748b;
+    color: var(--med-text-muted);
     margin: 4px 0 0 0;
     font-size: 0.95rem;
 }
@@ -820,15 +824,16 @@ body {
 }
 
 .med-kpi-pill:hover {
-    border-color: #cbd5e1;
-    background: #f8fafc;
+    border-color: var(--med-border-dark);
+    background: var(--med-surface);
     transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(14, 165, 233, 0.08);
 }
 
 .med-kpi-pill.active {
-    background: #f0fdfa;
+    background: var(--med-primary-light);
     border-color: var(--med-primary);
-    box-shadow: 0 4px 6px -1px rgba(15, 118, 110, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.15);
 }
 
 .med-kpi-pill .icon {
@@ -864,12 +869,12 @@ body {
 .med-kpi-pill .label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #475569;
+    color: var(--med-text-body);
 }
 
 .med-kpi-pill .count {
-    background: #1e293b;
-    color: #bae6fd;
+    background: var(--med-primary);
+    color: white;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.75rem;
@@ -939,25 +944,25 @@ body {
     align-items: center;
     gap: 8px;
     font-weight: 600;
-    color: #475569;
+    color: var(--med-text-body);
     cursor: pointer;
     font-size: 0.9rem;
 }
 
 .med-btn-icon-text.active {
-    background: #eff6ff;
-    border-color: #3b82f6;
-    color: #1d4ed8;
+    background: var(--med-primary-light);
+    border-color: var(--med-primary);
+    color: var(--med-primary-hover);
 }
 
 .med-advanced-filters-panel {
     display: flex;
     gap: 20px;
     padding: 16px;
-    background: #f8fafc;
+    background: var(--med-surface);
     border-radius: 8px;
     margin-top: 12px;
-    border: 1px dashed #cbd5e1;
+    border: 1px dashed var(--med-border-dark);
     animation: slideDown 0.2s ease-out;
 }
 
@@ -979,16 +984,16 @@ body {
 }
 
 .med-filter-chip {
-    background: #f1f5f9;
+    background: var(--med-primary-light);
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 600;
-    color: #475569;
+    color: var(--med-primary-hover);
     display: flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--med-border-dark);
 }
 
 .med-filter-chip span {
@@ -1031,11 +1036,11 @@ body {
 }
 
 .med-table-row:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--med-primary-light);
 }
 
 .med-table-row.expanded {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--med-primary-light);
     border-left-color: var(--med-primary);
 }
 
@@ -1052,13 +1057,13 @@ body {
 
 .med-user-cell .name {
     font-weight: 600;
-    color: #1e293b;
+    color: var(--med-text-main);
     font-size: 0.9rem;
 }
 
 .med-user-cell .sub-text {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--med-text-muted);
 }
 
 .med-delay-badge {
@@ -1075,19 +1080,19 @@ body {
 
 .med-text-medium {
     font-weight: 500;
-    color: #334155;
+    color: var(--med-text-body);
 }
 
 .med-time-cell .date {
     display: block;
     font-weight: 600;
     font-size: 0.85rem;
-    color: #334155;
+    color: var(--med-text-body);
 }
 
 .med-time-cell .time {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--med-text-muted);
 }
 
 .med-tech-pill {

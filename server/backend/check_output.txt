@@ -1,0 +1,30 @@
+﻿Total columns: 24
+
+  staff_id: varchar(20)
+  profile_photo: varchar(255)
+  full_name: varchar(100)
+  gender: enum('Male','Female','Other')
+  date_of_birth: date
+  phone_number: varchar(20)
+  email: varchar(100)
+  address: text
+  role_designation: varchar(50)
+  department: varchar(50)
+  employment_type: enum('Full-time','Part-time','Contract')
+  date_of_joining: date
+  experience_years: int(11)
+  morning_shift: tinyint(1)
+  evening_shift: tinyint(1)
+  night_shift: tinyint(1)
+  working_days: varchar(7)
+  daily_working_hours: varchar(20)
+  home_collection: tinyint(1)
+  specializations: text
+  document_files: text
+  emergency_contact_name: varchar(100)
+  emergency_contact_relationship: varchar(50)
+  emergency_contact_phone: varchar(20)
+
+Total records: 3
+First record sample (first 5 fields):
+('STA-3183', 'uploads/staff/sarah_miller.jpg', ' Sarah ', 'Female', datetime.date(1992, 5, 14))

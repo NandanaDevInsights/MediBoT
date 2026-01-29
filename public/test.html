@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediBot Test</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0 0 20px 0;
+        }
+
+        p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .status {
+            margin-top: 30px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏥 MediBot</h1>
+        <p>System Diagnostic Page</p>
+        <div class="status">
+            <p><strong>✅ HTML Loading: OK</strong></p>
+            <p><strong>✅ CSS Rendering: OK</strong></p>
+            <p id="js-status"><strong>⏳ JavaScript: Testing...</strong></p>
+        </div>
+        <div style="margin-top: 30px;">
+            <a href="/"
+                style="color: white; background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 5px; text-decoration: none; margin: 0 5px;">Go
+                to App</a>
+            <a href="/login"
+                style="color: white; background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 5px; text-decoration: none; margin: 0 5px;">Go
+                to Login</a>
+        </div>
+    </div>
+
+    <script>
+        // Test JavaScript
+        document.getElementById('js-status').innerHTML = '<strong>✅ JavaScript: OK</strong>';
+        console.log('✅ MediBot diagnostic page loaded successfully');
+        console.log('Frontend URL:', window.location.origin);
+        console.log('Backend URL:', 'http://localhost:5000');
+
+        // Test fetch to backend
+        setTimeout(() => {
+            fetch('http://localhost:5000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'test', password: 'test' })
+            })
+                .then(res => console.log('Backend connection test:', res.status))
+                .catch(err => console.error('Backend connection failed:', err));
+        }, 1000);
+    </script>
+</body>
+
+</html>

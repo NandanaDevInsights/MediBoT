@@ -1,0 +1,13 @@
+{
+  "columns": [
+    "id",
+    "email",
+    "username",
+    "password_hash",
+    "provider",
+    "role",
+    "pin_code",
+    "created_at"
+  ],
+  "sample": null
+}
