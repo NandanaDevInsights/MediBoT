@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LabAdminDashboard.css';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import logoImage from '../assets/Logo.png';
 
 
@@ -1203,7 +1203,7 @@ const LabAdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* 4. Active Staff */}
+                {/* 4. Lab Staff */}
                 <div
                     className="med-card hover-card clickable"
                     onClick={() => { setActiveSection('Lab Staff'); }}
@@ -1212,57 +1212,91 @@ const LabAdminDashboard = () => {
                         <div className="med-stat-icon-wrapper purple"><Icons.Users /></div>
                         <div className="med-drill-icon"><Icons.ChevronRight /></div>
                     </div>
-                    <h3 className="med-stat-value"><CountUp end={stats.activeStaff} /></h3>
-                    <p className="med-stat-label">Active Staff</p>
+                    <h3 className="med-stat-value"><CountUp end={stats.totalStaff || 0} /></h3>
+                    <p className="med-stat-label">Lab Staff</p>
                     <div className="med-micro-insight purple">
                         <div className="med-status-dot success"></div>
-                        <span>2 technicians online</span>
+                        <span>{stats.activeStaff || 0} available</span>
                     </div>
                 </div>
             </div>
 
-            {/* Graph Section */}
-            <div className="med-card zoom-in-enter" style={{ marginBottom: '24px', padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <h3 className="med-table-title">Weekly Appointments Overview</h3>
-                        <div className="med-insight-badge">
-                            <Icons.TrendingUp />
-                            Bookings increased by 18% compared to last week
+            {/* Graph & Pie Chart Grid Section */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+                {/* 1. Weekly Appointments Overview (Area Chart) */}
+                <div className="med-card zoom-in-enter" style={{ margin: 0, padding: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <h3 className="med-table-title">Weekly Appointments Overview</h3>
+                            <div className="med-insight-badge">
+                                <Icons.TrendingUp />
+                                Bookings increased by 18% compared to last week
+                            </div>
                         </div>
+                        <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--med-border)', outline: 'none', fontSize: '0.9rem', color: 'var(--med-text-body)' }}>
+                            <option>This Week</option>
+                            <option>Last Week</option>
+                        </select>
                     </div>
-                    <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--med-border)', outline: 'none', fontSize: '0.9rem', color: 'var(--med-text-body)' }}>
-                        <option>This Week</option>
-                        <option>Last Week</option>
-                    </select>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={stats.dailyStats && stats.dailyStats.length > 0 ? stats.dailyStats : [{ name: 'Mon', count: 0 }, { name: 'Tue', count: 0 }, { name: 'Wed', count: 0 }, { name: 'Thu', count: 0 }, { name: 'Fri', count: 0 }, { name: 'Sat', count: 0 }, { name: 'Sun', count: 0 }]}>
+                                <defs>
+                                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.6} />
+                                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--med-border)" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--med-text-muted)', fontSize: 12, fontWeight: 500 }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--med-text-muted)', fontSize: 12 }} />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '12px', border: '1px solid var(--med-border)', background: 'var(--med-surface)', color: 'var(--med-text-main)', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="count"
+                                    stroke="var(--med-primary)"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorCount)"
+                                    activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--med-primary)' }}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
-                <div style={{ width: '100%', height: '300px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={stats.dailyStats && stats.dailyStats.length > 0 ? stats.dailyStats : [{ name: 'Mon', count: 0 }, { name: 'Tue', count: 0 }, { name: 'Wed', count: 0 }, { name: 'Thu', count: 0 }, { name: 'Fri', count: 0 }, { name: 'Sat', count: 0 }, { name: 'Sun', count: 0 }]}>
-                            <defs>
-                                <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.6} />
-                                    <stop offset="95%" stopColor="#00d4ff" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} dy={10} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                            <Tooltip
-                                contentStyle={{ borderRadius: '12px', border: '1px solid #1e293b', background: '#151e32', color: '#bae6fd', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)', padding: '12px' }}
-                                cursor={{ stroke: '#00d4ff', strokeWidth: 1, strokeDasharray: '4 4' }}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="count"
-                                stroke="#00d4ff"
-                                strokeWidth={3}
-                                fillOpacity={1}
-                                fill="url(#colorCount)"
-                                activeDot={{ r: 6, strokeWidth: 0, fill: '#00d4ff' }}
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+
+                {/* 2. Appointment Status (Pie Chart) */}
+                <div className="med-card zoom-in-enter" style={{ margin: 0, padding: '24px' }}>
+                    <h3 className="med-table-title" style={{ marginBottom: '20px' }}>Appointment Status</h3>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={[
+                                        { name: 'Pending', value: countStatus('Pending') || 0 },
+                                        { name: 'Confirmed', value: countStatus('Confirmed') || 0 },
+                                        { name: 'Completed', value: countStatus('Completed') || 0 }
+                                    ]}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    <Cell key="cell-0" fill="var(--med-warning)" />
+                                    <Cell key="cell-1" fill="var(--med-primary)" />
+                                    <Cell key="cell-2" fill="var(--med-success)" />
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '12px', border: '1px solid var(--med-border)', background: 'var(--med-surface)', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 

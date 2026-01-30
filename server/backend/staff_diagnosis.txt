@@ -1,0 +1,30 @@
+============================================================
+CHECKING LAB STAFF DATA
+============================================================
+
+Total staff in lab_staff table: 3
+
+Staff by status:
+  Available: 3
+
+Staff by lab_id:
+  lab_id NULL: 3
+
+All staff records (3 total):
+  Staff ID: STA-3183, Name: None, Role: None, Status: Available, Lab ID: None
+  Staff ID: STA-3184, Name: None, Role: None, Status: Available, Lab ID: None
+  Staff ID: STA-3185, Name: None, Role: None, Status: Available, Lab ID: None
+
+============================================================
+CHECKING LAB ADMIN PROFILES
+============================================================
+
+Lab admin profiles (4 total):
+  User ID: 4, Lab Name: Royal Clinical Laboratory, Lab ID: None
+  User ID: 8, Lab Name: Medivison, Lab ID: None
+  User ID: 7, Lab Name: James Labs, Lab ID: None
+  User ID: 10, Lab Name: MediBot Central HQ, Lab ID: None
+
+============================================================
+DIAGNOSIS COMPLETE
+============================================================
