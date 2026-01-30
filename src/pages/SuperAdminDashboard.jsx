@@ -13,14 +13,22 @@ const SuperAdminDashboard = () => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [toast, setToast] = useState(null);
 
+    // Security Check
+    useEffect(() => {
+        const role = sessionStorage.getItem('auth_role');
+        if (role !== 'SUPER_ADMIN') {
+            navigate('/admin/login?role=ADMIN');
+        }
+    }, [navigate]);
+
     // Profile State
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [userProfile, setUserProfile] = useState({
         name: 'Super Admin',
-        email: 'admin@medibot.com',
+        email: 'medibot.care@gmail.com',
         role: 'System Administrator',
-        phone: '+1 (555) 000-ADMIN',
-        location: 'Central HQ, New York',
+        phone: '+91 999 555-ADMIN',
+        location: 'HQ Bangalore, India',
         lastLogin: new Date().toLocaleString()
     });
 
@@ -58,7 +66,7 @@ const SuperAdminDashboard = () => {
     ];
 
     const userRolesData = [
-        { name: 'Patients', value: 15200, fill: '#0284c7' }, // Blue
+        { name: 'Patients', value: 15200, fill: '#0ea5e9' }, // Sky 500
         { name: 'Lab Staff', value: 215, fill: '#10b981' }, // Green
         { name: 'Admins', value: 5, fill: '#6366f1' },  // Indigo
     ];
@@ -92,7 +100,7 @@ const SuperAdminDashboard = () => {
         language: 'English (US)',
         timezone: 'UTC-5 (Eastern Time)',
         maintenanceMode: false,
-        themeColor: '#0284c7' // Default Blue
+        themeColor: '#0ea5e9' // Sky 500
     });
 
     // --- Helpers ---
@@ -195,7 +203,7 @@ const SuperAdminDashboard = () => {
 
                 <div className="sad-stat-card">
                     <span className="sad-stat-title">System Health</span>
-                    <p className="sad-stat-value" style={{ color: '#0284c7' }}>{globalStats.systemHealth}</p>
+                    <p className="sad-stat-value" style={{ color: '#0ea5e9' }}>{globalStats.systemHealth}</p>
                     <div className="sad-stat-trend sad-trend-neutral">
                         <span>All systems operational</span>
                     </div>
@@ -225,7 +233,7 @@ const SuperAdminDashboard = () => {
                                 <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                                 <Tooltip contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                                 <Legend />
-                                <Line yAxisId="left" type="monotone" dataKey="bookings" stroke="#0284c7" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Bookings" />
+                                <Line yAxisId="left" type="monotone" dataKey="bookings" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Bookings" />
                                 <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Revenue ($)" />
                             </LineChart>
                         </ResponsiveContainer>
@@ -337,7 +345,7 @@ const SuperAdminDashboard = () => {
                                 </td>
                                 <td>
                                     <div style={{ color: '#334155', fontWeight: 500 }}>{lab.admin}</div>
-                                    <div style={{ fontSize: '0.75rem', color: '#0284c7', cursor: 'pointer' }}>Change Admin</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#0ea5e9', cursor: 'pointer' }}>Change Admin</div>
                                 </td>
                                 <td>
                                     <div style={{ fontSize: '0.9rem' }}>{lab.bookings.toLocaleString()} Bookings</div>
@@ -396,7 +404,7 @@ const SuperAdminDashboard = () => {
                             <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                 <td style={{ paddingLeft: '24px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
+                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e0f2fe', color: '#0ea5e9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
                                             {u.name.charAt(0)}
                                         </div>
                                         <div>
@@ -461,10 +469,10 @@ const SuperAdminDashboard = () => {
                             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>Primary Color Theme</label>
                             <div style={{ display: 'flex', gap: '12px' }}>
                                 {[
-                                    { color: '#0284c7', name: 'Blue' },
-                                    { color: '#10b981', name: 'Green' },
-                                    { color: '#f59e0b', name: 'Orange' },
-                                    { color: '#7c3aed', name: 'Purple' }
+                                    { color: '#0ea5e9', name: 'Sky Blue' },
+                                    { color: '#10b981', name: 'Emerald' },
+                                    { color: '#f59e0b', name: 'Amber' },
+                                    { color: '#7c3aed', name: 'Violet' }
                                 ].map(theme => (
                                     <div
                                         key={theme.color}
@@ -558,12 +566,12 @@ const SuperAdminDashboard = () => {
             </div>
             <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '32px', maxWidth: '800px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ width: '80px', height: '80px', background: '#0284c7', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700 }}>
+                    <div style={{ width: '80px', height: '80px', background: '#0ea5e9', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700 }}>
                         {userProfile.name.charAt(0)}
                     </div>
                     <div>
                         <h2 style={{ margin: '0 0 4px 0', fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{userProfile.name}</h2>
-                        <span style={{ background: '#e0f2fe', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, color: '#0369a1' }}>{userProfile.role}</span>
+                        <span style={{ background: '#e0f2fe', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, color: '#0284c7' }}>{userProfile.role}</span>
                     </div>
                 </div>
 
@@ -672,7 +680,7 @@ const SuperAdminDashboard = () => {
                             title="View Profile"
                             onClick={() => setActiveTab('profile')}
                         >
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#0284c7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#0ea5e9', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
                                 {userProfile.name.charAt(0)}
                             </div>
                         </div>
@@ -732,7 +740,7 @@ const SuperAdminDashboard = () => {
                                             <span style={{ fontSize: '1.5rem' }}>📄</span>
                                             <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>{doc}</span>
                                         </div>
-                                        <button className="sad-btn-ghost" style={{ fontSize: '0.85rem', color: '#0284c7' }}>Download</button>
+                                        <button className="sad-btn-ghost" style={{ fontSize: '0.85rem', color: '#0ea5e9' }}>Download</button>
                                     </li>
                                 )) : <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>No documents uploaded.</p>}
                             </ul>

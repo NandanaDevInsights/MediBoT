@@ -37,7 +37,8 @@ import uuid
 import time
 import razorpay
 
-load_dotenv()
+load_dotenv(override=True)
+print(f"[INIT] Twilio SID: {os.environ.get('TWILIO_ACCOUNT_SID', 'MISSING')[:10]}...")
 
 # Explicit Google OAuth scopes to avoid scope-mismatch warnings
 GOOGLE_SCOPES = [
@@ -157,7 +158,7 @@ def upsert_google_user(conn, email: str):
   # Determine role based on strict email policy
   # Determine role based on strict email policy
   target_role = "USER"
-  if email == "medibot.care@gmail.com":
+  if email.lower() == "medibot.care@gmail.com":
       target_role = "SUPER_ADMIN"
   else:
       # Check if whitelisted Lab Admin
@@ -235,6 +236,14 @@ def get_lab_admin_with_password(conn, identifier: str):
   )
   row = cur.fetchone()
   cur.close()
+
+  if row:
+      # Strict check: only medibot.care@gmail.com can be SUPER_ADMIN
+      uid, email_val, phash, prov, role_val, pin = row
+      if role_val == "SUPER_ADMIN" and email_val.lower() != "medibot.care@gmail.com":
+          # Block login if someone else tries to use SUPER_ADMIN account
+          return None
+
   return row
 
 
@@ -452,6 +461,10 @@ def login_user():
     # Ensure role is USER (since Admins login elsewhere, but if they try here, we should probably allow or redirect?)
     # For separation, we only log in Patients here.
     if role in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        # Strict check for Super Admin
+        if role == "SUPER_ADMIN" and email.lower() != "medibot.care@gmail.com":
+            return jsonify({"message": "Unauthorized Super Admin account."}), 403
+
         # Direct login for admins (skip OTP)
         # Using ID from users table as the primary source of truth
         session["user_id"] = user_id
@@ -618,7 +631,7 @@ def verify_otp():
         if not user_row:
              return jsonify({"message": "User not found."}), 404
 
-        user_id, _, password_hash, provider, role, pin_code, _ = user_row
+        user_id, _, password_hash, provider, role, pin_code, db_username = user_row
 
         # Set Session
         session["user_id"] = user_id
@@ -900,6 +913,8 @@ def google_callback():
   origin = os.environ.get("CORS_ORIGIN", "http://localhost:5173").split(",")[0].strip()
   
   if role == "SUPER_ADMIN":
+      if email.lower() != "medibot.care@gmail.com":
+          return jsonify({"message": "Unauthorized Super Admin access."}), 403
       target = f"{origin}/super-admin-dashboard"
   elif role == "LAB_ADMIN":
       target = f"{origin}/lab-admin-dashboard"
@@ -1020,7 +1035,7 @@ def ensure_otp_table():
     finally:
         conn.close()
 
-    ensure_otp_table()
+ensure_otp_table()
 
 def ensure_laboratories_table():
     """Create laboratories table if not exists."""
@@ -1145,6 +1160,92 @@ def ensure_reports_table():
         conn.close()
 
 ensure_reports_table()
+
+def ensure_lab_staff_table():
+    """Create lab_staff table if not exists with all required fields."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS lab_staff (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                staff_id VARCHAR(50),
+                name VARCHAR(255),
+                role VARCHAR(100),
+                department VARCHAR(100),
+                phone VARCHAR(20),
+                email VARCHAR(255),
+                profile_photo TEXT,
+                status VARCHAR(50) DEFAULT 'Available',
+                lab_id INT,
+                shift VARCHAR(50),
+                working_days VARCHAR(255),
+                qualification VARCHAR(255),
+                gender VARCHAR(20),
+                dob DATE,
+                address TEXT,
+                employment_type VARCHAR(50),
+                joining_date DATE,
+                experience VARCHAR(50),
+                working_hours VARCHAR(100),
+                home_collection BOOLEAN DEFAULT 0,
+                specializations TEXT,
+                documents TEXT,
+                emergency_name VARCHAR(255),
+                emergency_relation VARCHAR(100),
+                emergency_phone VARCHAR(20),
+                internal_notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Checking for column aliases/migrations
+        # check profile_photo vs image_url
+        cur.execute("SHOW COLUMNS FROM lab_staff LIKE 'image_url'")
+        if cur.fetchone():
+            # If image_url exists but profile_photo doesn't, maybe rename or just keep using profile_photo as canonical?
+            # Let's support both by ensuring profile_photo exists
+            pass
+        
+        cols = {
+            "profile_photo": "TEXT",
+            "full_name": "VARCHAR(255)", 
+            "documents": "LONGTEXT",
+            "working_days": "VARCHAR(255)",
+            "qualification": "VARCHAR(255)",
+            "joining_date": "DATE",
+            "experience": "VARCHAR(50)",
+            "employment_type": "VARCHAR(50)",
+            "home_collection": "BOOLEAN DEFAULT 0",
+            "specializations": "TEXT",
+            "emergency_name": "VARCHAR(255)",
+            "emergency_relation": "VARCHAR(100)",
+            "emergency_phone": "VARCHAR(20)",
+            "internal_notes": "TEXT",
+            "shift": "VARCHAR(50)",
+            "working_hours": "VARCHAR(100)"
+        }
+        
+        for col, dtype in cols.items():
+            cur.execute(f"SHOW COLUMNS FROM lab_staff LIKE '{col}'")
+            if not cur.fetchone():
+                 print(f"[INFO] Adding missing column '{col}' to lab_staff...")
+                 cur.execute(f"ALTER TABLE lab_staff ADD COLUMN {col} {dtype}")
+
+        # Ensure documents is LONGTEXT to avoid truncation
+        try:
+             cur.execute("ALTER TABLE lab_staff MODIFY COLUMN documents LONGTEXT")
+             cur.execute("ALTER TABLE lab_staff MODIFY COLUMN profile_photo LONGTEXT")
+        except Exception:
+             pass
+
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Lab Staff table check failed: {e}")
+    finally:
+        conn.close()
+
+ensure_lab_staff_table()
 
 @app.post("/api/admin/appointments")
 def create_appointment():
@@ -1448,114 +1549,7 @@ def get_admin_appointments():
         conn.close()
 
 
-@app.get("/api/user/appointments")
-def get_user_appointments():
-    if not session.get("user_id"):
-        return jsonify({"message": "Not authenticated"}), 401
-    
-    user_id = session["user_id"]
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT id, lab_name, doctor_name, appointment_date, appointment_time, tests, status, location
-            FROM appointments
-            WHERE user_id=%s
-            ORDER BY created_at DESC
-        """, (user_id,))
-        rows = cur.fetchall()
-        cur.close()
-        
-        appointments = []
-        for row in rows:
-            aid, lab, doc, date_obj, time_obj, tests_str, status, loc = row
-            
-            # Helper to safely convert time/timedelta to string
-            time_str = str(time_obj) if time_obj else ""
-            
-            # Convert tests string back to list if needed
-            test_list = [t.strip() for t in tests_str.split(",")] if tests_str else []
-            
-            appointments.append({
-                "id": aid,
-                "labName": lab,
-                "doctor": doc,
-                "date": date_obj.isoformat() if date_obj else "",
-                "time": time_str,
-                "tests": test_list,
-                "status": status,
-                "location": loc
-            })
-            
-        return jsonify(appointments), 200
-    except Exception as e:
-        print(f"[ERROR] Fetch appointments failed: {e}")
-        return jsonify({"message": "Failed to fetch bookings"}), 500
-    finally:
-        conn.close()
 
-@app.post("/api/user/appointments/cancel")
-def cancel_appointment():
-    if not session.get("user_id"):
-        return jsonify({"message": "Not authenticated"}), 401
-
-    user_id = session["user_id"]
-    data = request.get_json(silent=True) or {}
-    appt_id = data.get("appointment_id")
-    
-    if not appt_id:
-        return jsonify({"message": "Appointment ID required"}), 400
-
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        # Verify ownership
-        cur.execute("SELECT id FROM appointments WHERE id=%s AND user_id=%s", (appt_id, user_id))
-        if not cur.fetchone():
-            return jsonify({"message": "Appointment not found or access denied"}), 404
-            
-        cur.execute("UPDATE appointments SET status='Cancelled' WHERE id=%s", (appt_id,))
-        conn.commit()
-        cur.close()
-        
-        return jsonify({"message": "Booking cancelled successfully"}), 200
-    except Exception as e:
-        print(f"[ERROR] Cancel appointment failed: {e}")
-        return jsonify({"message": "Cancellation failed"}), 500
-    finally:
-        conn.close()
-
-@app.delete("/api/user/appointments/<int:id>")
-def delete_user_appointment(id):
-    if not session.get("user_id"):
-        return jsonify({"message": "Not authenticated"}), 401
-
-    user_id = session["user_id"]
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        
-        # Verify ownership
-        cur.execute("SELECT id FROM appointments WHERE id=%s AND user_id=%s", (id, user_id))
-        if not cur.fetchone():
-            return jsonify({"message": "Appointment not found or access denied"}), 404
-            
-        # Delete from appointments
-        cur.execute("DELETE FROM appointments WHERE id=%s", (id,))
-        
-        # Also clean up from bookings table if linked (optional, but good for consistency)
-        # We don't have a direct link ID, but we can try slightly safe delete if needed?
-        # For now, let's just delete the main record.
-        
-        conn.commit()
-        cur.close()
-        
-        return jsonify({"message": "Booking removed successfully"}), 200
-    except Exception as e:
-        print(f"[ERROR] Delete appointment failed: {e}")
-        return jsonify({"message": "Failed to delete booking"}), 500
-    finally:
-        conn.close()
 
 @app.get("/api/admin/patients")
 def get_admin_patients():
@@ -1593,6 +1587,8 @@ def get_admin_patients():
         user_rows = cur.fetchall()
 
         patients = []
+        existing_patient_ids = set()
+        
         for row in user_rows:
             uid, email, created_at, reports_count, phone, latest_rx, display_name, age, gender, blood_group, contact_number, address, profile_pic_url, username, latest_test = row
             
@@ -1616,6 +1612,48 @@ def get_admin_patients():
                 "latest_test": latest_test if latest_test else "None Booked",
                 "source": "Registered"
             })
+            existing_patient_ids.add(email) # Use email to dedup or uid
+
+        # 2. Add Guest Patients from Appointments
+        # Fetch distinct guests by identifying info (phone or name+email)
+        query_guests = """
+            SELECT DISTINCT patient_name, contact_number, email, age, gender, created_at, test_type
+            FROM appointments 
+            WHERE user_id IS NULL OR user_id = 0
+            GROUP BY patient_name, contact_number, email
+            ORDER BY created_at DESC
+        """
+        try:
+             cur.execute(query_guests)
+             guest_rows = cur.fetchall()
+             for gr in guest_rows:
+                 g_name, g_phone, g_email, g_age, g_gender, g_date, g_test = gr
+                 
+                 # Dedup: if email exists in registered, skip (though user_id check should handle it)
+                 if g_email and g_email in existing_patient_ids:
+                     continue
+                     
+                 # Generate a pseudo ID for guests
+                 g_id = f"guest-{g_phone or g_name}"
+                 
+                 patients.append({
+                    "id": g_id,
+                    "name": g_name or "Guest",
+                    "email": g_email or "N/A",
+                    "age": str(g_age) if g_age else "N/A",
+                    "gender": g_gender or "N/A",
+                    "blood_group": "N/A",
+                    "phone": g_phone or "N/A",
+                    "address": "N/A",
+                    "profile_pic": None,
+                    "joined_at": g_date.isoformat() if g_date else None,
+                    "uploaded_data_count": 0,
+                    "latest_prescription_url": None,
+                    "latest_test": g_test or "None",
+                    "source": "Guest"
+                 })
+        except Exception as ge:
+            print(f"[WARN] Fetching guest patients failed: {ge}")
 
         # Sort by latest activity
         patients.sort(key=lambda x: x['joined_at'] or "", reverse=True)
@@ -1771,7 +1809,10 @@ def get_admin_stats():
         
         # Staff
         cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE status = 'Available' {where_clause}", params)
-        staff_count = cur.fetchone()[0]
+        available_staff = cur.fetchone()[0]
+        
+        cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE 1=1 {where_clause}", params)
+        total_staff = cur.fetchone()[0]
 
         # Graph Data: Last 7 Days Appointments
         import datetime
@@ -1805,7 +1846,8 @@ def get_admin_stats():
             "pendingOrders": pending_orders,
             "reportsGenerated": reports_generated,
             "revenue": "₹0", 
-            "activeStaff": staff_count,
+            "activeStaff": available_staff,
+            "totalStaff": total_staff,
             "dailyStats": daily_stats
         }), 200
     except Exception as e:
@@ -2164,18 +2206,16 @@ def get_test_orders():
             if row:
                 l_id, l_name = row
                 if l_id:
-                    where_clause = " WHERE (p.lab_id = %s OR 1=1)" # Temp: prescriptions might not have lab_id yet
-                    # Actually, prescriptions are global unless assigned. 
-                    # For now, let's keep them global or filter if lab_id matches.
-                    # As per user request "add that booking AND all required data only to THAT laboratory admin dashboard"
-                    # We should probably only show prescriptions assigned to this lab.
-                    where_clause = " WHERE p.lab_id = %s"
-                    params = [l_id]
+                     # Filter by lab_id if assigned, or show all unassigned?
+                     # Ideally we show orders relevant to this lab. 
+                     # For now, following previous logic: if lab_id matches.
+                     where_clause = " WHERE p.lab_id = %s"
+                     params = [l_id]
                 else:
                     where_clause = " WHERE 1=0" # No lab assigned
 
         query = f"""
-            SELECT p.id, u.id, u.email, p.mobile_number, p.test_type, p.file_path, p.status, u.username
+            SELECT p.id, u.id, u.email, p.mobile_number, p.test_type, p.extracted_text, p.status, u.username
             FROM prescriptions p
             LEFT JOIN users u ON p.user_id = u.id
             {where_clause}
@@ -2192,11 +2232,19 @@ def get_test_orders():
             username = r[7]
             patient_display = username if username else (email.split("@")[0] if email else (mobile if mobile else "Guest"))
             
+            # Clean extracted text for display
+            detected_tests = []
+            if r[5]:
+                # Simple heuristic: take first few lines or split by comma
+                lines = [l.strip() for l in r[5].split('\n') if l.strip()]
+                detected_tests = lines[:3] # First 3 lines
+            
             orders.append({
                 "id": f"ORD-{r[0]}",
                 "patientId": uid,
                 "patient": patient_display,
-                "tests": [r[4]] if r[4] else ["General"],
+                "category": r[4] or "General",
+                "tests": detected_tests if detected_tests else ([r[4]] if r[4] else ["General Analysis"]),
                 "sample": "Blood/Urine", 
                 "status": r[6]
             })
@@ -2381,65 +2429,79 @@ def get_staff():
             row = cur.fetchone()
             if row:
                 l_id = row['lab_id']
-                l_name = row['lab_name']
                 if l_id:
                     where_clause = " WHERE lab_id = %s OR (lab_id IS NULL AND 1=0)"
                     params = [l_id]
                 else:
-                    where_clause = " WHERE 1=0"
+                    # Allow admins without a lab to see 'unassigned' staff
+                    where_clause = " WHERE lab_id IS NULL"
+                    params = []
 
-        cur.execute(f"SELECT * FROM lab_staff {where_clause} ORDER BY staff_id DESC", params)
+        # Use staff_id for sorting as id might not exist
+        query = f"SELECT * FROM lab_staff {where_clause} ORDER BY staff_id DESC" 
+        
+        # Safe execute
+        if params:
+            cur.execute(query, params)
+        else:
+            cur.execute(query)
+            
         rows = cur.fetchall()
         
         staff = []
         for r in rows:
-            # Safe handling for fields that might be non-serializable or need conversion
-            w_days = r.get('working_days', '')
-            if isinstance(w_days, (set, list)):
-                w_days = list(w_days)
-            elif isinstance(w_days, bytes):
-                w_days = w_days.decode('utf-8')
+            try:
+                # Safe handling for fields
+                w_days = r.get('working_days', '')
+                if isinstance(w_days, (set, list)):
+                    w_days = list(w_days)
+                elif isinstance(w_days, bytes):
+                    w_days = w_days.decode('utf-8')
 
-            # Determine shift fallback
-            shift_val = r.get('shift')
-            if not shift_val:
-                if r.get('morning_shift'): shift_val = "Morning"
-                elif r.get('evening_shift'): shift_val = "Evening"
-                elif r.get('night_shift'): shift_val = "Night"
-                else: shift_val = r.get('daily_working_hours') or "General"
+                # Determine shift fallback
+                shift_val = r.get('shift')
+                if not shift_val:
+                    if r.get('morning_shift'): shift_val = "Morning"
+                    elif r.get('evening_shift'): shift_val = "Evening"
+                    elif r.get('night_shift'): shift_val = "Night"
+                    else: shift_val = r.get('daily_working_hours') or "General"
 
-            # Map DB columns to Frontend expected names with fallbacks for legacy schemas
-            staff.append({
-                "id": r.get('id') or r.get('staff_id'),
-                "name": r.get('name') or r.get('full_name') or 'Unknown Staff',
-                "role": r.get('role') or r.get('role_designation') or 'Staff',
-                "status": r.get('status') or 'Available',
-                "image": r.get('image_url') or r.get('profile_photo'),
-                "staffId": r.get('staff_id'),
-                "department": r.get('department'),
-                "phone": r.get('phone') or r.get('phone_number') or '-',
-                "email": r.get('email') or '-',
-                "shift": shift_val,
-                "workingDays": w_days,
-                "qualification": r.get('qualification'),
-                "gender": r.get('gender'),
-                "dob": r.get('dob') or r.get('date_of_birth'),
-                "address": r.get('address'),
-                "employmentType": r.get('employment_type'),
-                "joiningDate": r.get('joining_date') or r.get('date_of_joining'),
-                "experience": r.get('experience') or r.get('experience_years'),
-                "workingHours": r.get('working_hours') or r.get('daily_working_hours'),
-                "homeCollection": bool(r.get('home_collection')),
-                "specializations": r.get('specializations'),
-                "documents": r.get('documents') or r.get('document_files'),
-                "emergencyName": r.get('emergency_name') or r.get('emergency_contact_name'),
-                "emergencyRelation": r.get('emergency_relation') or r.get('emergency_contact_relationship'),
-                "emergencyPhone": r.get('emergency_phone') or r.get('emergency_contact_phone'),
-                "internalNotes": r.get('internal_notes')
-            })
+                staff.append({
+                    "id": r.get('id'),
+                    "name": r.get('name') or r.get('full_name') or 'Unknown Staff',
+                    "role": r.get('role') or r.get('role_designation') or 'Staff',
+                    "status": r.get('status') or 'Available',
+                    "image": r.get('image_url') or r.get('profile_photo'),
+                    "staffId": r.get('staff_id'),
+                    "department": r.get('department'),
+                    "phone": r.get('phone') or r.get('phone_number') or '-',
+                    "email": r.get('email') or '-',
+                    "shift": shift_val,
+                    "workingDays": w_days,
+                    "qualification": r.get('qualification'),
+                    "gender": r.get('gender'),
+                    "dob": str(r.get('dob')) if r.get('dob') else None,
+                    "address": r.get('address'),
+                    "employmentType": r.get('employment_type'),
+                    "joiningDate": str(r.get('joining_date')) if r.get('joining_date') else None,
+                    "experience": r.get('experience'),
+                    "workingHours": r.get('working_hours'),
+                    "homeCollection": bool(r.get('home_collection')),
+                    "specializations": r.get('specializations'),
+                    "documents": r.get('documents'),
+                    "emergencyName": r.get('emergency_name'),
+                    "emergencyRelation": r.get('emergency_relation'),
+                    "emergencyPhone": r.get('emergency_phone'),
+                    "internalNotes": r.get('internal_notes')
+                })
+            except Exception as row_err:
+                print(f"[WARN] Error parsing staff row: {row_err}")
+                continue
             
         return jsonify(staff), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"[ERROR] Fetch Staff Failed: {e}")
         return jsonify({"message": f"Server Error: {str(e)}"}), 500
     finally:
@@ -3005,89 +3067,146 @@ def whatsapp_webhook():
         resp.message("Please send a prescription image.")
         return str(resp)
 
-    # 2. Get image URL
+    # 2. Get image URL and credentials
     media_url = request.form.get("MediaUrl0")
-    print(f"[INFO] Image URL: {media_url}")
+    TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
+    TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
+    
+    # Dedicated logging for WhatsApp troubleshooting
+    log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "whatsapp_debug.log")
+    with open(log_file, "a") as f:
+        f.write(f"\n--- {datetime.now()} ---\n")
+        f.write(f"From: {sender_number}\n")
+        f.write(f"Media URL: {media_url}\n")
+        f.write(f"Account SID: {TWILIO_ACCOUNT_SID[:10]}...\n")
 
     try:
-        # 3. Download image
+        # 3. Download image safely
         filename = f"rx_{int(time.time())}_{uuid.uuid4().hex[:8]}.jpg"
         static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "prescriptions")
         os.makedirs(static_dir, exist_ok=True)
-        
         image_path = os.path.join(static_dir, filename)
         
-        TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
-        TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+        # Use a session for better connection handling
+        session = requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0'})
         
-        headers = {'User-Agent': 'TwilioBot'}
-        # Try auth first if creds exist
-        if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
-             download_resp = requests.get(media_url, auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN), headers=headers)
-        else:
-             download_resp = requests.get(media_url, headers=headers)
+        max_retries = 2
+        success = False
+        last_status = 0
+        
+        for attempt in range(max_retries + 1):
+            if attempt > 0:
+                print(f"[INFO] Retry attempt {attempt} for media download...")
+                time.sleep(2) # Small delay for Twilio media propagation
+            
+            # Step A: Check redirect
+            try:
+                r = session.get(media_url, auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN), allow_redirects=False, timeout=15)
+                last_status = r.status_code
+                
+                if r.status_code in [301, 302, 303, 307, 308]:
+                    final_url = r.headers['Location']
+                    print(f"[DEBUG] Redirected to storage URL. Fetching content...")
+                    # Download from redirected URL WITHOUT Twilio auth
+                    img_resp = session.get(final_url, timeout=20)
+                    if img_resp.status_code == 200:
+                        with open(image_path, "wb") as f_out:
+                            f_out.write(img_resp.content)
+                        success = True
+                        break
+                elif r.status_code == 200:
+                    with open(image_path, "wb") as f_out:
+                        f_out.write(r.content)
+                    success = True
+                    break
+                else:
+                    print(f"[WARN] Download attempt failed with status: {r.status_code}")
+            except Exception as ex:
+                print(f"[ERROR] Download attempt {attempt} exception: {ex}")
+                last_status = 500
 
-        if download_resp.status_code in [400, 401, 403]:
-            # Fallback
-            download_resp = requests.get(media_url, headers=headers)
-        
-        if download_resp.status_code == 200:
-            with open(image_path, "wb") as f:
-                f.write(download_resp.content)
-            print(f"[INFO] Image downloaded: {image_path}")
-        else:
-            resp.message("Could not download image.")
+        if not success:
+            # Final Attempt: Public download (no auth at all)
+            print("[INFO] Trying public fallback download...")
+            try:
+                fallback_resp = requests.get(media_url, timeout=15)
+                if fallback_resp.status_code == 200:
+                    with open(image_path, "wb") as f_out:
+                        f_out.write(fallback_resp.content)
+                    success = True
+                    print("[INFO] Image saved via public fallback.")
+                else:
+                    last_status = fallback_resp.status_code
+            except:
+                pass
+
+        if not success:
+            print(f"[ERROR] All download attempts failed. Last status: {last_status}")
+            with open(log_file, "a") as f:
+                f.write(f"FAILED. Last status: {last_status}\n")
+            
+            if last_status == 401:
+                resp.message("⚠️ Access Denied: Your Twilio credentials in the .env file seem to be incorrect or expired. Please update them and restart the server.")
+            else:
+                resp.message(f"⚠️ I couldn't download the prescription (Error {last_status}). Please try sending it again.")
             return str(resp)
+
+        print(f"[INFO] Image saved successfully: {image_path}")
+        with open(log_file, "a") as f:
+            f.write(f"SUCCESS: {filename}\n")
 
         # 4. OCR
         extracted_text = None
-        current_ocr_service = "None"
 
-        # Try Google Vision
+        # Primary Method: Google Vision
         try:
             basedir = os.path.dirname(os.path.abspath(__file__))
             key_path = os.path.join(basedir, "google_key.json")
             if os.path.exists(key_path):
+                print("[INFO] Using Google Vision OCR...")
                 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
                 client = vision.ImageAnnotatorClient()
                 with io.open(image_path, 'rb') as image_file:
                     content = image_file.read()
                 image = vision.Image(content=content)
-                response = client.text_detection(image=image)
-                texts = response.text_annotations
+                vision_response = client.text_detection(image=image)
+                texts = vision_response.text_annotations
                 if texts:
                     extracted_text = texts[0].description
-                    current_ocr_service = "Google Vision"
+                    print("[INFO] Google Vision OCR extraction successful.")
         except Exception as e:
-            print(f"Google Vision failed: {e}")
+            print(f"[ERROR] Google Vision failed: {e}")
 
-        # Fallback to OCR.Space
+        # Fallback to OCR.Space if Google Vision fails or returns nothing
         if not extracted_text:
             try:
+                print("[INFO] Google Vision failed or empty, trying OCR.Space fallback...")
                 API_KEY = os.environ.get("OCR_SPACE_API_KEY", "helloworld")
-                ocr_resp = requests.post(
-                    'https://api.ocr.space/parse/image',
-                    files={image_path: open(image_path, 'rb')},
-                    data={'apikey': API_KEY, 'language': 'eng', 'OCREngine': 2},
-                    timeout=20
-                )
+                with open(image_path, 'rb') as f:
+                    ocr_resp = requests.post(
+                        'https://api.ocr.space/parse/image',
+                        files={image_path: f},
+                        data={'apikey': API_KEY, 'language': 'eng', 'OCREngine': 2},
+                        timeout=20
+                    )
                 if ocr_resp.status_code == 200:
                     res = ocr_resp.json()
                     if res.get('ParsedResults'):
                         extracted_text = res['ParsedResults'][0]['ParsedText']
-                        current_ocr_service = "OCR.Space"
+                        print("[INFO] OCR.Space extraction successful.")
             except Exception as e:
-                print(f"OCR.Space failed: {e}")
+                print(f"[ERROR] OCR.Space fallback also failed: {e}")
 
         if not extracted_text:
-            resp.message("Could not read text from image.")
+            print("[ERROR] OCR yielded no text from the prescription.")
+            resp.message("Could not read text from image. Please send a clearer photo.")
             return str(resp)
 
         # 5. Process Text
-        raw_text = extracted_text
-        cleaned_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+        cleaned_lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
         
-        # Test Keywords
+        # Test Keywords for filtering
         test_keywords = ["blood", "cbc", "hemoglobin", "sugar", "glucose", "thyroid", "tsh", "lipid", "creatinine", "kidney", "liver", "urine", "stool", "vitamin", "x-ray", "scan"]
         exclude_keywords = ["road", "street", "hospital", "clinic", "pathology", "phone", "email", "www", "date", "name", "age", "sex", "patient", "dr.", "doctor"]
 
@@ -3098,13 +3217,13 @@ def whatsapp_webhook():
                  filtered_lines.append(line)
         
         if not filtered_lines and len(cleaned_lines) > 0:
-             # Fallback snippet
+             # Fallback snippet if no keywords match specifically
              filtered_lines = cleaned_lines[:5]
 
         display_text = "\n".join(filtered_lines[:10])
 
-        # Detect Type
-        text_lower = raw_text.lower()
+        # Detect Test Type Category
+        text_lower = extracted_text.lower()
         test_type = "General Lab Test"
         if "blood" in text_lower or "cbc" in text_lower: test_type = "Blood Test"
         elif "urine" in text_lower: test_type = "Urine Test"
@@ -3115,12 +3234,10 @@ def whatsapp_webhook():
         conn = get_connection()
         try:
              cur = conn.cursor()
-             
-             # Try to link to user
+             # Link to user by last 10 digits of mobile
              clean_mobile = sender_number.replace('whatsapp:', '').replace(' ', '')[-10:]
              user_id = None
              
-             # Look up user by phone in user_profiles
              cur.execute("""
                 SELECT user_id FROM user_profiles 
                 WHERE contact_number LIKE %s 
@@ -3130,7 +3247,9 @@ def whatsapp_webhook():
              if row:
                  user_id = row[0]
              
-             file_url = f"http://localhost:5000/static/prescriptions/{filename}"
+             # Use dynamic host URL for the file path
+             base_url = request.host_url.rstrip('/')
+             file_url = f"{base_url}/static/prescriptions/{filename}"
              
              cur.execute("""
                 INSERT INTO prescriptions (mobile_number, image_url, extracted_text, test_type, file_path, status, file_type, user_id)
@@ -3138,25 +3257,27 @@ def whatsapp_webhook():
              """, (sender_number, media_url, extracted_text, test_type, file_url, user_id))
              conn.commit()
              cur.close()
+             print(f"[INFO] Prescription saved for mobile: {sender_number}")
         except Exception as e:
-             print(f"DB Save error: {e}")
+             print(f"[ERROR] Database save error: {e}")
         finally:
              conn.close()
 
         # 7. Reply
         website_link = "http://localhost:5173/login"
         resp.message(
-            f"Prescription Received!\n"
-            f"Category: {test_type}\n"
-            f"Detected Tests:\n{display_text}\n\n"
-            f"We have saved this for review. Login to track status:\n{website_link}"
+            f"✅ Prescription Received!\n\n"
+            f"🔬 Category: {test_type}\n"
+            f"📋 Detected Tests:\n{display_text}\n\n"
+            f"We've added this to your records for review. Track progress here:\n{website_link}"
         )
 
     except Exception as e:
-        print(f"Webhook Error: {e}")
-        resp.message("Error processing request.")
+        print(f"[CRITICAL] WhatsApp Webhook Error: {e}")
+        resp.message("Error processing request. Please try again.")
 
     return str(resp)
+
 
 # --- Chatbot API (Gemini Integration) ---
 @app.route('/api/chat', methods=['POST'])

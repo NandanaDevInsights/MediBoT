@@ -1,0 +1,7 @@
+(3, 'nandanapramod329@gmail.com', 'Sherya', 'USER')
+(4, '47.nandanapramod@gmail.com', 'Nithin', 'LAB_ADMIN')
+(6, 'admin@example.com', 'admin_user', 'LAB_ADMIN')
+(7, 'keerthanapramod55@gmail.com', 'James', 'LAB_ADMIN')
+(8, 'smriti@gmail.com', 'smriti', 'LAB_ADMIN')
+(9, 'jewelbiju2028@mca.ajce.in', 'Jewel', 'USER')
+(10, 'medibot.care@gmail.com', 'superadmin', 'SUPER_ADMIN')

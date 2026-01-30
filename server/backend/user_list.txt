@@ -1,0 +1,5 @@
+nandanapramod329@gmail.com | Sherya | USER
+47.nandanapramod@gmail.com | Nithin | LAB_ADMIN
+admin@example.com | admin_user | LAB_ADMIN
+keerthanapramod55@gmail.com | James | LAB_ADMIN
+smriti@gmail.com | smriti | LAB_ADMIN
