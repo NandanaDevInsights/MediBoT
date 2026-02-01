@@ -1,0 +1,2 @@
+{'id': 1, 'user_id': 6, 'lab_name': 'Test Lab', 'address': None, 'contact_number': '1234567890', 'admin_name': 'Test Admin', 'updated_at': datetime.datetime(2026, 1, 31, 10, 17, 25), 'lab_id': None}
+{'id': 2, 'user_id': 2, 'lab_name': 'Royal Clinical Laboratory', 'address': '', 'contact_number': '', 'admin_name': 'James', 'updated_at': datetime.datetime(2026, 1, 31, 16, 47, 23), 'lab_id': None}

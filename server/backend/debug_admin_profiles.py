@@ -15,14 +15,14 @@ def get_connection():
 
 try:
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("DESCRIBE lab_staff")
-    with open("schema_staff.txt", "w") as f:
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM lab_admin_profile")
+    with open("lab_profiles.txt", "w") as f:
         for row in cur.fetchall():
             f.write(str(row) + "\n")
-    
-    cur.execute("SELECT id, name, role FROM lab_staff")
-    with open("data_staff.txt", "w") as f:
+            
+    cur.execute("SELECT user_id, role FROM users WHERE role IN ('LAB_ADMIN', 'SUPER_ADMIN')")
+    with open("admin_users.txt", "w") as f:
         for row in cur.fetchall():
             f.write(str(row) + "\n")
             

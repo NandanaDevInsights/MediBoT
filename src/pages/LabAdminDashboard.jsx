@@ -181,6 +181,7 @@ const LabAdminDashboard = () => {
     const [appointmentFilter, setAppointmentFilter] = useState('All'); // Status: All, Pending, Completed, etc.
     const [dateFilter, setDateFilter] = useState('Today'); // New Default: Today
     const [paymentDateFilter, setPaymentDateFilter] = useState('All Time'); // Payment specific filter
+    const [paymentSelectedDate, setPaymentSelectedDate] = useState(''); // New: for day-wise filtering
 
     // --- Advanced Filter State ---
     const [expandedRowId, setExpandedRowId] = useState(null);
@@ -198,7 +199,7 @@ const LabAdminDashboard = () => {
         // 1. Basic Info
         name: '', gender: 'Male', dob: '', phone: '', email: '', address: '', photo: null, photoPreview: null,
         // 2. Employment
-        staffId: `STA-${Math.floor(1000 + Math.random() * 9000)}`, role: '', department: '', type: 'Full-time', joiningDate: new Date().toISOString().split('T')[0], experience: '',
+        staffId: `STA-${Math.floor(1000 + Math.random() * 9000)}`, role: '', qualification: '', department: '', type: 'Full-time', joiningDate: new Date().toISOString().split('T')[0], experience: '',
         // 3. Shift
         shift: 'Morning', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], workingHours: '9:00 AM - 5:00 PM', homeCollection: false, maxOrders: '',
         // 5. Skills
@@ -234,8 +235,10 @@ const LabAdminDashboard = () => {
 
     // --- Test Orders State ---
     const [orderFilter, setOrderFilter] = useState('All');
+    const [testCategoryFilter, setTestCategoryFilter] = useState('All'); // New: Filter by test category
     const [expandedOrderId, setExpandedOrderId] = useState(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+
 
     // New Smart Filter States
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -254,6 +257,7 @@ const LabAdminDashboard = () => {
 
     // Status Update Modal State
     const [staffFilter, setStaffFilter] = useState('All');
+    const [expandedStaffId, setExpandedStaffId] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [statusUpdateAppointment, setStatusUpdateAppointment] = useState(null);
     const [newStatus, setNewStatus] = useState('');
@@ -355,6 +359,15 @@ const LabAdminDashboard = () => {
                         setAppointments(data);
                     }
                 }
+
+                // Fetch Patients for name resolution
+                const patientsRes = await fetch('http://localhost:5000/api/admin/patients', { credentials: 'include' });
+                if (patientsRes.ok) {
+                    const data = await patientsRes.json();
+                    if (Array.isArray(data)) {
+                        setPatients(data);
+                    }
+                }
             } catch (err) {
                 console.error("Dashboard Load Error:", err);
             }
@@ -375,16 +388,17 @@ const LabAdminDashboard = () => {
                 if (activeSection === 'Appointments' || activeSection === 'Payments') url = 'http://localhost:5000/api/admin/appointments';
                 if (activeSection === 'Test Orders') url = 'http://localhost:5000/api/admin/test-orders';
                 if (activeSection === 'Lab Staff') url = 'http://localhost:5000/api/admin/staff';
-                if (url || activeSection === 'Reports') {
-                    const fetchUrl = activeSection === 'Reports' ? 'http://localhost:5000/api/admin/patients' : url;
-                    const res = await fetch(fetchUrl, { credentials: 'include' });
+                if (activeSection === 'Reports') url = 'http://localhost:5000/api/admin/patients'; // Primary for reports
+
+                if (url) {
+                    const res = await fetch(url, { credentials: 'include' });
                     if (res.status === 401 || res.status === 403) {
                         navigate('/admin/login');
                         return;
                     }
                     if (!res.ok) {
                         const errData = await res.json().catch(() => ({}));
-                        throw new Error(errData.message || 'Fetch failed');
+                        throw new Error(errData.message || `Failed to load ${activeSection}`);
                     }
 
                     const data = await res.json();
@@ -402,7 +416,22 @@ const LabAdminDashboard = () => {
                         }));
                         setStaff(sanitizedStaff);
                     }
-                    if (activeSection === 'Reports' && Array.isArray(data)) setPatients(data); // Reusing patients state for Booked Users view
+                    if (activeSection === 'Reports' && Array.isArray(data)) {
+                        setPatients(data);
+                        // Ensure we have current appointments for the mapping
+                        try {
+                            const apptRes = await fetch('http://localhost:5000/api/admin/appointments', { credentials: 'include' });
+                            if (apptRes.ok) {
+                                const apptData = await apptRes.json();
+                                if (Array.isArray(apptData)) {
+                                    setAppointments(apptData);
+                                    console.log("Synced appointments for reports:", apptData.length);
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Failed to sync appointments in reports", e);
+                        }
+                    }
                     if (activeSection === 'Settings' || activeSection === 'Profile') {
                         if (data.email) {
                             setProfileData({
@@ -483,11 +512,13 @@ const LabAdminDashboard = () => {
         // 1. Action Required (Yellow) - Pending Appointments
         const pending = appointments.filter(a => a.status === 'Pending').slice(0, 2);
         pending.forEach(a => {
+            const pObj = patients.find(p => p.username === a.username || p.email === a.email);
+            const pName = (pObj && pObj.name && !pObj.name.includes('@')) ? pObj.name : ((a.patient && !a.patient.includes('@')) ? a.patient : (a.username || 'Patient'));
             newNotifs.push({
                 id: `notif-${a.id}`,
                 type: 'action', // Yellow
                 title: 'Action Required',
-                message: `Pending test approval for ${a.patient}.`,
+                message: `Pending test approval for ${pName}.`,
                 time: '10 mins ago',
                 read: false
             });
@@ -496,11 +527,13 @@ const LabAdminDashboard = () => {
         // 2. Informational (Green) - New Bookings
         const recent = appointments.slice(0, 1);
         recent.forEach(a => {
+            const pObj = patients.find(p => p.username === a.username || p.email === a.email);
+            const pName = (pObj && pObj.name && !pObj.name.includes('@')) ? pObj.name : ((a.patient && !a.patient.includes('@')) ? a.patient : (a.username || 'Patient'));
             newNotifs.push({
                 id: `new-${a.id}`,
                 type: 'info', // Green
                 title: 'New Booking',
-                message: `New booking received from ${a.patient}.`,
+                message: `New booking received from ${pName}.`,
                 time: 'Just now',
                 read: false
             });
@@ -531,7 +564,7 @@ const LabAdminDashboard = () => {
         // Actually, simple reset is fine for this context.
         setNotificationsList(newNotifs);
 
-    }, [appointments]); // Only re-run when appointments change
+    }, [appointments, patients]); // Re-run when appointments or patients change
 
     const markAsRead = (id) => {
         setNotificationsList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -717,7 +750,7 @@ const LabAdminDashboard = () => {
                 setShowAddStaffModal(false);
                 setNewStaff({
                     name: '', gender: 'Male', dob: '', phone: '', email: '', address: '', photo: null, photoPreview: null,
-                    staffId: `STA-${Math.floor(1000 + Math.random() * 9000)}`, role: '', department: '', type: 'Full-time', joiningDate: new Date().toISOString().split('T')[0], experience: '',
+                    staffId: `STA-${Math.floor(1000 + Math.random() * 9000)}`, role: '', qualification: '', department: '', type: 'Full-time', joiningDate: new Date().toISOString().split('T')[0], experience: '',
                     shift: 'Morning', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], workingHours: '9:00 AM - 5:00 PM', homeCollection: false, maxOrders: '',
                     specializations: [], handlingCapability: [], licenseNumber: '',
                     documents: [], emergencyName: '', emergencyRelation: '', emergencyPhone: '',
@@ -803,19 +836,36 @@ const LabAdminDashboard = () => {
     const handleViewHistory = async (patient) => {
         setSelectedPatient(patient);
         setPatientHistory(null); // Clear previous
-        setActiveReportTab('Uploaded'); // Default to uploaded view
+        setActiveReportTab('Prescriptions'); // Default to Prescriptions view
         setShowPatientHistoryModal(true);
 
         try {
             // Encode ID to handle '+' in phone numbers
             const encodedId = encodeURIComponent(patient.id);
-            const res = await fetch(`http://localhost:5000/api/admin/patients/${encodedId}/history`, { credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
-                setPatientHistory(data);
-            } else {
-                showToast("Failed to load history", "error");
+
+            // Fetch patient history
+            const historyRes = await fetch(`http://localhost:5000/api/admin/patients/${encodedId}/history`, { credentials: 'include' });
+            let historyData = {};
+
+            if (historyRes.ok) {
+                historyData = await historyRes.json();
             }
+
+            // Fetch profile data for the patient
+            const profileRes = await fetch(`http://localhost:5000/api/profile?username=${encodeURIComponent(patient.username || patient.name || patient.id)}`, { credentials: 'include' });
+            let profileData = {};
+
+            if (profileRes.ok) {
+                profileData = await profileRes.json();
+            }
+
+            // Combine all data
+            setPatientHistory({
+                ...historyData,
+                prescriptions: historyData.prescriptions || [],
+                profile: profileData || {}
+            });
+
         } catch (e) {
             console.error(e);
             showToast("Error loading history", "error");
@@ -1095,8 +1145,14 @@ const LabAdminDashboard = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
                             <div>
                                 <h4 style={{ margin: '0 0 8px', color: 'var(--med-text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Billed To</h4>
-                                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: 'var(--med-text-main)' }}>{selectedPaymentBill.patient}</p>
-                                <p style={{ margin: '4px 0 0', color: 'var(--med-text-body)', fontSize: '0.9rem' }}>{selectedPaymentBill.contact || 'No contact provided'}</p>
+                                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: 'var(--med-text-main)' }}>
+                                    {(() => {
+                                        const pObj = patients.find(p => p.username === selectedPaymentBill.username || p.email === selectedPaymentBill.email);
+                                        if (pObj && pObj.name && !pObj.name.includes('@')) return pObj.name;
+                                        return (selectedPaymentBill.patient && !selectedPaymentBill.patient.includes('@')) ? selectedPaymentBill.patient : (selectedPaymentBill.username || 'Patient');
+                                    })()}
+                                </p>
+                                <p style={{ margin: '4px 0 0', color: 'var(--med-text-body)', fontSize: '0.9rem' }}>{selectedPaymentBill.phone || selectedPaymentBill.contact || 'Registered Patient'}</p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                                 <h4 style={{ margin: '0 0 8px', color: 'var(--med-text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</h4>
@@ -1326,8 +1382,15 @@ const LabAdminDashboard = () => {
                                     <tr key={appt.id}>
                                         <td style={{ fontWeight: 500, color: 'var(--med-text-main)' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <span>{appt.patient && appt.patient.includes('@') ? appt.patient.split('@')[0] : appt.patient}</span>
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)', fontWeight: 400 }}>@{appt.username || 'guest'}</span>
+                                                <span style={{ fontWeight: 600 }}>
+                                                    {(() => {
+                                                        const pObj = patients.find(p => p.username === appt.username || p.email === appt.email);
+                                                        if (pObj && pObj.name && !pObj.name.includes('@')) return pObj.name;
+                                                        if (appt.patient && !appt.patient.includes('@')) return appt.patient;
+                                                        return (appt.username && !appt.username.includes('@')) ? appt.username : 'Patient';
+                                                    })()}
+                                                </span>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)', fontWeight: 400 }}>ID: {appt.id}</span>
                                             </div>
                                         </td>
                                         <td>{appt.test}</td>
@@ -1431,8 +1494,15 @@ const LabAdminDashboard = () => {
                                             <div className="med-user-cell">
                                                 <div className="med-avatar-mini">{(appt.username || appt.patient).charAt(0).toUpperCase()}</div>
                                                 <div className="info">
-                                                    <span className="name">{appt.patient && appt.patient.includes('@') ? appt.patient.split('@')[0] : appt.patient}</span>
-                                                    <span className="sub-text">@{appt.username || 'guest'} • ID: {appt.id}</span>
+                                                    <span className="name">
+                                                        {(() => {
+                                                            const pObj = patients.find(p => p.username === appt.username || p.email === appt.email);
+                                                            if (pObj && pObj.name && !pObj.name.includes('@')) return pObj.name;
+                                                            if (appt.patient && !appt.patient.includes('@')) return appt.patient;
+                                                            return (appt.username && !appt.username.includes('@')) ? appt.username : 'Patient';
+                                                        })()}
+                                                    </span>
+                                                    <span className="sub-text">ID: {appt.id}</span>
                                                 </div>
                                                 {appt.isDelayed && (
                                                     <div className="med-delay-badge" title="Delayed by > 2 hrs">
@@ -1488,8 +1558,15 @@ const LabAdminDashboard = () => {
                                                             <span className="value">{appt.age || 'N/A'} yrs / {appt.gender || 'N/A'}</span>
                                                         </div>
                                                         <div className="detail-item">
-                                                            <span className="label">Email Address</span>
-                                                            <span className="value">{appt.email || 'N/A'}</span>
+                                                            <span className="label">Patient Name</span>
+                                                            <span className="value">
+                                                                {(() => {
+                                                                    const pObj = patients.find(p => p.username === appt.username || p.email === appt.email);
+                                                                    if (pObj && pObj.name && !pObj.name.includes('@')) return pObj.name;
+                                                                    if (appt.patient && !appt.patient.includes('@')) return appt.patient;
+                                                                    return (appt.username && !appt.username.includes('@')) ? appt.username : 'Patient';
+                                                                })()}
+                                                            </span>
                                                         </div>
                                                         <div className="detail-item">
                                                             <span className="label">Sample Status</span>
@@ -1626,214 +1703,428 @@ const LabAdminDashboard = () => {
     };
 
     const renderTestOrders = () => {
-        // Mock data enhancement with safety checks
-        const enhancedOrders = testOrders.map(t => ({
-            ...t,
-            sampleType: t.sampleType || ((t.tests || []).join('').includes('Blood') ? 'Blood' : 'Urine'),
-            sampleStatus: t.sampleStatus || (t.status === 'Pending' ? 'Not Collected' : 'Collected'),
-            tat: t.tat || '24 hrs',
-            whatsapp: t.whatsapp || '9876543210',
-            isDelayed: Math.random() > 0.8
-        }));
-
-        const filteredOrders = enhancedOrders.filter(t =>
-            (orderFilter === 'All' || t.status === orderFilter) &&
-            ((t.patient || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (t.tests || []).join(' ').toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-
-        const countOrderStatus = (status) => {
-            if (status === 'All') return enhancedOrders.length;
-            return enhancedOrders.filter(t => t.status === status).length;
+        // Categorize tests by type based on appointments data
+        const testCategories = {
+            'Blood Test': [],
+            'Urine Test': [],
+            'Sputum Test': [],
+            'Stool Test': []
         };
 
-        const toggleRowExpansion = (id) => {
-            setExpandedOrderId(expandedOrderId === id ? null : id);
-        };
+        // Process appointments to categorize them
+        (appointments || []).forEach(appointment => {
+            const testName = String(appointment.test || '').toLowerCase();
 
-        const toggleSelection = (id) => {
-            setSelectedOrderIds(prev =>
-                prev.includes(id) ? prev.filter(oid => oid !== id) : [...prev, id]
+            let category = null;
+            if (testName.includes('blood') || testName.includes('hemoglobin') || testName.includes('glucose') || testName.includes('cholesterol')) {
+                category = 'Blood Test';
+            } else if (testName.includes('urine') || testName.includes('urinalysis')) {
+                category = 'Urine Test';
+            } else if (testName.includes('sputum') || testName.includes('tb') || testName.includes('tuberculosis')) {
+                category = 'Sputum Test';
+            } else if (testName.includes('stool') || testName.includes('fecal')) {
+                category = 'Stool Test';
+            } else {
+                // Default to Blood Test if unclear
+                category = 'Blood Test';
+            }
+
+            const patientData = patients.find(p =>
+                (p.username && p.username === appointment.username) ||
+                (p.email && p.email === appointment.email) ||
+                (p.name && p.name === appointment.patient)
             );
+
+            testCategories[category].push({
+                ...appointment,
+                patientName: (patientData && patientData.name && !patientData.name.includes('@'))
+                    ? patientData.name
+                    : ((appointment.patient && !appointment.patient.includes('@')) ? appointment.patient : (appointment.username || 'Patient')),
+                testName: appointment.test || 'General Test',
+                date: appointment.date || new Date().toISOString().split('T')[0],
+                status: appointment.status || 'Pending',
+                time: appointment.time || 'Not Specified'
+            });
+        });
+
+        const getCategoryIcon = (category) => {
+            switch (category) {
+                case 'Blood Test': return '🩸';
+                case 'Urine Test': return '🧪';
+                case 'Sputum Test': return '💨';
+                case 'Stool Test': return '🔬';
+                default: return '📋';
+            }
         };
+
+        const getCategoryColor = (category) => {
+            switch (category) {
+                case 'Blood Test': return { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' };
+                case 'Urine Test': return { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' };
+                case 'Sputum Test': return { bg: '#e0f2fe', border: '#0ea5e9', text: '#075985' };
+                case 'Stool Test': return { bg: '#f3e8ff', border: '#a855f7', text: '#6b21a8' };
+                default: return { bg: '#f1f5f9', border: '#64748b', text: '#475569' };
+            }
+        };
+
+        const getStatusStyles = (status) => {
+            const s = String(status || '').toLowerCase();
+            if (s === 'completed') return { background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' };
+            if (s === 'confirmed') return { background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd' };
+            if (s === 'pending') return { background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' };
+            return { background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' };
+        };
+
+        // Calculate total counts for filters
+        const totalAll = Object.values(testCategories).reduce((sum, orders) => sum + orders.length, 0);
+
+        // Determine which categories to display
+        const categoriesToDisplay = testCategoryFilter === 'All'
+            ? Object.entries(testCategories)
+            : [[testCategoryFilter, testCategories[testCategoryFilter] || []]];
 
         return (
             <div className="med-test-orders-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* 1. Header & Hierarchy */}
-                <div className="med-premium-header" style={{ marginBottom: 0 }}>
+                {/* Header */}
+                <div className="med-premium-header">
                     <div>
-                        <h2 className="med-page-heading">Test Orders</h2>
-                        <p className="med-page-subheading">Track, process, and manage incoming lab test orders</p>
+                        <h2 className="med-page-heading">Test Orders Management</h2>
+                        <p className="med-page-subheading">Organized lab test orders by category</p>
                     </div>
                 </div>
 
-                {/* 2. Test Orders Filter Pills */}
-                <div className="med-filter-pills-row">
-                    {[
-                        { label: 'Total Orders', status: 'All', color: 'blue', icon: '📊' },
-                        { label: 'Pending', status: 'Pending', color: 'orange', icon: '⏳' },
-                        { label: 'In Process', status: 'In Process', color: 'blue', icon: '🔄' },
-                        { label: 'Completed', status: 'Completed', color: 'green', icon: '✅' }
-                    ].map(kpi => (
+                {/* Category Filter Pills */}
+                <div style={{
+                    display: 'flex',
+                    gap: '12px',
+                    flexWrap: 'wrap'
+                }}>
+                    {/* All Tests Filter */}
+                    <button
+                        onClick={() => setTestCategoryFilter('All')}
+                        style={{
+                            padding: '10px 20px',
+                            borderRadius: '8px',
+                            border: testCategoryFilter === 'All' ? '2px solid var(--med-primary)' : '2px solid #e2e8f0',
+                            background: testCategoryFilter === 'All' ? 'var(--med-primary)' : 'white',
+                            color: testCategoryFilter === 'All' ? 'white' : '#64748b',
+                            fontSize: '0.9rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
+                    >
+                        <span>📊</span>
+                        All Tests
+                        <span style={{
+                            background: testCategoryFilter === 'All' ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontSize: '0.8rem',
+                            fontWeight: 700
+                        }}>
+                            {totalAll}
+                        </span>
+                    </button>
+
+                    {/* Individual Category Filters */}
+                    {Object.entries(testCategories).map(([category, orders]) => {
+                        const colors = getCategoryColor(category);
+                        const isActive = testCategoryFilter === category;
+
+                        return (
+                            <button
+                                key={category}
+                                onClick={() => setTestCategoryFilter(category)}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    border: isActive ? `2px solid ${colors.border}` : '2px solid #e2e8f0',
+                                    background: isActive ? colors.border : 'white',
+                                    color: isActive ? 'white' : '#64748b',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                <span>{getCategoryIcon(category)}</span>
+                                {category}
+                                <span style={{
+                                    background: isActive ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700
+                                }}>
+                                    {orders.length}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Professional Tables */}
+                {categoriesToDisplay.map(([category, orders]) => {
+                    const colors = getCategoryColor(category);
+
+                    return (
                         <div
-                            key={kpi.label}
-                            className={`med-filter-pill-item ${orderFilter === kpi.status ? 'active' : ''}`}
-                            onClick={() => setOrderFilter(kpi.status)}
+                            key={category}
+                            style={{
+                                background: 'white',
+                                borderRadius: '12px',
+                                overflow: 'hidden',
+                                border: '1px solid #e2e8f0',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                            }}
                         >
-                            <span className={`pill-dot ${kpi.color}`}></span>
-                            <span style={{ marginRight: '4px' }}>{kpi.icon}</span> {kpi.label}
-                            <span className="pill-count">{countOrderStatus(kpi.status)}</span>
-                        </div>
-                    ))}
-                </div>
+                            {/* Category Header */}
+                            <div style={{
+                                background: colors.bg,
+                                padding: '16px 20px',
+                                borderBottom: `3px solid ${colors.border}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <span style={{ fontSize: '1.8rem' }}>{getCategoryIcon(category)}</span>
+                                    <div>
+                                        <h3 style={{
+                                            margin: 0,
+                                            fontSize: '1.2rem',
+                                            fontWeight: 700,
+                                            color: colors.text
+                                        }}>
+                                            {category}
+                                        </h3>
+                                        <p style={{
+                                            margin: '2px 0 0 0',
+                                            fontSize: '0.85rem',
+                                            color: '#64748b',
+                                            fontWeight: 500
+                                        }}>
+                                            {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div style={{
+                                    background: 'white',
+                                    color: colors.text,
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    fontWeight: 700,
+                                    fontSize: '1.1rem',
+                                    border: `2px solid ${colors.border}`
+                                }}>
+                                    {orders.length}
+                                </div>
+                            </div>
 
-                {/* 10. Bulk Actions Bar (only shows when items selected) */}
-                {selectedOrderIds.length > 0 && (
-                    <div className="med-bulk-actions-bar">
-                        <span style={{ fontWeight: 600, color: 'var(--med-text-main)' }}>{selectedOrderIds.length} orders selected</span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button className="med-btn-outlined small">Assign Tech</button>
-                            <button className="med-btn-gradient small">Process Selected</button>
-                        </div>
-                    </div>
-                )}
-
-                {/* 3. Modern Table Design Upgrade */}
-                <div className="med-table-card premium">
-                    <table className="med-table premium-table">
-                        <thead>
-                            <tr>
-                                <th style={{ width: '40px' }}><input type="checkbox" onChange={(e) => {
-                                    if (e.target.checked) setSelectedOrderIds(filteredOrders.map(o => o.id));
-                                    else setSelectedOrderIds([]);
-                                }} checked={selectedOrderIds.length > 0 && selectedOrderIds.length === filteredOrders.length} /></th>
-                                <th>Order ID</th>
-                                <th>Patient</th>
-                                <th>Tests</th>
-                                <th>Sample</th>
-                                <th>Status</th>
-                                <th style={{ textAlign: 'right' }}>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredOrders.length === 0 ? (
-                                <tr>
-                                    <td colSpan="7" style={{ textAlign: 'center', padding: '60px' }}>
-                                        {/* 11. Empty State */}
-                                        <div className="med-empty-state-content">
-                                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🧪</div>
-                                            <h3 style={{ fontSize: '1.2rem', color: 'var(--med-text-main)', marginBottom: '8px' }}>No test orders available</h3>
-                                            <p style={{ color: 'var(--med-text-muted)' }}>Waiting for new orders to process.</p>
-                                        </div>
-                                    </td>
-                                </tr>
+                            {/* Table */}
+                            {orders.length === 0 ? (
+                                <div style={{
+                                    padding: '60px 20px',
+                                    textAlign: 'center',
+                                    color: '#94a3b8'
+                                }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>📭</div>
+                                    <p style={{ fontSize: '1rem', fontWeight: 500, margin: 0 }}>
+                                        No {category.toLowerCase()}s ordered yet
+                                    </p>
+                                </div>
                             ) : (
-                                filteredOrders.map(order => (
-                                    <React.Fragment key={order.id}>
-                                        <tr
-                                            className={`med-table-row ${expandedOrderId === order.id ? 'expanded' : ''}`}
-                                            onClick={() => toggleRowExpansion(order.id)}
-                                        >
-                                            <td onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedOrderIds.includes(order.id)}
-                                                    onChange={() => toggleSelection(order.id)}
-                                                />
-                                            </td>
-                                            <td className="mono-text" style={{ fontWeight: 600, color: 'var(--med-primary)' }}>{order.id}</td>
-                                            {/* 4. Patient Column Enhancement */}
-                                            <td>
-                                                <div className="med-user-cell">
-                                                    <div className="info">
-                                                        <span className="name">{order.patient || 'Unknown Patient'}</span>
-                                                        <div className="med-contact-pill compact" title="Booked via WhatsApp" style={{ marginTop: '4px', fontSize: '0.75rem', padding: '2px 8px' }}>
-                                                            <Icons.Phone size={10} color="#25D366" /> {order.whatsapp}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            {/* 5. Tests Column */}
-                                            <td>
-                                                <div title={(order.tests || []).join(', ')} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                    <span style={{ fontWeight: 500, color: 'var(--med-text-main)' }}>
-                                                        {(order.tests && order.tests[0]) || 'N/A'}
-                                                        {(order.tests && order.tests.length > 1) && <span style={{ color: 'var(--med-text-muted)', fontSize: '0.8rem', marginLeft: '6px' }}>+{order.tests.length - 1} more</span>}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            {/* 6. Sample Column & 7. Status Column */}
-                                            <td>
-                                                <div className="med-sample-badge" title={order.sampleStatus === 'Collected' ? 'Sample Collected' : 'Sample Not Collected'}>
-                                                    <span style={{ fontSize: '1.2rem' }}>{order.sampleType === 'Blood' ? '🩸' : '🧪'}</span>
-                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--med-text-main)' }}>{order.sampleType}</span>
-                                                        <span style={{ fontSize: '0.7rem', color: order.sampleStatus === 'Collected' ? '#16a34a' : '#ea580c' }}>{order.sampleStatus}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span className={`med-status-badge ${(order.status || 'pending').toLowerCase().replace(' ', '-')}`}>
-                                                        {order.status || 'Pending'}
-                                                    </span>
-                                                    {order.isDelayed && <div title="Order is delayed" style={{ color: '#ef4444' }}><Icons.ClockSmall size={16} /></div>}
-                                                </div>
-                                            </td>
-                                            {/* 8. Smart Actions */}
-                                            <td style={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
-                                                <div className="med-action-group">
-                                                    {order.status === 'Pending' && (
-                                                        <button className="med-btn-icon info" title="Process Order" ><Icons.Settings /></button>
-                                                    )}
-                                                    {['In Process', 'Processing'].includes(order.status) && (
-                                                        <button className="med-btn-icon success" title="Upload Result" onClick={() => {
-                                                            setUploadData({ patient_id: order.patientId, test_name: (order.tests && order.tests[0]) || '', file: null });
-                                                            setShowUploadModal(true);
-                                                        }}><Icons.UploadCloud /></button>
-                                                    )}
-                                                    <button className="med-btn-icon" title="View Details" onClick={() => toggleRowExpansion(order.id)}>
-                                                        {expandedOrderId === order.id ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {/* 9. Expandable Row Details */}
-                                        {expandedOrderId === order.id && (
-                                            <tr className="med-expanded-row">
-                                                <td colSpan="7">
-                                                    <div className="med-row-details">
-                                                        <div className="med-detail-grid">
-                                                            <div className="detail-item">
-                                                                <span className="label">Timeline</span>
-                                                                <span className="value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }}></div>
-                                                                    Created: Today, 9:00 AM
-                                                                </span>
-                                                            </div>
-                                                            <div className="detail-item">
-                                                                <span className="label">Expected TAT</span>
-                                                                <span className="value">{order.tat}</span>
-                                                            </div>
-                                                            <div className="detail-item">
-                                                                <span className="label">Technician</span>
-                                                                <span className="value">Unassigned <button className="med-link-btn" style={{ fontSize: '0.8rem' }}>Assign</button></span>
-                                                            </div>
-                                                            <div className="detail-item">
-                                                                <span className="label">Notes</span>
-                                                                <span className="value" style={{ fontStyle: 'italic', color: 'var(--med-text-muted)' }}>No special instructions.</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{
+                                        width: '100%',
+                                        borderCollapse: 'collapse'
+                                    }}>
+                                        <thead>
+                                            <tr style={{ background: '#f8fafc' }}>
+                                                <th style={{
+                                                    padding: '14px 20px',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 700,
+                                                    color: '#64748b',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    borderBottom: '2px solid #e2e8f0'
+                                                }}>
+                                                    Order ID
+                                                </th>
+                                                <th style={{
+                                                    padding: '14px 20px',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 700,
+                                                    color: '#64748b',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    borderBottom: '2px solid #e2e8f0'
+                                                }}>
+                                                    Patient Name
+                                                </th>
+                                                <th style={{
+                                                    padding: '14px 20px',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 700,
+                                                    color: '#64748b',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    borderBottom: '2px solid #e2e8f0'
+                                                }}>
+                                                    Test Name
+                                                </th>
+                                                <th style={{
+                                                    padding: '14px 20px',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 700,
+                                                    color: '#64748b',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    borderBottom: '2px solid #e2e8f0'
+                                                }}>
+                                                    Date
+                                                </th>
+                                                <th style={{
+                                                    padding: '14px 20px',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 700,
+                                                    color: '#64748b',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    borderBottom: '2px solid #e2e8f0'
+                                                }}>
+                                                    Time
+                                                </th>
+                                                <th style={{
+                                                    padding: '14px 20px',
+                                                    textAlign: 'center',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 700,
+                                                    color: '#64748b',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    borderBottom: '2px solid #e2e8f0'
+                                                }}>
+                                                    Status
+                                                </th>
                                             </tr>
-                                        )}
-                                    </React.Fragment>
-                                ))
+                                        </thead>
+                                        <tbody>
+                                            {orders.map((order, index) => (
+                                                <tr
+                                                    key={`${order.id}-${index}`}
+                                                    style={{
+                                                        borderBottom: '1px solid #f1f5f9',
+                                                        transition: 'background 0.2s',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.background = colors.bg;
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.background = 'white';
+                                                    }}
+                                                >
+                                                    <td style={{
+                                                        padding: '16px 20px',
+                                                        fontSize: '0.9rem',
+                                                        fontWeight: 600,
+                                                        color: colors.text,
+                                                        fontFamily: 'monospace'
+                                                    }}>
+                                                        #{order.id || `${category.substring(0, 3).toUpperCase()}-${index + 1}`}
+                                                    </td>
+                                                    <td style={{
+                                                        padding: '16px 20px'
+                                                    }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                            <div style={{
+                                                                width: '40px',
+                                                                height: '40px',
+                                                                borderRadius: '10px',
+                                                                background: colors.bg,
+                                                                color: colors.text,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '1rem',
+                                                                fontWeight: 700,
+                                                                border: `2px solid ${colors.border}`
+                                                            }}>
+                                                                {String(order.patientName || '?').charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span style={{
+                                                                fontSize: '0.95rem',
+                                                                fontWeight: 600,
+                                                                color: '#1e293b'
+                                                            }}>
+                                                                {order.patientName}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{
+                                                        padding: '16px 20px',
+                                                        fontSize: '0.9rem',
+                                                        fontWeight: 600,
+                                                        color: '#475569'
+                                                    }}>
+                                                        {order.testName}
+                                                    </td>
+                                                    <td style={{
+                                                        padding: '16px 20px',
+                                                        fontSize: '0.9rem',
+                                                        color: '#64748b',
+                                                        fontWeight: 500
+                                                    }}>
+                                                        {order.date}
+                                                    </td>
+                                                    <td style={{
+                                                        padding: '16px 20px',
+                                                        fontSize: '0.9rem',
+                                                        color: '#64748b',
+                                                        fontWeight: 500
+                                                    }}>
+                                                        {order.time}
+                                                    </td>
+                                                    <td style={{
+                                                        padding: '16px 20px',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        <span style={{
+                                                            padding: '6px 12px',
+                                                            borderRadius: '6px',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 700,
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.5px',
+                                                            display: 'inline-block',
+                                                            ...getStatusStyles(order.status)
+                                                        }}>
+                                                            {order.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             )}
-                        </tbody>
-                    </table>
-                </div>
+                        </div>
+                    );
+                })}
             </div>
         );
     };
@@ -1841,7 +2132,7 @@ const LabAdminDashboard = () => {
     const renderPatients = () => {
         const filteredPatients = patients.filter(p =>
             ((p.name || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
-            ((p.email || '').toLowerCase().includes(searchTerm.toLowerCase()))
+            ((p.username || '').toLowerCase().includes(searchTerm.toLowerCase()))
         );
 
         return (
@@ -1934,7 +2225,9 @@ const LabAdminDashboard = () => {
                                                 color: 'var(--med-primary)', borderRadius: '8px', fontSize: '0.9rem',
                                                 fontWeight: 600, display: 'inline-block'
                                             }}>
-                                                {p.latest_test || 'General Consult'}
+                                                {p.prescription_test ? (
+                                                    <span title="From Prescription"><Icons.FileText size={12} style={{ marginRight: '5px' }} /> {p.prescription_test}</span>
+                                                ) : (p.latest_test || 'General Consult')}
                                             </div>
                                         </td>
                                         <td style={{ padding: '20px' }}>
@@ -1973,111 +2266,137 @@ const LabAdminDashboard = () => {
 
 
     const renderReports = () => {
-        // Step 1: Identify patients who have at least one "Confirmed" appointment
-        const confirmedUserRefs = new Set(
-            appointments
-                .filter(a => a.status === 'Confirmed')
-                .map(a => a.username || a.patient)
-        );
+        try {
+            // Step 1: Identify unique patients who have made an appointment
+            const uniqueBookedUsers = new Map();
+            const safeAppointments = Array.isArray(appointments) ? appointments : [];
+            const safePatients = Array.isArray(patients) ? patients : [];
 
-        // Step 2: Filter patients based on confirmed status and search term
-        const filteredReports = patients.filter(p => {
-            const isConfirmed = confirmedUserRefs.has(p.username) || confirmedUserRefs.has(p.name) || confirmedUserRefs.has(p.email);
-            const matchesSearch = ((p.name || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
-                ((p.email || '').toLowerCase().includes(searchTerm.toLowerCase()));
-            return isConfirmed && matchesSearch;
-        });
+            safeAppointments.forEach(a => {
+                if (!a) return;
+                const key = String(a.username || a.patient || '').toLowerCase().trim();
+                if (!key) return;
 
-        return (
-            <div className="med-reports-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div className="med-premium-header">
-                    <div>
-                        <h2 className="med-page-heading">Reports & Test History</h2>
-                        <p className="med-page-subheading">Review diagnostic records and upload patient results</p>
-                    </div>
-                </div>
+                const existing = uniqueBookedUsers.get(key);
+                const statusWeight = { 'Completed': 3, 'Confirmed': 2, 'Pending': 1, 'Cancelled': -1 };
+                const currentWeight = statusWeight[a.status] || 0;
+                const existingWeight = existing ? (statusWeight[existing.status] || 0) : -2;
 
-                {filteredReports.length === 0 ? (
-                    <div className="med-empty-state" style={{ background: 'var(--med-surface)', padding: '80px 40px', textAlign: 'center', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
-                        <div style={{ width: 100, height: 100, background: 'var(--med-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                            <Icons.FileText size={48} color="#94a3b8" />
+                if (!existing || currentWeight > existingWeight) {
+                    const patientDetails = safePatients.find(p =>
+                        (p.username && String(p.username).toLowerCase() === key) ||
+                        (p.name && String(p.name).toLowerCase() === key) ||
+                        (p.email && String(p.email).toLowerCase() === key)
+                    );
+
+                    uniqueBookedUsers.set(key, {
+                        id: patientDetails?.id || a.id || `temp-${key}`,
+                        name: (patientDetails?.name && !patientDetails.name.includes('@')) ? patientDetails.name : (a.patient && !a.patient.includes('@') ? a.patient : (a.username && !a.username.includes('@') ? a.username : 'Patient')),
+                        username: a.username || patientDetails?.username || 'guest',
+                        status: a.status || 'Pending',
+                        latest_test: a.test || 'General Consult',
+                        age: patientDetails?.age || 'N/A',
+                        gender: patientDetails?.gender || 'N/A',
+                        profile_pic: patientDetails?.profile_pic,
+                        uploaded_data_count: Number(patientDetails?.uploaded_data_count || 0)
+                    });
+                }
+            });
+
+            const reportsList = Array.from(uniqueBookedUsers.values()).filter(r =>
+                String(r.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                String(r.username).toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            const getStatusStyles = (status) => {
+                const s = String(status || '').toLowerCase();
+                if (s === 'completed') return { background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' };
+                if (s === 'confirmed') return { background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd' };
+                if (s === 'pending') return { background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' };
+                return { background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' };
+            };
+
+            return (
+                <div className="med-reports-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div className="med-premium-header">
+                        <div>
+                            <h2 className="med-page-heading">Reports & Test History</h2>
+                            <p className="med-page-subheading">Manage diagnostic results for all booked patients</p>
                         </div>
-                        <h3 style={{ fontSize: '1.4rem', color: 'var(--med-text-main)', marginBottom: '12px' }}>No records found</h3>
-                        <p style={{ color: 'var(--med-text-muted)', maxWidth: '400px', margin: '0 auto' }}>Navigate to Appointments to book users or wait for new registrations to appear here.</p>
                     </div>
-                ) : (
-                    <div className="med-reports-grid">
-                        {filteredReports.map(p => (
-                            <div key={p.id} className="med-report-user-card">
-                                <div className="card-header-main">
-                                    <div className="user-identity-block">
-                                        <div className="card-avatar-wrapper">
-                                            <div className="card-avatar">
+
+                    {reportsList.length === 0 ? (
+                        <div className="med-empty-state" style={{ background: 'var(--med-surface)', padding: '80px 40px', textAlign: 'center', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
+                            <div style={{ width: 100, height: 100, background: 'var(--med-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                                <Icons.FileText size={48} color="#94a3b8" />
+                            </div>
+                            <h3 style={{ fontSize: '1.4rem', color: 'var(--med-text-main)', marginBottom: '12px' }}>No records found</h3>
+                            <p style={{ color: 'var(--med-text-muted)', maxWidth: '400px', margin: '0 auto' }}>Wait for new bookings to appear here.</p>
+                        </div>
+                    ) : (
+                        <div className="med-reports-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                            {reportsList.map(p => (
+                                <div key={p.id} className="med-report-user-card" style={{ background: 'var(--med-surface)', borderRadius: '20px', padding: '24px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)', border: '1px solid var(--med-border)', position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '380px' }}>
+
+                                    <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
+                                        <span style={{
+                                            padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700,
+                                            textTransform: 'uppercase', ...getStatusStyles(p.status)
+                                        }}>
+                                            {p.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="card-header-main" style={{ marginBottom: '20px' }}>
+                                        <div className="user-identity-block" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                            <div className="card-avatar" style={{
+                                                width: 58, height: 58, borderRadius: '18px', background: 'var(--med-bg)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800, color: 'var(--med-primary)', border: '2px solid var(--med-border)'
+                                            }}>
                                                 {p.profile_pic ? (
                                                     <img src={p.profile_pic} alt={p.name} style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }} />
-                                                ) : (p.name || '?').charAt(0).toUpperCase()}
+                                                ) : String(p.name || '?').charAt(0).toUpperCase()}
                                             </div>
-                                            <div className="status-indicator" title="Patient Online"></div>
-                                        </div>
-                                        <div className="user-meta">
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <h3>{p.name}</h3>
-                                                {p.uploaded_data_count > 0 && (
-                                                    <span className="med-upload-sign" title="Report Uploaded">
-                                                        <Icons.CheckCircle size={14} />
-                                                    </span>
-                                                )}
+                                            <div className="user-meta">
+                                                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--med-text-main)', lineHeight: 1.2 }}>{p.name}</h3>
                                             </div>
-                                            <span className="user-id-tag">PATIENT ID #{p.id}</span>
                                         </div>
                                     </div>
-                                    <button className="med-btn-icon" style={{ opacity: 0.5 }}><Icons.MoreVertical /></button>
-                                </div>
 
-                                <div className="card-stats-grid">
-                                    <div className="stat-box">
-                                        <span className="label">Total Reports</span>
-                                        <span className="value">{p.uploaded_data_count || 0} Files</span>
+                                    <div className="latest-test-banner" style={{ background: 'rgba(14, 165, 233, 0.05)', padding: '16px', borderRadius: '16px', borderLeft: '5px solid var(--med-primary)', marginBottom: '24px' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)', marginBottom: '4px', fontWeight: 600 }}>BOOKED TEST</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--med-text-main)' }}>{p.latest_test}</div>
                                     </div>
-                                    <div className="stat-box">
-                                        <span className="label">Identity</span>
-                                        <span className="value">{(p.age && p.age !== 'N/A') ? p.age : '??'}Y • {p.gender || 'N/A'}</span>
-                                    </div>
-                                </div>
 
-                                <div className="latest-test-banner">
-                                    <span className="test-icon">🔬</span>
-                                    <div className="test-info">
-                                        <span className="title">Latest Booking Type</span>
-                                        <span className="name">{p.latest_test || 'General Consultation'}</span>
+                                    <div className="card-footer-actions" style={{ marginTop: 'auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <button
+                                            className="med-btn"
+                                            style={{ background: 'white', border: '1px solid var(--med-border)', color: 'var(--med-text-main)', padding: '12px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                            onClick={() => handleViewHistory(p)}
+                                        >
+                                            <Icons.ClockSmall size={18} /> History
+                                        </button>
+                                        <button
+                                            className="med-btn med-btn-primary"
+                                            style={{ padding: '12px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                            onClick={() => {
+                                                setUploadData({ patient_id: p.id, test_name: p.latest_test, file: null });
+                                                setShowUploadModal(true);
+                                            }}
+                                        >
+                                            <Icons.UploadCloud size={18} /> Upload PDF
+                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="card-footer-actions">
-                                    <button
-                                        className="btn-report-action primary"
-                                        onClick={() => handleViewHistory(p)}
-                                    >
-                                        <Icons.ClockSmall size={18} /> View History
-                                    </button>
-                                    <button
-                                        className="btn-report-action secondary"
-                                        title="Upload Result"
-                                        style={{ background: 'var(--med-primary)', color: 'white', border: 'none' }}
-                                        onClick={() => {
-                                            setUploadData({ patient_id: p.id, test_name: p.latest_test || 'General Test', file: null });
-                                            setShowUploadModal(true);
-                                        }}
-                                    >
-                                        <Icons.UploadCloud size={18} /> Upload Result
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        } catch (error) {
+            console.error("RenderReports Error:", error);
+            return <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>Error loading reports view. Please check data consistency.</div>;
+        }
     };
 
     const renderStaff = () => {
@@ -2165,72 +2484,151 @@ const LabAdminDashboard = () => {
                                         return matchesSearch && matchesFilter;
                                     })
                                     .map(s => (
-                                        <tr key={s.id} className="med-table-row">
-                                            {/* 4. Name Column Enhancement */}
-                                            <td>
-                                                <div className="med-user-cell">
-                                                    <div className="med-avatar-circle small" style={{ background: '#e0e7ff', color: '#4338ca', fontWeight: 700, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        {s.image ? (
-                                                            <img src={s.image} alt={s.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                        ) : (
-                                                            (s.name || '?').charAt(0).toUpperCase()
-                                                        )}
+                                        <React.Fragment key={s.id}>
+                                            <tr
+                                                className={`med-table-row ${expandedStaffId === s.id ? 'expanded' : ''}`}
+                                                onClick={() => setExpandedStaffId(expandedStaffId === s.id ? null : s.id)}
+                                            >
+                                                {/* 4. Name Column Enhancement */}
+                                                <td>
+                                                    <div className="med-user-cell">
+                                                        <div className="med-avatar-circle small" style={{ background: '#e0e7ff', color: '#4338ca', fontWeight: 700, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            {(s.image || s.image_url) ? (
+                                                                <img src={s.image || s.image_url} alt={s.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            ) : (
+                                                                (s.name || '?').charAt(0).toUpperCase()
+                                                            )}
+                                                        </div>
+                                                        <div className="info">
+                                                            <span className="name">{s.name || 'Unknown Staff'}</span>
+                                                            <span className="sub-text" style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)' }}>ID: {s.staffId || `STA-${s.id}`}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="info">
-                                                        <span className="name">{s.name || 'Unknown Staff'}</span>
-                                                        <span className="sub-text" style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)' }}>ID: {s.staffId || `STA-${s.id}`}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            {/* 5. Role Column Enhancement */}
-                                            <td>
-                                                <span className={`med-role-tag ${(s.role || '').toLowerCase().replace(' ', '-')}`}
-                                                    style={{
-                                                        padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600,
-                                                        background: s.role === 'Admin' ? '#f3e8ff' : '#dbeafe',
-                                                        color: s.role === 'Admin' ? '#7e22ce' : '#1e40af'
+                                                </td>
+                                                {/* 5. Role Column Enhancement */}
+                                                <td>
+                                                    <span className={`med-role-tag ${(s.role || '').toLowerCase().replace(' ', '-')}`}
+                                                        style={{
+                                                            padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600,
+                                                            background: s.role === 'Admin' ? '#f3e8ff' : '#dbeafe',
+                                                            color: s.role === 'Admin' ? '#7e22ce' : '#1e40af'
+                                                        }}>
+                                                        {s.role || 'No Role'}
+                                                    </span>
+                                                </td>
+                                                <td><span style={{ color: 'var(--med-text-muted)' }}>{s.department || '-'}</span></td>
+                                                <td>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--med-text-main)' }}>{s.phone || '-'}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)' }}>{s.email}</div>
+                                                </td>
+                                                <td>
+                                                    <span style={{
+                                                        fontSize: '0.8rem', padding: '2px 8px', borderRadius: '4px', background: 'var(--med-bg)', border: '1px solid var(--med-border)', color: 'var(--med-text-body)'
                                                     }}>
-                                                    {s.role || 'No Role'}
-                                                </span>
-                                            </td>
-                                            <td><span style={{ color: 'var(--med-text-muted)' }}>{s.department || '-'}</span></td>
-                                            <td>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--med-text-main)' }}>{s.phone || '-'}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--med-text-muted)' }}>{s.email}</div>
-                                            </td>
-                                            <td>
-                                                <span style={{
-                                                    fontSize: '0.8rem', padding: '2px 8px', borderRadius: '4px', background: 'var(--med-bg)', border: '1px solid var(--med-border)', color: 'var(--med-text-body)'
-                                                }}>
-                                                    {s.shift || 'General'}
-                                                </span>
-                                            </td>
-                                            {/* 6. Status Column Upgrade */}
-                                            <td>
-                                                <select
-                                                    className="med-status-select"
-                                                    value={s.status === 'Available' ? 'Active' : s.status}
-                                                    onChange={(e) => handleStaffStatusChange(s.id, e.target.value)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    style={{
-                                                        padding: '4px 8px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer',
-                                                        background: (s.status === 'Active' || s.status === 'Available') ? '#dcfce7' : (s.status === 'Leave' ? '#fef9c3' : '#f1f5f9'),
-                                                        color: (s.status === 'Active' || s.status === 'Available') ? '#15803d' : (s.status === 'Leave' ? '#854d0e' : '#64748b')
-                                                    }}
-                                                >
-                                                    <option value="Active">Active</option>
-                                                    <option value="Inactive">Inactive</option>
-                                                    <option value="Leave">Leave</option>
-                                                </select>
-                                            </td>
-                                            {/* 7. Action Column */}
-                                            <td style={{ textAlign: 'right' }}>
-                                                <div className="med-action-group">
-                                                    <button className="med-btn-icon" title="Edit Staff"><Icons.Settings /></button>
-                                                    <button className="med-btn-icon danger" title="Remove"><Icons.Trash /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                        {s.shift || 'General'}
+                                                    </span>
+                                                </td>
+                                                {/* 6. Status Column Upgrade */}
+                                                <td>
+                                                    <select
+                                                        className="med-status-select"
+                                                        value={s.status === 'Available' ? 'Active' : s.status}
+                                                        onChange={(e) => handleStaffStatusChange(s.id, e.target.value)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        style={{
+                                                            padding: '4px 8px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer',
+                                                            background: (s.status === 'Active' || s.status === 'Available') ? '#dcfce7' : (s.status === 'Leave' ? '#fef9c3' : '#f1f5f9'),
+                                                            color: (s.status === 'Active' || s.status === 'Available') ? '#15803d' : (s.status === 'Leave' ? '#854d0e' : '#64748b')
+                                                        }}
+                                                    >
+                                                        <option value="Active">Active</option>
+                                                        <option value="Inactive">Inactive</option>
+                                                        <option value="Leave">Leave</option>
+                                                    </select>
+                                                </td>
+                                                {/* 7. Action Column */}
+                                                <td style={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                                                    <div className="med-action-group">
+                                                        <button className="med-btn-icon" title="View Details" onClick={() => setExpandedStaffId(expandedStaffId === s.id ? null : s.id)}>
+                                                            {expandedStaffId === s.id ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
+                                                        </button>
+                                                        <button className="med-btn-icon" title="Edit Staff"><Icons.Settings /></button>
+                                                        <button className="med-btn-icon danger" title="Remove"><Icons.Trash /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {expandedStaffId === s.id && (
+                                                <tr className="med-expanded-row">
+                                                    <td colSpan="7">
+                                                        <div className="med-row-details" style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '0 0 12px 12px', border: '1px solid var(--med-border)', borderTop: 'none' }}>
+                                                            <div className="med-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                                                                <div className="detail-item">
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Qualification</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.qualification || '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Gender / DOB</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.gender || '-'} / {s.dob || '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Experience</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.experience ? `${s.experience} Years` : '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Employment Type</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.employmentType || '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Joining Date</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.joiningDate || '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Working Hours</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.workingHours || '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Address</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.address || '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Working Days</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.workingDays || '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Specializations</span>
+                                                                    <span className="value" style={{ fontWeight: 500 }}>{s.specializations || '-'}</span>
+                                                                </div>
+                                                                <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Documents</span>
+                                                                    <span className="value" style={{ fontWeight: 500, color: 'var(--med-primary)', cursor: 'pointer' }}>{s.documents || 'No documents'}</span>
+                                                                </div>
+                                                                <div className="detail-item" style={{ gridColumn: 'span 2', background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#ef4444', marginBottom: '8px', textTransform: 'uppercase' }}>Emergency Contact</span>
+                                                                    <div style={{ display: 'flex', gap: '24px' }}>
+                                                                        <div>
+                                                                            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Name:</span>
+                                                                            <div style={{ fontWeight: 600 }}>{s.emergencyName || '-'}</div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Relation:</span>
+                                                                            <div style={{ fontWeight: 600 }}>{s.emergencyRelation || '-'}</div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Phone:</span>
+                                                                            <div style={{ fontWeight: 600 }}>{s.emergencyPhone || '-'}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                                                                    <span className="label" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--med-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Internal Notes</span>
+                                                                    <span className="value" style={{ fontWeight: 400, fontStyle: 'italic' }}>{s.internalNotes || 'No notes available.'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
                                     ))}
                             </tbody>
                         </table>
@@ -2354,6 +2752,10 @@ const LabAdminDashboard = () => {
                                                     <option>Receptionist</option>
                                                     <option>Admin</option>
                                                 </select>
+                                            </div>
+                                            <div>
+                                                <label className="med-label-pro">Qualification</label>
+                                                <input className="med-input-pro" placeholder="e.g. M.Sc. Biotechnology" value={newStaff.qualification} onChange={e => setNewStaff({ ...newStaff, qualification: e.target.value })} />
                                             </div>
                                             <div>
                                                 <label className="med-label-pro">Department</label>
@@ -2551,6 +2953,26 @@ const LabAdminDashboard = () => {
                                                 <label className="med-label-pro">Phone Number</label>
                                                 <input className="med-input-pro" value={newStaff.emergencyPhone} onChange={e => setNewStaff({ ...newStaff, emergencyPhone: e.target.value })} />
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 8. Internal Notes */}
+                                    <div className="med-pro-form-section">
+                                        <div className="med-section-header">
+                                            <div className="med-section-number">7</div>
+                                            <div className="med-section-title">
+                                                <h4>Internal Notes</h4>
+                                                <p className="med-section-subtitle">Special instructions or HR notes</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <textarea
+                                                className="med-input-pro"
+                                                style={{ minHeight: '100px', resize: 'vertical' }}
+                                                placeholder="Enter any internal notes about the staff member..."
+                                                value={newStaff.internalNotes}
+                                                onChange={e => setNewStaff({ ...newStaff, internalNotes: e.target.value })}
+                                            />
                                         </div>
                                     </div>
 
@@ -2871,12 +3293,16 @@ const LabAdminDashboard = () => {
                                 <h4 style={{ marginBottom: '15px', color: 'var(--med-primary)' }}>Personal Details</h4>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                     <div>
-                                        <label style={{ fontSize: '0.8rem', color: 'var(--med-text-muted)' }}>Email</label>
-                                        <div style={{ fontWeight: 500 }}>{patientHistory.details.email}</div>
+                                        <label style={{ fontSize: '0.8rem', color: 'var(--med-text-muted)' }}>Patient Name</label>
+                                        <div style={{ fontWeight: 500 }}>{selectedPatient.name}</div>
                                     </div>
                                     <div>
                                         <label style={{ fontSize: '0.8rem', color: 'var(--med-text-muted)' }}>Phone</label>
                                         <div style={{ fontWeight: 500 }}>{patientHistory.details.phone || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', color: 'var(--med-text-muted)' }}>Location</label>
+                                        <div style={{ fontWeight: 500 }}>{patientHistory.details.location || 'N/A'}</div>
                                     </div>
                                     <div>
                                         <label style={{ fontSize: '0.8rem', color: 'var(--med-text-muted)' }}>Patient ID</label>
@@ -2999,6 +3425,7 @@ const LabAdminDashboard = () => {
         };
 
         const filteredPaymentsByDate = (appointments || []).filter(a => {
+            if (paymentSelectedDate) return a.date === paymentSelectedDate;
             if (paymentDateFilter === 'Today') return a.date === todayStr;
             if (paymentDateFilter === 'This Week') return isThisWeek(a.date);
             if (paymentDateFilter === 'This Month') return isThisMonth(a.date);
@@ -3020,7 +3447,7 @@ const LabAdminDashboard = () => {
                 </div>
 
                 {/* Attractive Date Filter Pills */}
-                <div className="med-filter-pills-row">
+                <div className="med-filter-pills-row" style={{ alignItems: 'center' }}>
                     {[
                         { label: 'All Time', id: 'All Time', icon: '📅' },
                         { label: 'Today', id: 'Today', icon: '☀️' },
@@ -3029,8 +3456,11 @@ const LabAdminDashboard = () => {
                     ].map(pill => (
                         <div
                             key={pill.id}
-                            className={`med-filter-pill-item ${paymentDateFilter === pill.id ? 'active' : ''}`}
-                            onClick={() => setPaymentDateFilter(pill.id)}
+                            className={`med-filter-pill-item ${paymentDateFilter === pill.id && !paymentSelectedDate ? 'active' : ''}`}
+                            onClick={() => {
+                                setPaymentDateFilter(pill.id);
+                                setPaymentSelectedDate('');
+                            }}
                         >
                             <span style={{ marginRight: '6px' }}>{pill.icon}</span>
                             {pill.label}
@@ -3044,6 +3474,20 @@ const LabAdminDashboard = () => {
                             </span>
                         </div>
                     ))}
+
+                    <div className="med-divider-v" style={{ height: '24px', margin: '0 8px' }}></div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--med-surface)', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--med-border)' }}>
+                        <Icons.Calendar size={18} color="var(--med-primary)" />
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--med-text-main)' }}>Custom:</span>
+                        <input
+                            type="date"
+                            className="med-date-input"
+                            value={paymentSelectedDate}
+                            onChange={(e) => setPaymentSelectedDate(e.target.value)}
+                            style={{ border: 'none', outline: 'none', background: 'transparent', color: 'var(--med-text-main)', fontSize: '0.9rem', fontWeight: 600 }}
+                        />
+                    </div>
                 </div>
 
                 {filteredPayments.length === 0 ? (
@@ -3076,8 +3520,14 @@ const LabAdminDashboard = () => {
                                                     {appt.patient ? appt.patient.charAt(0).toUpperCase() : '?'}
                                                 </div>
                                                 <div className="info">
-                                                    <span className="name">{appt.patient || 'Unknown Patient'}</span>
-                                                    <span className="sub-text">{appt.test || 'General Test'}</span>
+                                                    <span className="name">
+                                                        {(() => {
+                                                            const pObj = patients.find(p => p.username === appt.username || p.email === appt.email);
+                                                            if (pObj && pObj.name && !pObj.name.includes('@')) return pObj.name;
+                                                            if (appt.patient && !appt.patient.includes('@')) return appt.patient;
+                                                            return (appt.username && !appt.username.includes('@')) ? appt.username : 'Patient';
+                                                        })()}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </td>
@@ -3094,12 +3544,12 @@ const LabAdminDashboard = () => {
                                             <span style={{ fontWeight: 700, color: 'var(--med-text-main)', fontSize: '1rem' }}>₹{appt.amount || '750'}</span>
                                         </td>
                                         <td>
-                                            <span className={`med-status-badge ${(appt.paymentStatus || appt.status || '').toLowerCase().replace(' ', '-')}`} style={{
+                                            <span className="med-status-badge paid" style={{
                                                 padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
-                                                background: (appt.paymentStatus === 'Paid' || appt.status === 'Completed') ? '#dcfce7' : (appt.status === 'Cancelled' ? '#fee2e2' : '#fef9c3'),
-                                                color: (appt.paymentStatus === 'Paid' || appt.status === 'Completed') ? '#15803d' : (appt.status === 'Cancelled' ? '#dc2626' : '#854d0e')
+                                                background: '#dcfce7',
+                                                color: '#15803d'
                                             }}>
-                                                {(appt.paymentStatus === 'Paid' || appt.status === 'Completed') ? 'Paid' : (appt.status === 'Cancelled' ? 'Cancelled' : 'Pending')}
+                                                Paid
                                             </span>
                                         </td>
                                         <td style={{ textAlign: 'right' }}>
@@ -3257,8 +3707,6 @@ const LabAdminDashboard = () => {
                                         <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--med-text-main)', margin: 0, letterSpacing: '-0.02em' }}>{selectedPatient.name}</h2>
                                         <p style={{ color: 'var(--med-text-muted)', margin: '4px 0 0', fontSize: '0.9rem', display: 'flex', gap: '8px', alignItems: 'center' }}>
                                             <span style={{ fontWeight: 600 }}>ID: #{selectedPatient.id}</span>
-                                            <span style={{ width: '4px', height: '4px', background: '#cbd5e1', borderRadius: '50%' }}></span>
-                                            {selectedPatient.email}
                                             {selectedPatient.phone && (
                                                 <>
                                                     <span style={{ width: '4px', height: '4px', background: '#cbd5e1', borderRadius: '50%' }}></span>
@@ -3311,111 +3759,139 @@ const LabAdminDashboard = () => {
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                         {/* Tabs */}
                                         <div style={{ background: 'var(--med-bg)', padding: '4px', borderRadius: '12px', display: 'inline-flex', alignSelf: 'start', marginBottom: '24px', border: '1px solid var(--med-border)' }}>
-                                            {['Uploaded', 'Generated'].map(tab => (
+                                            {['Prescriptions', 'Profile', 'Results'].map(tab => (
                                                 <button
                                                     key={tab}
                                                     onClick={() => setActiveReportTab(tab)}
                                                     style={{
-                                                        padding: '10px 32px',
+                                                        padding: '10px 24px',
                                                         borderRadius: '8px',
                                                         border: 'none',
-                                                        background: activeReportTab === tab ? '#0d9488' : 'transparent', // Teal for active
+                                                        background: activeReportTab === tab ? '#0d9488' : 'transparent',
                                                         color: activeReportTab === tab ? 'white' : '#64748b',
                                                         fontWeight: activeReportTab === tab ? 600 : 500,
                                                         cursor: 'pointer',
                                                         boxShadow: activeReportTab === tab ? '0 4px 6px -1px rgba(13, 148, 136, 0.3)' : 'none',
                                                         transition: 'all 0.2s ease',
-                                                        fontSize: '0.95rem'
+                                                        fontSize: '0.9rem'
                                                     }}
                                                 >
-                                                    {tab === 'Uploaded' ? 'Uploaded Reports' : 'Generated Reports'}
+                                                    {tab}
                                                 </button>
                                             ))}
                                         </div>
 
                                         {/* Grid Content */}
                                         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', paddingBottom: '20px' }} className="med-scrollbar-hidden">
-                                            {activeReportTab === 'Uploaded' ? (
+                                            {activeReportTab === 'Prescriptions' ? (
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-                                                    {patientReports.length > 0 ? (
-                                                        patientReports.map(report => (
-                                                            <div key={report.id} style={{
+                                                    {patientHistory?.prescriptions && patientHistory.prescriptions.length > 0 ? (
+                                                        patientHistory.prescriptions.map((prescription, index) => (
+                                                            <div key={prescription.id || index} style={{
                                                                 background: 'var(--med-surface)', border: '1px solid var(--med-border)', borderRadius: '16px', overflow: 'hidden',
                                                                 boxShadow: '0 10px 15px -3px rgba(0,0,0,0.03), 0 4px 6px -2px rgba(0,0,0,0.01)',
                                                                 transition: 'transform 0.2s', cursor: 'default'
                                                             }}>
-                                                                {/* Image Preview */}
-                                                                <div style={{ height: '180px', background: 'var(--med-bg)', position: 'relative', overflow: 'hidden' }}>
+                                                                {/* Prescription Image */}
+                                                                <div style={{ height: '200px', background: 'var(--med-bg)', position: 'relative', overflow: 'hidden' }}>
                                                                     <img
-                                                                        src={report.image_url}
-                                                                        alt="Report"
-                                                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=No+Preview' }}
-                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                        src={prescription.image_url}
+                                                                        alt="Prescription"
+                                                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=No+Image' }}
+                                                                        style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '10px' }}
                                                                     />
-                                                                    <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                                                                        <span style={{
-                                                                            background: 'rgba(255, 255, 255, 0.95)', padding: '4px 10px', borderRadius: '20px',
-                                                                            fontSize: '0.75rem', fontWeight: 700, color: '#0f766e', boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                                                            backdropFilter: 'blur(4px)'
-                                                                        }}>
-                                                                            {report.status || 'Pending'}
-                                                                        </span>
-                                                                    </div>
                                                                 </div>
 
-                                                                {/* Card Body */}
+                                                                {/* Prescription Details */}
                                                                 <div style={{ padding: '20px' }}>
-                                                                    <h4 style={{ margin: '0 0 6px', fontSize: '1.1rem', fontWeight: 700, color: 'var(--med-text-main)' }}>{report.type || 'General Lab Test'}</h4>
-                                                                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--med-text-muted)', fontWeight: 500 }}>{report.date ? new Date(report.date).toLocaleDateString() : 'Unknown Date'}</p>
+                                                                    <h4 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 700, color: 'var(--med-text-main)' }}>
+                                                                        {prescription.type || 'Medical Prescription'}
+                                                                    </h4>
+                                                                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
+                                                                        {prescription.created_at || prescription.date ? new Date(prescription.created_at || prescription.date).toLocaleDateString() : 'Date N/A'}
+                                                                    </p>
 
-                                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '20px' }}>
+                                                                    <div style={{ marginTop: '16px' }}>
                                                                         <a
-                                                                            href={report.image_url}
+                                                                            href={prescription.image_url}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
                                                                             style={{
                                                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                                                                padding: '10px', borderRadius: '8px', border: '1px solid #0d9488',
-                                                                                background: 'var(--med-surface)', color: '#0d9488', textDecoration: 'none',
+                                                                                padding: '10px', borderRadius: '8px',
+                                                                                background: '#0d9488', color: 'white', textDecoration: 'none',
                                                                                 fontWeight: 600, fontSize: '0.9rem', transition: 'all 0.2s'
                                                                             }}
-                                                                            onMouseOver={(e) => e.currentTarget.style.background = '#f0fdfa'}
-                                                                            onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                                                                            onMouseOver={(e) => e.currentTarget.style.background = '#0f766e'}
+                                                                            onMouseOut={(e) => e.currentTarget.style.background = '#0d9488'}
                                                                         >
-                                                                            <Icons.Eye size={18} /> View
+                                                                            <Icons.Eye size={18} /> View Full Image
                                                                         </a>
-                                                                        <button
-                                                                            onClick={async (e) => {
-                                                                                /* Download Logic */
-                                                                                e.preventDefault();
-                                                                                window.open(report.image_url, '_blank');
-                                                                            }}
-                                                                            style={{
-                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                                                                padding: '10px', borderRadius: '8px', border: 'none',
-                                                                                background: '#0d9488', color: 'white',
-                                                                                fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-                                                                                boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.2)'
-                                                                            }}
-                                                                        >
-                                                                            <Icons.Download size={18} /> Download
-                                                                        </button>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         ))
                                                     ) : (
-                                                        <div style={{ gridColumn: '1 / -1', padding: '48px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed #e2e8f0', borderRadius: '16px', color: 'var(--med-text-muted)' }}>
-                                                            <Icons.FileText size={48} style={{ opacity: 0.2 }} />
-                                                            <p style={{ marginTop: '16px', fontWeight: 500 }}>No uploaded reports found used.</p>
+                                                        <div style={{ gridColumn: '1 / -1', padding: '48px', textAlign: 'center', background: 'var(--med-bg)', borderRadius: '16px' }}>
+                                                            <p style={{ color: 'var(--med-text-muted)', fontSize: '1rem' }}>No prescriptions found for this patient.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : activeReportTab === 'Profile' ? (
+                                                <div style={{ background: 'var(--med-surface)', border: '1px solid var(--med-border)', borderRadius: '16px', padding: '32px' }}>
+                                                    <h3 style={{ margin: '0 0 24px', fontSize: '1.4rem', fontWeight: 700, color: 'var(--med-text-main)' }}>
+                                                        Patient Profile
+                                                    </h3>
+                                                    {patientHistory?.profile && Object.keys(patientHistory.profile).length > 0 ? (
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+                                                            {patientHistory.profile.name && (
+                                                                <div>
+                                                                    <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--med-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Name</span>
+                                                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--med-text-main)' }}>{patientHistory.profile.name}</div>
+                                                                </div>
+                                                            )}
+                                                            {patientHistory.profile.phone && (
+                                                                <div>
+                                                                    <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--med-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Phone</span>
+                                                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--med-text-main)' }}>{patientHistory.profile.phone}</div>
+                                                                </div>
+                                                            )}
+                                                            {patientHistory.profile.age && (
+                                                                <div>
+                                                                    <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--med-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Age</span>
+                                                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--med-text-main)' }}>{patientHistory.profile.age}</div>
+                                                                </div>
+                                                            )}
+                                                            {patientHistory.profile.gender && (
+                                                                <div>
+                                                                    <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--med-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Gender</span>
+                                                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--med-text-main)' }}>{patientHistory.profile.gender}</div>
+                                                                </div>
+                                                            )}
+                                                            {patientHistory.profile.blood_group && (
+                                                                <div>
+                                                                    <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--med-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Blood Group</span>
+                                                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--med-text-main)' }}>{patientHistory.profile.blood_group}</div>
+                                                                </div>
+                                                            )}
+                                                            {patientHistory.profile.address && (
+                                                                <div style={{ gridColumn: '1 / -1' }}>
+                                                                    <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--med-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Address</span>
+                                                                    <div style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--med-text-main)', lineHeight: '1.4' }}>{patientHistory.profile.address}</div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ padding: '32px', textAlign: 'center', background: 'var(--med-bg)', borderRadius: '12px' }}>
+                                                            <p style={{ color: 'var(--med-text-muted)', fontSize: '1rem', margin: 0 }}>No profile data available.</p>
                                                         </div>
                                                     )}
                                                 </div>
                                             ) : (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                                    {/* Placeholder for Generated Reports to match style if needed, or keep list */}
+                                                    {/* Placeholder for Generated Reports */}
                                                     <div style={{ padding: '48px', textAlign: 'center', background: 'var(--med-bg)', borderRadius: '16px', color: 'var(--med-text-muted)' }}>
-                                                        <p>Generated reports section under construction.</p>
+                                                        <p>Generated results section under construction.</p>
                                                     </div>
                                                 </div>
                                             )}

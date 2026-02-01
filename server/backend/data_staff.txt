@@ -1,0 +1,7 @@
+(1, 'Anil Kumar', 'Lab Technician')
+(2, 'Sneha Menon', 'Phlebotomist')
+(3, 'Rahul Das', 'Lab Supervisor')
+(4, 'Priya Nair', 'Microbiologist')
+(5, 'Vivek S', 'Reception Executive')
+(6, 'Sarah', 'Lab Technician')
+(7, 'Rahul', 'Pathologist')

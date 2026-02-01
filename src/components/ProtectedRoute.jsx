@@ -1,6 +1,8 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const role = sessionStorage.getItem('auth_role');
     const location = useLocation();
@@ -10,7 +12,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     React.useEffect(() => {
         if (!role) {
             // Attempt to recover session from backend
-            fetch('http://localhost:5000/api/profile', { credentials: 'include' })
+            fetch(`${API_BASE}/profile`, { credentials: 'include' })
                 .then(res => {
                     if (res.ok) return res.json();
                     throw new Error('Not authenticated');

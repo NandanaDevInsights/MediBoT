@@ -4,6 +4,8 @@ import heroBg from '../assets/LabHero.jpg';
 import labHeroSplit from '../assets/LabHeroSplit.png';
 import logoImage from '../assets/Logo.png';
 import microscopeBg from '../assets/MicroscopeBg.png';
+import dnaBg from '../assets/medibot_dna_bg.png';
+import moleculesBg from '../assets/medibot_3d_molecules.png';
 import lab1 from '../assets/lab1.png';
 import lab2 from '../assets/lab2.png';
 import lab3 from '../assets/lab3.png';
@@ -338,6 +340,7 @@ const LandingPage = () => {
   const [filteredLabs, setFilteredLabs] = useState([]);
   const [visibleLimit, setVisibleLimit] = useState(20); // Show more labs by default
   const [userProfile, setUserProfile] = useState(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   // New State for Features
@@ -396,7 +399,7 @@ const LandingPage = () => {
     if (!window.confirm("Remove this notification?")) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/user/notifications/${id}`, {
+      const response = await fetch(`/api/user/notifications/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -457,21 +460,34 @@ const LandingPage = () => {
   const [selectedTests, setSelectedTests] = useState([]);
 
   const downloadFile = async (url, filename) => {
+    if (!url) return;
     try {
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = filename || 'download.pdf'; // specific default
+
+      // Determine filename
+      let finalFilename = filename;
+      if (!finalFilename) {
+        const parts = url.split('/');
+        finalFilename = parts[parts.length - 1].split('?')[0] || 'download';
+      }
+
+      link.download = finalFilename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Download failed:', error);
-      // Fallback
-      window.open(url, '_blank');
+      // Fallback: simple redirect/open
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.download = filename || '';
+      link.click();
     }
   };
 
@@ -501,7 +517,7 @@ const LandingPage = () => {
       const formattedTests = selectedTests.map(t => typeof t === 'object' ? t.name : t).join(', ');
 
       // Step 1: Create order on backend
-      const orderResponse = await fetch('http://localhost:5000/api/create-payment-order', {
+      const orderResponse = await fetch('/api/create-payment-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -528,12 +544,12 @@ const LandingPage = () => {
         amount: orderData.amount,
         currency: orderData.currency,
         name: "MediBot Healthcare",
-        description: `Booking for ${selectedLab?.name}`,
+        description: "Medical Laboratory Booking",
         order_id: orderData.order_id,
         handler: async (response) => {
           try {
             // Verify payment on backend
-            const verifyRes = await fetch('http://localhost:5000/api/verify-payment', {
+            const verifyRes = await fetch('/api/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -609,7 +625,7 @@ const LandingPage = () => {
     if (!window.confirm("Are you sure you want to remove this booking from your history?")) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/user/appointments/${id}`, {
+      const response = await fetch(`/api/user/appointments/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -759,7 +775,7 @@ const LandingPage = () => {
   // Fetch Bookings from Backend
   const fetchBookings = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/user/appointments', {
+      const response = await fetch('/api/user/appointments', {
         credentials: 'include'
       });
       if (response.ok) {
@@ -911,8 +927,10 @@ const LandingPage = () => {
   const [reports, setReports] = useState([]);
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [activeReportTab, setActiveReportTab] = useState('Uploaded');
+  const [showViewerModal, setShowViewerModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
 
-  const isAnyModalOpen = showNotifications || showReminders || showMyBookingsModal || showReportsModal || showProfileModal || showBookingModal;
+  const isAnyModalOpen = showNotifications || showReminders || showMyBookingsModal || showReportsModal || showProfileModal || showBookingModal || showViewerModal;
 
   const handleHomeClick = () => {
     setShowNotifications(false);
@@ -1180,6 +1198,8 @@ const LandingPage = () => {
 
       } catch (e) {
         console.error("Failed to fetch profile", e);
+      } finally {
+        setIsInitialLoading(false);
       }
     };
     fetchProfile();
@@ -1396,8 +1416,32 @@ const LandingPage = () => {
     setVisibleLimit(prev => prev + 4);
   };
 
+  // Lock body scroll when modals are open to prevent double scrollers
+  useEffect(() => {
+    const isModalOpen = showReportsModal || showLabDetailsModal || showViewerModal || showPaymentModal || showReminders || showMyBookingsModal;
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => { document.body.style.overflow = 'auto'; };
+  }, [showReportsModal, showLabDetailsModal, showViewerModal, showPaymentModal, showReminders, showMyBookingsModal]);
+
+  if (isInitialLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f9ff' }}>
+        <div className="spinner"></div>
+        <span style={{ marginLeft: '12px', color: '#3b82f6', fontWeight: 600 }}>Loading MediBot...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="landing-container">
+    <div className="landing-container" style={{
+      backgroundImage: `linear-gradient(rgba(240, 249, 255, 0.95), rgba(240, 249, 255, 0.98)), url(${dnaBg})`,
+      backgroundAttachment: 'fixed',
+      backgroundSize: '800px'
+    }}>
       {/* Hidden File Input for Upload */}
       <input
         type="file"
@@ -1817,7 +1861,7 @@ const LandingPage = () => {
                   ))}
                 </div>
 
-                <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+                <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                   {/* Uploaded Reports */}
                   {activeReportTab === 'Uploaded' && (
                     <>
@@ -1825,10 +1869,10 @@ const LandingPage = () => {
                         reports.map((report) => (
                           <div key={report.id} className="report-card" style={{
                             background: 'linear-gradient(to bottom, #ffffff, #f8fafc)',
-                            borderRadius: '24px',
-                            padding: '2rem',
+                            borderRadius: '20px',
+                            padding: '1.25rem',
                             border: '1px solid #e2e8f0',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.05)',
+                            boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.05)',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             cursor: 'default',
                             display: 'flex',
@@ -1884,33 +1928,66 @@ const LandingPage = () => {
                                 </span>
                               </div>
 
-                              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', color: '#1e293b', fontWeight: 700 }}>Prescription #{report.id}</h4>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.9rem', marginBottom: '2rem' }}>
+                              {/* Prescription Image Preview */}
+                              <div style={{
+                                height: '110px',
+                                background: '#f1f5f9',
+                                borderRadius: '16px',
+                                marginBottom: '1.5rem',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                border: '1px solid #e2e8f0',
+                                position: 'relative'
+                              }}>
+                                {report.file_path ? (
+                                  <img
+                                    src={report.file_path}
+                                    alt="Prescription"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : null}
+                                <div style={{ position: 'absolute', color: '#cbd5e1', zIndex: 0 }}>
+                                  <IconFileText size={48} />
+                                </div>
+                              </div>
+
+                              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#1e293b', fontWeight: 700 }}>{report.test_name || `Prescription #${report.id}`}</h4>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
                                 <IconCalendar size={14} />
-                                <span>{new Date(report.date).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                <span>{report.date ? new Date(report.date).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
                               </div>
 
                               <div style={{ display: 'flex', gap: '1rem' }}>
-                                <a href={report.file_path} target="_blank" rel="noopener noreferrer" style={{
-                                  flex: 1,
-                                  textAlign: 'center',
-                                  padding: '0.8rem',
-                                  borderRadius: '14px',
-                                  background: '#f1f5f9',
-                                  color: '#475569',
-                                  fontWeight: 700,
-                                  fontSize: '0.95rem',
-                                  textDecoration: 'none',
-                                  transition: 'all 0.2s',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '0.5rem'
-                                }}>
-                                  <IconEye size={18} /> View
-                                </a>
                                 <button
-                                  onClick={() => downloadFile(report.file_path, `Prescription_${report.id}.pdf`)}
+                                  onClick={() => { setSelectedReport(report); setShowViewerModal(true); }}
+                                  style={{
+                                    flex: 1,
+                                    textAlign: 'center',
+                                    padding: '0.8rem',
+                                    borderRadius: '14px',
+                                    background: '#f1f5f9',
+                                    color: '#475569',
+                                    fontWeight: 700,
+                                    fontSize: '0.95rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem'
+                                  }}
+                                >
+                                  <IconEye /> View
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const isPdf = report.file_path.toLowerCase().endsWith('.pdf');
+                                    downloadFile(report.file_path, `Prescription_${report.id}.${isPdf ? 'pdf' : 'jpg'}`);
+                                  }}
                                   style={{
                                     flex: 1.5,
                                     padding: '0.8rem',
@@ -1928,7 +2005,7 @@ const LandingPage = () => {
                                     boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
                                   }}
                                 >
-                                  <IconDownload size={18} /> Download
+                                  <IconDownload /> Download
                                 </button>
                               </div>
                             </div>
@@ -2002,36 +2079,61 @@ const LandingPage = () => {
                                   <IconCheckCircle size={14} /> VERIFIED
                                 </div>
                               </div>
-                              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.3rem', color: '#064e3b', fontWeight: 800 }}>Clinical Lab Report #{report.id}</h4>
+                              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.3rem', color: '#064e3b', fontWeight: 800 }}>{report.test_name || `Lab Report #${report.id}`}</h4>
                               <p style={{ margin: 0, color: '#059669', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, opacity: 0.8 }}>
                                 <IconCalendar size={14} /> Issued on {new Date(report.date).toLocaleDateString(undefined, { day: '2-digit', month: 'long', year: 'numeric' })}
                               </p>
                             </div>
 
-                            <button
-                              onClick={() => downloadFile(report.file_path, `Lab_Result_${report.id}.pdf`)}
-                              style={{
-                                width: '100%',
-                                padding: '1.2rem',
-                                borderRadius: '16px',
-                                border: 'none',
-                                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                                color: 'white',
-                                fontWeight: 800,
-                                fontSize: '1rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.75rem',
-                                boxShadow: '0 10px 15px -3px rgba(5, 150, 105, 0.3)',
-                                transition: 'all 0.2s'
-                              }}
-                              onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
-                              onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
-                            >
-                              <IconDownload size={20} /> Download Final Report
-                            </button>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                              <button
+                                onClick={() => { setSelectedReport(report); setShowViewerModal(true); }}
+                                style={{
+                                  flex: 1,
+                                  padding: '1rem',
+                                  borderRadius: '16px',
+                                  border: 'none',
+                                  background: '#dcfce7',
+                                  color: '#059669',
+                                  fontWeight: 800,
+                                  fontSize: '0.95rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '0.5rem',
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#bbf7d0'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#dcfce7'}
+                              >
+                                <IconEye size={20} /> View
+                              </button>
+                              <button
+                                onClick={() => downloadFile(report.file_path, `Lab_Result_${report.id}.pdf`)}
+                                style={{
+                                  flex: 1.5,
+                                  padding: '1rem',
+                                  borderRadius: '16px',
+                                  border: 'none',
+                                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                                  color: 'white',
+                                  fontWeight: 800,
+                                  fontSize: '0.95rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '0.5rem',
+                                  boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)',
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
+                                onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
+                              >
+                                <IconDownload size={20} /> Download
+                              </button>
+                            </div>
                           </div>
                         ))
                       ) : (
@@ -2051,6 +2153,10 @@ const LandingPage = () => {
           </div>
         )
       }
+
+
+
+
 
 
 
@@ -2636,6 +2742,26 @@ const LandingPage = () => {
       {/* 2. Hero Section - Split Layout */}
       <section className="hero-section-split">
         <div className="hero-left">
+          {/* Decorative Molecule Background */}
+          <img
+            src={moleculesBg}
+            alt=""
+            style={{
+              position: 'absolute',
+              top: '10%',
+              left: '5%',
+              width: '300px',
+              opacity: 0.05,
+              pointerEvents: 'none',
+              animation: 'spin-slow 60s linear infinite'
+            }}
+          />
+          <style>{`
+            @keyframes spin-slow {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
           <div className="hero-content-left">
             <h1>Find Best Laboratories<br />Near You</h1>
             <p>Don't wait in lines. Book your tests now and get results faster than ever.</p>
@@ -2696,12 +2822,8 @@ const LandingPage = () => {
           {filteredLabs.length > 0 ? (
             filteredLabs.slice(0, visibleLimit).map((lab) => (
               <div className="lab-card" key={lab.id} onClick={() => handleViewDetails(lab)} style={{ cursor: 'pointer' }}>
-                <div className="lab-image-placeholder" style={{
-                  backgroundImage: `url(${lab.image})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}>
-                  {/* Empty div for cover image, overlay handled by CSS */}
+                <div className="lab-image-placeholder">
+                  <img src={lab.image} alt={lab.name} onError={(e) => e.target.style.display = 'none'} />
                 </div>
                 <div className="lab-details">
                   <div className="lab-header">
@@ -3254,21 +3376,7 @@ const LandingPage = () => {
                         </div>
                       </div>
 
-                      {/* Security Badges */}
-                      <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', fontWeight: 600,
-                          color: '#16a34a', background: '#f0fdf4', padding: '0.3rem 0.6rem', borderRadius: '50px'
-                        }}>
-                          <IconShield size={12} /> SSL Secure
-                        </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', fontWeight: 600,
-                          color: '#2563eb', background: '#eff6ff', padding: '0.3rem 0.6rem', borderRadius: '50px'
-                        }}>
-                          <IconCheckCircle size={12} /> Razorpay
-                        </div>
-                      </div>
+                      {/* Security Badges Removed */}
                     </div>
                   )}
 
@@ -3621,6 +3729,167 @@ const LandingPage = () => {
         }
       `}</style>
 
+
+      {/* Report Viewer Modal */}
+      {
+        showViewerModal && selectedReport && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(15, 23, 42, 0.9)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            padding: '2rem'
+          }}>
+            <div style={{
+              background: 'white',
+              width: '100%',
+              maxWidth: '750px',
+              height: '80vh',
+              borderRadius: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+            }}>
+              <div style={{
+                padding: '1.5rem 2rem',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexShrink: 0
+              }}>
+                <div>
+                  <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.25rem', fontWeight: 700 }}>{selectedReport.test_name || 'Medical Document'}</h3>
+                  <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                    {selectedReport.date ? new Date(selectedReport.date).toLocaleDateString(undefined, { day: '2-digit', month: 'long', year: 'numeric' }) : 'Date unknown'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowViewerModal(false)}
+                  style={{
+                    background: '#f1f5f9',
+                    border: 'none',
+                    borderRadius: '12px',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#64748b',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                >
+                  <IconX size={20} />
+                </button>
+              </div>
+
+              <div style={{ flex: 1, position: 'relative', background: '#f8fafc', overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {selectedReport.file_path && (selectedReport.file_path.toLowerCase().includes('.pdf') || selectedReport.file_type === 'application/pdf') ? (
+                  <iframe
+                    src={selectedReport.file_path}
+                    title="PDF Viewer"
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                    <img
+                      src={selectedReport.file_path}
+                      alt="Prescription"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '55vh',
+                        objectFit: 'contain',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                        cursor: 'zoom-in',
+                        backgroundColor: 'white'
+                      }}
+                      onClick={() => window.open(selectedReport.file_path, '_blank')}
+                      onError={(e) => {
+                        if (!e.target.src.includes('placeholder')) {
+                          e.target.onerror = null;
+                          e.target.src = 'https://via.placeholder.com/800x600?text=Wait+for+Sync...+Or+View+Original';
+                        }
+                      }}
+                    />
+                    <div style={{ marginTop: '1.5rem' }}>
+                      <button
+                        onClick={() => window.open(selectedReport.file_path, '_blank')}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#3b82f6',
+                          textDecoration: 'underline',
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <IconEye size={18} /> View High Quality Original
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexShrink: 0 }}>
+                <button
+                  onClick={() => setShowViewerModal(false)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                    background: 'white',
+                    color: '#475569',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => downloadFile(selectedReport.file_path, `${selectedReport.test_name || 'Report'}_${selectedReport.id}.${selectedReport.file_path.toLowerCase().includes('.pdf') ? 'pdf' : 'jpg'}`)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
+                >
+                  <IconDownload size={18} /> Download
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
     </div >
   );
 };
