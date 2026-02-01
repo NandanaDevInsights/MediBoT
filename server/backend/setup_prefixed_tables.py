@@ -3,7 +3,7 @@ import os
 import mysql.connector
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv('server/backend/.env')
 
 def setup_all_tables():
     try:
@@ -11,15 +11,14 @@ def setup_all_tables():
             host=os.environ.get("DB_HOST", "localhost"),
             user=os.environ.get("DB_USER", "root"),
             password=os.environ.get("DB_PASSWORD", ""),
-            database=os.environ.get("DB_NAME", "medibot")
+            database=os.environ.get("DB_NAME", "medibot_new") # Use the new one
         )
-        print(f"DEBUG: Connected to {conn.database}")
         cur = conn.cursor()
-        print("Connected to database. Starting table creation...")
+        print("Connected to database. Starting table creation with prefixes...")
 
         # 1. Users Table
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS mb_users (
             id INT AUTO_INCREMENT PRIMARY KEY,
             email VARCHAR(255) NOT NULL UNIQUE,
             username VARCHAR(255) UNIQUE,
@@ -30,48 +29,44 @@ def setup_all_tables():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- users table ensured.")
+        print("- mb_users table ensured.")
 
-        # 2. Lab Admin Users (Whitelist Table)
+        # 2. Lab Admin Whitelist
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS lab_admin_users (
+        CREATE TABLE IF NOT EXISTS mb_lab_admin_whitelist (
             id INT AUTO_INCREMENT PRIMARY KEY,
             email VARCHAR(255) NOT NULL UNIQUE,
-            password_hash VARCHAR(255),
-            role VARCHAR(50) DEFAULT 'LAB_ADMIN',
-            pin_code VARCHAR(10),
-            provider VARCHAR(50) DEFAULT 'password',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- lab_admin_users table ensured.")
+        print("- mb_lab_admin_whitelist table ensured.")
 
         # 3. Password Resets
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS password_resets (
+        CREATE TABLE IF NOT EXISTS mb_password_resets (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
             token_hash VARCHAR(64) NOT NULL,
             expires_at DATETIME NOT NULL,
             used TINYINT(1) DEFAULT 0,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES mb_users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- password_resets table ensured.")
+        print("- mb_password_resets table ensured.")
 
         # 4. User OTPs
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS user_otps (
+        CREATE TABLE IF NOT EXISTS mb_user_otps (
             email VARCHAR(255) PRIMARY KEY,
             otp_code VARCHAR(10) NOT NULL,
             expires_at DATETIME NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- user_otps table ensured.")
+        print("- mb_user_otps table ensured.")
 
         # 5. Laboratories
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS laboratories (
+        CREATE TABLE IF NOT EXISTS mb_laboratories (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             address TEXT,
@@ -82,11 +77,11 @@ def setup_all_tables():
             UNIQUE KEY unique_lab (name, latitude, longitude) 
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- laboratories table ensured.")
+        print("- mb_laboratories table ensured.")
 
         # 6. Prescriptions
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS prescriptions (
+        CREATE TABLE IF NOT EXISTS mb_prescriptions (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT,
             mobile_number VARCHAR(20),
@@ -96,14 +91,14 @@ def setup_all_tables():
             test_type VARCHAR(100),
             status ENUM('pending','reviewed','completed') DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            FOREIGN KEY (user_id) REFERENCES mb_users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- prescriptions table ensured.")
+        print("- mb_prescriptions table ensured.")
 
         # 7. Appointments
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS appointments (
+        CREATE TABLE IF NOT EXISTS mb_appointments (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT,
             lab_id INT, 
@@ -115,15 +110,15 @@ def setup_all_tables():
             status VARCHAR(50) DEFAULT 'Pending',
             location VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-            FOREIGN KEY (lab_id) REFERENCES laboratories(id) ON DELETE SET NULL
+            FOREIGN KEY (user_id) REFERENCES mb_users(id) ON DELETE SET NULL,
+            FOREIGN KEY (lab_id) REFERENCES mb_laboratories(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- appointments table ensured.")
+        print("- mb_appointments table ensured.")
 
         # 8. Lab Staff
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS lab_staff (
+        CREATE TABLE IF NOT EXISTS mb_lab_staff (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             role VARCHAR(100),
@@ -134,25 +129,25 @@ def setup_all_tables():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- lab_staff table ensured.")
+        print("- mb_lab_staff table ensured.")
 
         # 9. Reports
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS reports (
+        CREATE TABLE IF NOT EXISTS mb_reports (
             id INT AUTO_INCREMENT PRIMARY KEY,
             patient_id INT,
             test_name VARCHAR(255),
             file_path TEXT NOT NULL,
             status VARCHAR(50) DEFAULT 'Uploaded',
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (patient_id) REFERENCES mb_users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- reports table ensured.")
+        print("- mb_reports table ensured.")
 
         # 10. Lab Admin Profile
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS lab_admin_profile (
+        CREATE TABLE IF NOT EXISTS mb_lab_admin_profile (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT UNIQUE,
             lab_name VARCHAR(255),
@@ -160,14 +155,14 @@ def setup_all_tables():
             contact_number VARCHAR(50),
             admin_name VARCHAR(255),
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES mb_users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- lab_admin_profile table ensured.")
+        print("- mb_lab_admin_profile table ensured.")
 
         # 11. Bookings
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS bookings (
+        CREATE TABLE IF NOT EXISTS mb_bookings (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT,
             lab_id INT DEFAULT 1,
@@ -181,28 +176,28 @@ def setup_all_tables():
             contact_number VARCHAR(50),
             source VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-            FOREIGN KEY (lab_id) REFERENCES laboratories(id) ON DELETE SET NULL
+            FOREIGN KEY (user_id) REFERENCES mb_users(id) ON DELETE SET NULL,
+            FOREIGN KEY (lab_id) REFERENCES mb_laboratories(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- bookings table ensured.")
+        print("- mb_bookings table ensured.")
 
         # 12. Notifications
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS notifications (
+        CREATE TABLE IF NOT EXISTS mb_notifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
             message TEXT NOT NULL,
             is_read TINYINT(1) DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES mb_users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- notifications table ensured.")
+        print("- mb_notifications table ensured.")
 
         # 13. User Profiles
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS user_profiles (
+        CREATE TABLE IF NOT EXISTS mb_user_profiles (
             user_id INT PRIMARY KEY,
             display_name VARCHAR(100),
             age INT,
@@ -212,15 +207,15 @@ def setup_all_tables():
             address TEXT,
             profile_pic_url TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES mb_users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
-        print("- user_profiles table ensured.")
+        print("- mb_user_profiles table ensured.")
 
         conn.commit()
         cur.close()
         conn.close()
-        print("\nAll tables created/validated successfully.")
+        print("\nAll prefixed tables created successfully.")
     except Exception as e:
         print(f"\nError: {e}")
 

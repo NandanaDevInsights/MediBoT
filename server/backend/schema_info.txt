@@ -1,0 +1,11 @@
+Columns in app_users:
+('id', 'int(11)', 'NO', 'PRI', None, 'auto_increment')
+('email', 'varchar(255)', 'NO', 'UNI', None, '')
+('username', 'varchar(255)', 'YES', 'UNI', None, '')
+('password_hash', 'varchar(255)', 'YES', '', None, '')
+('provider', "enum('password','google')", 'NO', '', 'password', '')
+('role', "enum('USER','ADMIN','LAB_ADMIN','SUPER_ADMIN')", 'NO', '', 'USER', '')
+('pin_code', 'varchar(10)', 'YES', '', None, '')
+('created_at', 'timestamp', 'NO', '', 'current_timestamp()', '')
+
+Users in app_users:

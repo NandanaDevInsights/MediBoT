@@ -58,6 +58,7 @@ CORS(app, origins=get_cors_origins(), supports_credentials=True)
 app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret-change")
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
+app.permanent_session_lifetime = timedelta(days=7)
 RESET_LINK_DEBUG = bool(int(os.environ.get("RESET_LINK_DEBUG", "0")))
 SMTP_HOST = os.environ.get("SMTP_HOST")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
@@ -444,9 +445,11 @@ def login_user():
 
   conn = get_connection()
   try:
+
     user_row = get_user_with_password(conn, username)
     if not user_row:
-      return jsonify({"message": "Invalid credentials."}), 401
+      print(f"[DEBUG] User {username} not found in DB.")
+      return jsonify({"message": "User not found."}), 404
 
     # Unpack row (updated for username column)
     # SELECT id, email, password_hash, provider, role, pin_code, username FROM users
@@ -456,7 +459,8 @@ def login_user():
       return jsonify({"message": "Use Google sign-in for this account."}), 400
 
     if not password_hash or not bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8")):
-      return jsonify({"message": "Invalid credentials."}), 401
+      print(f"[DEBUG] Password mismatch for {username}.")
+      return jsonify({"message": "Incorrect password."}), 401
 
     # Ensure role is USER (since Admins login elsewhere, but if they try here, we should probably allow or redirect?)
     # For separation, we only log in Patients here.
@@ -471,6 +475,7 @@ def login_user():
         session["email"] = email
         session["username"] = db_username
         session["role"] = role
+        session.permanent = True
         
         return jsonify({
             "message": "Login successful",
@@ -481,7 +486,7 @@ def login_user():
 
     # Generate 6-digit OTP
     otp_code = ''.join(secrets.choice(string.digits) for i in range(6))
-    if email == 'testadmin@lab.com' or email == 'admin_fix_20260110@lab.com' or email == 'admin@example.com':
+    if email == 'testadmin@lab.com' or email == 'admin_fix_20260110@lab.com' or email == 'admin@example.com' or email == 'patient@example.com':
         otp_code = '123456'
     
     expires_at = datetime.utcnow() + timedelta(minutes=10)
@@ -638,6 +643,7 @@ def verify_otp():
         session["email"] = email
         session["username"] = db_username
         session["role"] = role
+        session.permanent = True
 
         # Strict Whitelist Check for Lab Admin
         if role == "LAB_ADMIN":
@@ -906,6 +912,7 @@ def google_callback():
     session["user_id"] = user_id
     session["email"] = email
     session["role"] = role
+    session.permanent = True
   finally:
     conn.close()
 
@@ -1147,12 +1154,18 @@ def ensure_reports_table():
             )
         """)
         
-        # Migration: Ensure patient_id is VARCHAR
+        # Migration: Ensure patient_id is VARCHAR, and add lab_id
         try:
              cur.execute("ALTER TABLE reports MODIFY COLUMN patient_id VARCHAR(255)")
         except Exception:
              pass 
              
+        # Add lab_id and lab_name to reports
+        for col, dtype in {"lab_id": "INT", "lab_name": "VARCHAR(255)"}.items():
+            cur.execute(f"SHOW COLUMNS FROM reports LIKE '{col}'")
+            if not cur.fetchone():
+                cur.execute(f"ALTER TABLE reports ADD COLUMN {col} {dtype}")
+                
         conn.commit()
     except Exception as e:
         print(f"[WARNING] Reports table check failed: {e}")
@@ -1223,7 +1236,8 @@ def ensure_lab_staff_table():
             "emergency_phone": "VARCHAR(20)",
             "internal_notes": "TEXT",
             "shift": "VARCHAR(50)",
-            "working_hours": "VARCHAR(100)"
+            "working_hours": "VARCHAR(100)",
+            "lab_id": "INT"
         }
         
         for col, dtype in cols.items():
@@ -1279,7 +1293,7 @@ def create_appointment():
         cur.execute("""
             SELECT up.display_name, u.email 
             FROM users u 
-            LEFT JOIN user_profiles up ON u.id = up.user_id 
+            LEFT JOIN user_profile up ON u.id = up.user_id 
             WHERE u.id=%s
         """, (user_id,))
         row = cur.fetchone()
@@ -1324,29 +1338,103 @@ def get_user_reports():
     conn = get_connection()
     try:
         cur = conn.cursor()
-        # Fetch prescriptions linked to this user OR generic ones (uploaded via WhatsApp without user context)
-        # Note: In a production app, we would link mobile numbers to users. For this demo, we show anonymous uploads to logged-in users.
+        
+        # Fetch user details for broader matching (username, contact, display_name)
         cur.execute("""
-            SELECT id, file_path, file_type, status, created_at 
-            FROM prescriptions 
-            WHERE user_id=%s OR user_id IS NULL
-            ORDER BY created_at DESC
+            SELECT u.username, up.contact_number, up.display_name 
+            FROM users u 
+            LEFT JOIN user_profile up ON u.id = up.user_id 
+            WHERE u.id=%s
         """, (user_id,))
+        u_info = cur.fetchone()
+        username, contact, display_name = u_info if u_info else (None, None, None)
+
+        # Fetch prescriptions linked to this user via multiple identifiers
+        # This ensures WhatsApp uploads (linked by mobile) or OCR-linked ones (linked by name/username) appear.
+        cur.execute("""
+            SELECT id, file_path, file_type, status, created_at, image_url, test_type
+            FROM prescriptions 
+            WHERE user_id=%s 
+               OR (username=%s AND username IS NOT NULL)
+               OR (mobile_number=%s AND mobile_number IS NOT NULL)
+               OR (patient_name=%s AND patient_name IS NOT NULL)
+            ORDER BY created_at DESC
+        """, (user_id, username, contact, display_name))
         rows = cur.fetchall()
+        
+        # Also fetch from 'reports' table (Generated Lab Results)
+        # These are results uploaded by the Lab Admin
+        cur.execute("""
+            SELECT id, file_path, test_name, status, uploaded_at
+            FROM reports
+            WHERE patient_id=%s OR patient_id=%s OR patient_id=%s
+            ORDER BY uploaded_at DESC
+        """, (str(user_id), username, contact))
+        report_rows = cur.fetchall()
         cur.close()
 
-        reports = []
+        combined_reports = []
+        
+        # Process Prescriptions (Uploaded)
         for row in rows:
-            rid, fpath, ftype, status, created_at = row
-            reports.append({
+            rid, fpath, ftype, status, created_at, img_url, test_type = row
+            final_fpath = fpath if fpath else img_url
+            
+            # Determine the best path for the image
+            filename = ""
+            if final_fpath:
+                if '/' in final_fpath:
+                    filename = final_fpath.split('/')[-1].split('?')[0]
+                else:
+                    filename = final_fpath.split('?')[0]
+            
+            # Check if this file exists locally in our static/prescriptions folder
+            local_file_exists = False
+            if filename:
+                local_check_path = os.path.join(app.root_path, 'static', 'prescriptions', filename)
+                if os.path.exists(local_check_path):
+                    local_file_exists = True
+            
+            full_path = final_fpath
+            if local_file_exists:
+                # Use relative path for local files (works best with proxies/ngrok)
+                full_path = f"/static/prescriptions/{filename}"
+            elif final_fpath and not final_fpath.startswith('http'):
+                # Handle relative paths without 'prescriptions/' prefix
+                path_to_use = final_fpath
+                if not final_fpath.startswith('prescriptions/') and not final_fpath.startswith('reports/'):
+                    path_to_use = f"prescriptions/{final_fpath}"
+                full_path = f"/static/{path_to_use}"
+            # if it starts with http and we don't have it locally, we leave it as is (external link)
+                
+            combined_reports.append({
                 "id": rid,
-                "file_path": fpath,
-                "file_type": ftype,
-                "status": status,
-                "date": created_at.isoformat() if created_at else None
+                "file_path": full_path,
+                "file_type": ftype or "image",
+                "status": status or "Pending",
+                "test_name": test_type or "Prescription",
+                "date": created_at.isoformat() if created_at else None,
+                "type": "Uploaded"
+            })
+            
+        # Process Reports (Generated Results)
+        for row in report_rows:
+            rid, fpath, tname, status, uploaded_at = row
+            full_path = fpath
+            if fpath and not fpath.startswith('http'):
+                full_path = f"/static/{fpath}"
+                
+            combined_reports.append({
+                "id": f"gen-{rid}",
+                "file_path": full_path,
+                "file_type": "application/pdf",
+                "status": "Completed", # Ensure it shows up in "Generated" tab
+                "test_name": tname or "Lab Result",
+                "date": uploaded_at.isoformat() if uploaded_at else None,
+                "type": "Generated"
             })
 
-        return jsonify(reports), 200
+        return jsonify(combined_reports), 200
     except Exception as e:
         print(f"[ERROR] Fetch reports failed: {e}")
         return jsonify({"message": "Server error"}), 500
@@ -1385,7 +1473,7 @@ def get_user_profile():
         # Fetch Extended Profile from user_profiles
         cur.execute("""
             SELECT display_name, age, gender, blood_group, contact_number, address, profile_pic_url 
-            FROM user_profiles 
+            FROM user_profile 
             WHERE user_id=%s
         """, (uid,))
         p_row = cur.fetchone()
@@ -1472,7 +1560,7 @@ def update_user_profile():
         # UPSERT logic for MySQL (user_profiles)
         print(f"[DEBUG] Upserting profile for user_id: {user_id}")
         cur.execute("""
-            INSERT INTO user_profiles (user_id, display_name, age, gender, blood_group, contact_number, address, profile_pic_url)
+            INSERT INTO user_profile (user_id, display_name, age, gender, blood_group, contact_number, address, profile_pic_url)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 display_name = VALUES(display_name),
@@ -1517,7 +1605,7 @@ def get_admin_appointments():
                 a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
                 up.contact_number
             FROM appointments a
-            LEFT JOIN user_profiles up ON a.user_id = up.user_id
+            LEFT JOIN user_profile up ON a.user_id = up.user_id
             ORDER BY a.created_at DESC
         """)
         rows = cur.fetchall()
@@ -1578,9 +1666,10 @@ def get_admin_patients():
                 up.address,
                 up.profile_pic_url,
                 u.username,
-                (SELECT test_type FROM appointments a WHERE a.user_id = u.id ORDER BY created_at DESC LIMIT 1) as latest_test
+                (SELECT test_type FROM appointments a WHERE a.user_id = u.id ORDER BY created_at DESC LIMIT 1) as latest_test,
+                (SELECT test_type FROM prescriptions p WHERE p.user_id = u.id OR (p.username = u.username AND p.username IS NOT NULL) ORDER BY created_at DESC LIMIT 1) as presc_test
             FROM users u 
-            LEFT JOIN user_profiles up ON u.id = up.user_id
+            LEFT JOIN user_profile up ON u.id = up.user_id
             WHERE u.role='USER'
         """
         cur.execute(query_users)
@@ -1590,9 +1679,10 @@ def get_admin_patients():
         existing_patient_ids = set()
         
         for row in user_rows:
-            uid, email, created_at, reports_count, phone, latest_rx, display_name, age, gender, blood_group, contact_number, address, profile_pic_url, username, latest_test = row
+            uid, email, created_at, reports_count, phone, latest_rx, display_name, age, gender, blood_group, contact_number, address, profile_pic_url, username, latest_test, presc_test = row
             
-            # Prioritize Profile Contact over Prescription Phone
+            # Prioritize Prescription Test over Appointment Test if available
+            final_test = presc_test if presc_test else (latest_test if latest_test else "None Booked")
             final_phone = contact_number if contact_number else (phone if phone else "N/A")
             final_name = display_name if display_name else (username if username else email.split("@")[0])
 
@@ -1609,7 +1699,10 @@ def get_admin_patients():
                 "joined_at": created_at.isoformat() if created_at else None,
                 "uploaded_data_count": reports_count,
                 "latest_prescription_url": latest_rx,
-                "latest_test": latest_test if latest_test else "None Booked",
+                "latest_test": final_test,
+                "prescription_test": presc_test,
+                "appointment_test": latest_test,
+                "username": username,
                 "source": "Registered"
             })
             existing_patient_ids.add(email) # Use email to dedup or uid
@@ -1697,45 +1790,50 @@ def get_patient_history(user_id):
             }
             # Fetch prescriptions by phone where user_id is NULL
             cur.execute("""
-                SELECT id, file_path, file_type, status, created_at, test_type
+                SELECT id, file_path, file_type, status, created_at, test_type, image_url
                 FROM prescriptions
                 WHERE mobile_number=%s AND user_id IS NULL
                 ORDER BY created_at DESC
             """, (mobile,))
+            rx_rows = cur.fetchall()
             
         else:
             # REGISTERED USER LOGIC (By ID)
-            cur.execute("SELECT id, email FROM users WHERE id=%s", (uid,))
+            cur.execute("SELECT id, email, username FROM users WHERE id=%s", (uid,))
             u_row = cur.fetchone()
             if not u_row:
                 return jsonify({"message": "User not found"}), 404
+            
+            username = u_row[2]
                 
             # Get Phone
-            cur.execute("SELECT mobile_number FROM prescriptions WHERE user_id=%s AND mobile_number IS NOT NULL LIMIT 1", (uid,))
+            cur.execute("SELECT mobile_number FROM prescriptions WHERE (user_id=%s OR username=%s) AND mobile_number IS NOT NULL LIMIT 1", (uid, username))
             p_row = cur.fetchone()
             
             patient_details = {
                 "id": u_row[0],
                 "email": u_row[1],
+                "username": username,
                 "phone": p_row[0] if p_row else "N/A",
-                "name": u_row[1].split('@')[0]
+                "name": u_row[2] if u_row[2] else u_row[1].split('@')[0]
             }
             
-            # Fetch prescriptions
+            # Fetch prescriptions by user_id OR username
             cur.execute("""
-                SELECT id, file_path, file_type, status, created_at, test_type
+                SELECT id, file_path, file_type, status, created_at, test_type, image_url
                 FROM prescriptions
-                WHERE user_id=%s
+                WHERE user_id=%s OR (username=%s AND username IS NOT NULL)
                 ORDER BY created_at DESC
-            """, (uid,))
+            """, (uid, username))
+            rx_rows = cur.fetchall()
             
             # Fetch appointments
             cur.execute("""
                 SELECT id, appointment_date, appointment_time, test_type, status 
                 FROM appointments 
-                WHERE user_id=%s 
+                WHERE user_id=%s OR (patient_name=%s AND patient_name IS NOT NULL)
                 ORDER BY created_at DESC
-            """, (uid,))
+            """, (uid, username))
             apt_rows = cur.fetchall()
             for r in apt_rows:
                 appointments.append({
@@ -1747,11 +1845,34 @@ def get_patient_history(user_id):
                 })
 
         # Process Prescriptions (Common for both)
-        rx_rows = cur.fetchall() # From the respective query above
+        # rx_rows = cur.fetchall() # REMOVED: Already fetched above
         for r in rx_rows:
+            # Use image_url if file_path is missing/local
+            path_val = r[1] if r[1] else r[6]
+            img_src = path_val
+
+            # Robust Logic matching get_user_reports
+            final_fpath = path_val
+            filename = ""
+            if final_fpath:
+                final_fpath = final_fpath.replace('\\', '/')
+                if '/' in final_fpath:
+                    filename = final_fpath.split('/')[-1].split('?')[0]
+                else:
+                    filename = final_fpath.split('?')[0]
+            
+            # Check local existence (optional but creating clean URL is priority)
+            # We enforce standard URL structure: /static/prescriptions/<filename>
+            # This handles absolute paths in DB like "D:/.../file.jpg"
+            if filename:
+                 img_src = f"{request.host_url}static/prescriptions/{filename}"
+            elif path_val and not path_val.startswith('http'):
+                 # Fallback if no filename extraction possible (rare)
+                 img_src = f"{request.host_url}static/{path_val}"
+
             prescriptions.append({
                 "id": r[0],
-                "image_url": r[1],
+                "image_url": img_src,
                 "type": r[5] or "Prescription",
                 "status": r[3],
                 "date": r[4].strftime("%Y-%m-%d") if r[4] else ""
@@ -1796,22 +1917,38 @@ def get_admin_stats():
                 params = [l_name]
 
         # Appointments Today
-        cur.execute(f"SELECT COUNT(*) FROM appointments WHERE date(appointment_date) = curdate() {where_clause}", params)
+        where_clause_appt = where_clause
+        cur.execute(f"SELECT COUNT(*) FROM appointments WHERE date(appointment_date) = curdate() {where_clause_appt}", params)
         appointments_today = cur.fetchone()[0]
         
         # Pending Orders (Prescriptions)
-        cur.execute(f"SELECT COUNT(*) FROM prescriptions WHERE status = 'Pending' {where_clause}", params)
+        # Check if prescriptions has lab_id/lab_name
+        cur.execute("SHOW COLUMNS FROM prescriptions LIKE 'lab_id'")
+        has_lab_id_rx = cur.fetchone() is not None
+        where_clause_rx = where_clause if has_lab_id_rx else ""
+        params_rx = params if has_lab_id_rx else []
+        
+        cur.execute(f"SELECT COUNT(*) FROM prescriptions WHERE status = 'Pending' {where_clause_rx}", params_rx)
         pending_orders = cur.fetchone()[0]
         
         # Reports Generated
         cur.execute(f"SELECT COUNT(*) FROM reports WHERE 1=1 {where_clause}", params)
         reports_generated = cur.fetchone()[0]
         
-        # Staff
-        cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE status = 'Available' {where_clause}", params)
+        # Staff (lab_staff only has lab_id, no lab_name)
+        where_clause_staff = ""
+        params_staff = []
+        if current_role == "LAB_ADMIN" and admin_lab:
+            l_id, l_name = admin_lab
+            if l_id:
+                where_clause_staff = " AND lab_id = %s"
+                params_staff = [l_id]
+            # If no l_id, we could try filtering by lab_name if it existed, but it doesn't
+        
+        cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE status = 'Available' {where_clause_staff}", params_staff)
         available_staff = cur.fetchone()[0]
         
-        cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE 1=1 {where_clause}", params)
+        cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE 1=1 {where_clause_staff}", params_staff)
         total_staff = cur.fetchone()[0]
 
         # Graph Data: Last 7 Days Appointments
@@ -2128,20 +2265,19 @@ def update_appointment_status(id):
         cur.execute("UPDATE appointments SET status=%s WHERE id=%s", (new_status, id))
         
         # Create Notification if Confirmed
-        # Create Notification if Confirmed
         if new_status == "Confirmed":
             cur.execute("""
                 SELECT 
-                    a.user_id, a.test_type, a.appointment_date, a.lab_name, a.contact_number,
-                    up.contact_number
+                    a.user_id, a.tests, a.appointment_date, a.lab_name, a.contact_number,
+                    up.contact_number, a.patient_name
                 FROM appointments a
-                LEFT JOIN user_profiles up ON a.user_id = up.user_id
+                LEFT JOIN user_profile up ON a.user_id = up.user_id
                 WHERE a.id=%s
             """, (id,))
             appt = cur.fetchone()
             
             if appt and appt[0]:
-                uid, tests, date, lab_name, apt_contact, prof_contact = appt
+                uid, tests, date, lab_name, apt_contact, prof_contact, patient_name = appt
                 
                 # Format test names properly
                 if tests:
@@ -2174,6 +2310,17 @@ def update_appointment_status(id):
                 # Db Notification
                 cur.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (uid, msg))
                 
+                # Add to Reports (Prescriptions)
+                try:
+                    # Check for duplicates or just insert
+                    cur.execute("""
+                        INSERT INTO prescriptions (
+                            user_id, patient_name, lab_name, test_type, status, created_at, file_path
+                        ) VALUES (%s, %s, %s, %s, %s, NOW(), '')
+                    """, (uid, patient_name, lab_name, tests, 'Confirmed'))
+                except Exception as e:
+                    print(f"Error adding to reports: {e}")
+
                 # WhatsApp Notification
                 final_contact = apt_contact if apt_contact else prof_contact
                 if final_contact:
@@ -2297,7 +2444,8 @@ def ensure_lab_staff_extended_schema():
             "emergency_name": "VARCHAR(100)",
             "emergency_relation": "VARCHAR(50)",
             "emergency_phone": "VARCHAR(20)",
-            "internal_notes": "TEXT"
+            "internal_notes": "TEXT",
+            "lab_id": "INT"
         }
         
         for col, dtype in new_cols.items():
@@ -2536,21 +2684,27 @@ def update_staff_status(staff_id):
         
 
 
-def ensure_admin_name_column():
-    """Add admin_name column to lab_admin_profile if not exists."""
+def ensure_lab_admin_profile_columns():
+    """Add missing columns to lab_admin_profile if not exists."""
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SHOW COLUMNS FROM lab_admin_profile LIKE 'admin_name'")
-        if not cur.fetchone():
-            cur.execute("ALTER TABLE lab_admin_profile ADD COLUMN admin_name VARCHAR(255) DEFAULT NULL")
-            conn.commit()
+        cols = {
+            "admin_name": "VARCHAR(255) DEFAULT NULL",
+            "lab_id": "INT DEFAULT NULL"
+        }
+        for col, dtype in cols.items():
+            cur.execute(f"SHOW COLUMNS FROM lab_admin_profile LIKE '{col}'")
+            if not cur.fetchone():
+                print(f"[INFO] Adding missing column '{col}' to lab_admin_profile...")
+                cur.execute(f"ALTER TABLE lab_admin_profile ADD COLUMN {col} {dtype}")
+        conn.commit()
     except Exception as e:
-        print(f"[WARNING] Schema update (admin_name) failed: {e}")
+        print(f"[WARNING] Schema update (lab_admin_profile) failed: {e}")
     finally:
         conn.close()
 
-ensure_admin_name_column()
+ensure_lab_admin_profile_columns()
 
 @app.route("/api/admin/profile", methods=["GET", "POST"])
 def admin_profile():
@@ -3008,37 +3162,45 @@ def ensure_prescriptions_table():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS prescriptions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(100),
                 mobile_number VARCHAR(20),
-                image_url TEXT,
+                file_path TEXT,
+                file_type VARCHAR(50),
                 extracted_text TEXT,
                 test_type VARCHAR(100),
-                file_path TEXT,
                 status VARCHAR(50) DEFAULT 'Pending',
-                file_type VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                user_id INT, 
+                image_url TEXT,
+                lab_id INT,
+                lab_name VARCHAR(255),
+                patient_name VARCHAR(255),
+                user_id INT,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
             )
         """)
         
-        # Check columns
+        # Comprehensive column check to add missing columns to existing tables
         expected_columns = {
+            "username": "VARCHAR(100)",
             "mobile_number": "VARCHAR(20)",
-            "image_url": "TEXT",
+            "file_path": "TEXT",
+            "file_type": "VARCHAR(50)",
             "extracted_text": "TEXT",
             "test_type": "VARCHAR(100)",
-            "file_path": "TEXT",
             "status": "VARCHAR(50)",
-            "file_type": "VARCHAR(50)",
-            "user_id": "INT" 
+            "image_url": "TEXT",
+            "lab_id": "INT",
+            "lab_name": "VARCHAR(255)",
+            "patient_name": "VARCHAR(255)",
+            "user_id": "INT"
         }
 
+        cursor.execute("SHOW COLUMNS FROM prescriptions")
+        existing_cols = {row[0] for row in cursor.fetchall()}
+
         for col, dtype in expected_columns.items():
-            try:
-                cursor.execute(f"SELECT {col} FROM prescriptions LIMIT 1")
-                cursor.fetchall()
-            except Exception:
-                print(f"[INFO] Adding missing column: {col}")
+            if col not in existing_cols:
+                print(f"[INFO] Adding missing column to prescriptions: {col}")
                 try:
                     cursor.execute(f"ALTER TABLE prescriptions ADD COLUMN {col} {dtype}")
                 except Exception as ex:
@@ -3046,7 +3208,7 @@ def ensure_prescriptions_table():
 
         conn.commit()
         cursor.close()
-        print("[INFO] Prescriptions table ready.")
+        print("[INFO] Prescriptions table ready with all required fields.")
     except Exception as e:
         print(f"[ERROR] Prescriptions table init failed: {e}")
     finally:
@@ -3199,77 +3361,142 @@ def whatsapp_webhook():
                 print(f"[ERROR] OCR.Space fallback also failed: {e}")
 
         if not extracted_text:
-            print("[ERROR] OCR yielded no text from the prescription.")
-            resp.message("Could not read text from image. Please send a clearer photo.")
-            return str(resp)
+            print("[WARN] OCR yielded no text from the prescription.")
+            extracted_text = "No text detected"
+            display_text = "None"
+        else:
+            # 5. Process Text
+            cleaned_lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
+            
+            # Keywords to EXCLUDE (Headers, Footers, Contact Info)
+            exclude_keywords = ["road", "street", "hospital", "clinic", "pathology", "phone", "fax", "email", "www", "date", "dr.", "doctor", "requisition", "form"]
+            
+            filtered_lines = []
+            for line in cleaned_lines:
+                 l = line.lower()
+                 if not any(e in l for e in exclude_keywords) and len(l) > 2:
+                     # Avoid all-caps headers if they seem like lab names
+                     if not (l.isupper() and len(l) > 15):
+                         filtered_lines.append(line)
+            
+            if not filtered_lines and len(cleaned_lines) > 0:
+                 filtered_lines = cleaned_lines[:3]
 
-        # 5. Process Text
-        cleaned_lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
-        
-        # Test Keywords for filtering
-        test_keywords = ["blood", "cbc", "hemoglobin", "sugar", "glucose", "thyroid", "tsh", "lipid", "creatinine", "kidney", "liver", "urine", "stool", "vitamin", "x-ray", "scan"]
-        exclude_keywords = ["road", "street", "hospital", "clinic", "pathology", "phone", "email", "www", "date", "name", "age", "sex", "patient", "dr.", "doctor"]
-
-        filtered_lines = []
-        for line in cleaned_lines:
-             l = line.lower()
-             if any(k in l for k in test_keywords) and not any(e in l for e in exclude_keywords):
-                 filtered_lines.append(line)
-        
-        if not filtered_lines and len(cleaned_lines) > 0:
-             # Fallback snippet if no keywords match specifically
-             filtered_lines = cleaned_lines[:5]
-
-        display_text = "\n".join(filtered_lines[:10])
+            display_text = "\n".join(filtered_lines[:5])
+            if not display_text:
+                 display_text = "No tests clearly identified"
 
         # Detect Test Type Category
         text_lower = extracted_text.lower()
         test_type = "General Lab Test"
         if "blood" in text_lower or "cbc" in text_lower: test_type = "Blood Test"
-        elif "urine" in text_lower: test_type = "Urine Test"
+        elif "urine" in text_lower or "ketone" in text_lower: test_type = "Urine Test"
         elif "thyroid" in text_lower: test_type = "Thyroid Test"
         elif "sugar" in text_lower or "glucose" in text_lower: test_type = "Diabetes Test"
         
-        # 6. Save to DB
+        # 6. Save to DB (Store EVERY upload)
         conn = get_connection()
         try:
              cur = conn.cursor()
              # Link to user by last 10 digits of mobile
              clean_mobile = sender_number.replace('whatsapp:', '').replace(' ', '')[-10:]
-             user_id = None
              
              cur.execute("""
-                SELECT user_id FROM user_profiles 
-                WHERE contact_number LIKE %s 
+                SELECT u.id, up.display_name, u.username 
+                FROM users u
+                LEFT JOIN user_profiles up ON u.id = up.user_id 
+                WHERE up.contact_number LIKE %s OR u.email LIKE %s
                 LIMIT 1
-             """, (f"%{clean_mobile}",))
+             """, (f"%{clean_mobile}", f"%{clean_mobile}%"))
              row = cur.fetchone()
-             if row:
-                 user_id = row[0]
              
+             user_id = None
+             patient_name = "Guest User"
+             username = None
+             
+             if row:
+                 user_id, d_name, u_name = row
+                 username = u_name
+                 patient_name = d_name if d_name else u_name
+                 if not patient_name:
+                     patient_name = "Registered User"
+             else:
+                 # If no user found in DB, try to extract patient name from OCR text
+                 for line in extracted_text.splitlines():
+                     l = line.lower()
+                     if "name:" in l or "patient name:" in l or "patient:" in l:
+                         try:
+                             extracted_name = line.split(":", 1)[1].strip()
+                             # Basic cleanup (remove non-alphabetic chars at start/end)
+                             extracted_name = ''.join(c for c in extracted_name if c.isalnum() or c.isspace()).strip()
+                             if len(extracted_name) > 3:
+                                 patient_name = extracted_name
+                                 break
+                         except Exception:
+                             continue
+
+             # Try to extract lab name from text
+             lab_name = None
+             lab_id = None
+             # Look for common lab indicators in the first 10 lines
+             lines = extracted_text.splitlines()[:10]
+             for line in lines:
+                 l = line.lower()
+                 if any(keyword in l for keyword in ["lab", "laboratory", "diagnostics", "pathology", "clinic"]):
+                     # Usually the first line with these keywords is the lab name
+                     potential_lab = line.strip()
+                     # Clean up common garbage at start of line
+                     potential_lab = potential_lab.lstrip(' .-_')
+                     if len(potential_lab) > 5:
+                         lab_name = potential_lab
+                         break
+             
+             # If lab name found, try to find in DB to get lab_id
+             if lab_name:
+                 try:
+                     cur.execute("SELECT id, name FROM laboratories WHERE %s LIKE CONCAT('%', name, '%') OR name LIKE %s LIMIT 1", (lab_name, f"%{lab_name}%"))
+                     lab_row = cur.fetchone()
+                     if lab_row:
+                         lab_id, lab_name = lab_row # Use the exact name from DB if found
+                 except Exception:
+                     pass
+
              # Use dynamic host URL for the file path
              base_url = request.host_url.rstrip('/')
              file_url = f"{base_url}/static/prescriptions/{filename}"
              
-             cur.execute("""
-                INSERT INTO prescriptions (mobile_number, image_url, extracted_text, test_type, file_path, status, file_type, user_id)
-                VALUES (%s, %s, %s, %s, %s, 'Pending', 'image/jpeg', %s)
-             """, (sender_number, media_url, extracted_text, test_type, file_url, user_id))
+             # Fields requested: username, mobile_number, file_path, file_type, extracted_text, test_type, status, created_at, image_url, lab_id, lab_name, patient_name
+             cols = [
+                 "username", "mobile_number", "file_path", "file_type", 
+                 "extracted_text", "test_type", "status", "image_url", 
+                 "lab_id", "lab_name", "patient_name", "user_id"
+             ]
+             vals = [
+                 username, sender_number, file_url, 'image/jpeg', 
+                 extracted_text, test_type, 'Pending', media_url, 
+                 lab_id, lab_name, patient_name, user_id
+             ]
+             
+             placeholders = ", ".join(["%s"] * len(cols))
+             query = f"INSERT INTO prescriptions ({', '.join(cols)}) VALUES ({placeholders})"
+             
+             cur.execute(query, tuple(vals))
              conn.commit()
              cur.close()
-             print(f"[INFO] Prescription saved for mobile: {sender_number}")
+             print(f"[INFO] Prescription saved successfully for {sender_number}")
         except Exception as e:
              print(f"[ERROR] Database save error: {e}")
+             with open(log_file, "a") as f:
+                 f.write(f"DB ERROR: {str(e)}\n")
         finally:
              conn.close()
 
-        # 7. Reply
         website_link = "http://localhost:5173/login"
         resp.message(
             f"✅ Prescription Received!\n\n"
             f"🔬 Category: {test_type}\n"
-            f"📋 Detected Tests:\n{display_text}\n\n"
-            f"We've added this to your records for review. Track progress here:\n{website_link}"
+            f"📋 Detected Tests:\n{display_text}\n"
+            f"Login here:\n{website_link}."
         )
 
     except Exception as e:

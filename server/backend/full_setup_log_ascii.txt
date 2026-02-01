@@ -1,0 +1,3 @@
+Connected to database. Starting table creation...
+
+Error: 1813 (HY000): Tablespace for table '`medibot`.`users`' exists. Please DISCARD the tablespace before IMPORT
