@@ -3368,23 +3368,28 @@ def whatsapp_webhook():
             # 5. Process Text
             cleaned_lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
             
-            # Keywords to EXCLUDE (Headers, Footers, Contact Info)
-            exclude_keywords = ["road", "street", "hospital", "clinic", "pathology", "phone", "fax", "email", "www", "date", "dr.", "doctor", "requisition", "form"]
+            # Much more aggressive exclusion for cleaner test detection
+            exclude_keywords = [
+                "road", "street", "hospital", "clinic", "pathology", "phone", "fax", 
+                "email", "www", "date", "dr.", "doctor", "requisition", "form", 
+                "patient", "name:", "id:", "age:", "sex:", "gender:", "address", 
+                "suite", "ave", "anytown", "usa", "pincode", "ph:", "contact", "lab", "laboratory",
+                "physician", "signature", "signed", "m.d", "license"
+            ]
             
             filtered_lines = []
             for line in cleaned_lines:
                  l = line.lower()
-                 if not any(e in l for e in exclude_keywords) and len(l) > 2:
-                     # Avoid all-caps headers if they seem like lab names
-                     if not (l.isupper() and len(l) > 15):
+                 # Basic filtering: skip lines with address/patient info or if too long (likely header)
+                 if not any(e in l for e in exclude_keywords) and len(l) > 2 and len(l) < 50:
+                     # Filter out lines that look like addresses (e.g., lots of commas or numbers)
+                     if l.count(',') < 3 and not (l.isupper() and len(l) > 20):
                          filtered_lines.append(line)
             
-            if not filtered_lines and len(cleaned_lines) > 0:
-                 filtered_lines = cleaned_lines[:3]
-
-            display_text = "\n".join(filtered_lines[:5])
+            # SHOW ONLY ONE TEST as requested
+            display_text = filtered_lines[0] if filtered_lines else "Reviewing Prescription..."
             if not display_text:
-                 display_text = "No tests clearly identified"
+                 display_text = "Reviewing Prescription..."
 
         # Detect Test Type Category
         text_lower = extracted_text.lower()
@@ -3491,13 +3496,18 @@ def whatsapp_webhook():
         finally:
              conn.close()
 
-        website_link = "http://localhost:5173/login"
+        website_link = "https://medibot-66976.web.app/login"
+        # Show all detected tests as requested
+        tests_display = "\n".join(filtered_lines) if filtered_lines else "Reviewing Prescription..."
+
         resp.message(
-            f"✅ Prescription Received!\n\n"
-            f"🔬 Category: {test_type}\n"
-            f"📋 Detected Tests:\n{display_text}\n"
-            f"Login here:\n{website_link}."
+            f"✅ Prescription Received!\n\n\n"
+            f"🔬 Category: {test_type}\n\n"
+            f" 📋 Tests Ordered:\n"
+            f"{tests_display}\n\n\n"
+            f"Login here: {website_link}"
         )
+
 
     except Exception as e:
         print(f"[CRITICAL] WhatsApp Webhook Error: {e}")
