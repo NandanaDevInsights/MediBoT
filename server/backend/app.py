@@ -3524,62 +3524,53 @@ def chat_bot():
         # Enhanced System instructions with specific project knowledge
         system_instruction = (
             "You are MediBot, the advanced AI assistant for the MediBot Healthcare platform. "
-            "Your role is to assist users with navigating the website, booking diagnostic tests, and understanding our services. "
-            "You have full knowledge of the website's features and workflows.\n\n"
-            "--- WEBSITE CAPABILITIES & KNOWLEDGE BASE ---\n\n"
-            "1. **CORE SERVICE**: We facilitate online booking for diagnostic labs. Users can search for labs, book appointments, and view reports online.\n"
-            "   - **Tests Available**: Blood tests, Urine tests, Stool tests, Sputum tests, and comprehensive health packages.\n"
-            "   - **Home Collection**: Many labs offer home sample collection (indicated in lab details).\n\n"
-            "2. **FINDING LABS**:\n"
-            "   - Users can search by **City/Area** (e.g., 'Kanjirapally', 'Kochi') or by **Lab Name**.\n"
-            "   - We use OpenStreetMap to find real nearby laboratories based on the user's location.\n"
-            "   - **Special Demo**: For 'Kanjirapally', we display a curated list of top-rated labs including 'Scanron Diagnostics', 'Royal Clinical Laboratory', and 'Dianova'.\n\n"
-            "3. **BOOKING PROCESS**:\n"
-            "   - **Step 1**: Find a lab and click 'Book Now'.\n"
-            "   - **Step 2**: Select tests (e.g., CBC, Lipid Profile). Default prices are approx ₹150/test + Lab Booking Fee.\n"
-            "   - **Step 3**: Choose an Appointment Date and Time.\n"
-            "   - **Step 4**: Enter Patient Details (Name, Contact).\n"
-            "   - **Step 5**: Payment. We offer two modes:\n"
-            "     a) **Pay Online**: Secure payment via Razorpay (UPI, Credit/Debit Cards, Net Banking). It's instant and secure.\n"
-            "     b) **Pay at Lab**: Book now and pay cash/card when you visit the lab.\n"
-            "   - **Confirmation**: Booking is confirmed instantly. Users receive a notification and can track it in 'My Bookings'.\n\n"
-            "4. **REPORTS & PRESCRIPTIONS**:\n"
-            "   - **My Reports**: Users can view and download their test reports (PDFs) directly from the 'Reports' tab.\n"
-            "   - **Upload Prescription**: Users can upload a doctor's prescription. Our team analyzes it and suggests the correct tests.\n"
-            "   - **WhatsApp Integration**: Users can also send a photo of their prescription to our WhatsApp bot. Our AI extracts the tests and saves them to their profile.\n\n"
-            "5. **USER PROFILE**:\n"
-            "   - Users have a unique `@username`.\n"
-            "   - They can manage their personal details (Age, Gender, Blood Group, Address) in the Profile section.\n"
-            "   - 'My Bookings' shows history and status (Pending, Confirmed, Completed).\n\n"
-            "6. **FOR LAB OWNERS**:\n"
-            "   - There is a dedicated **Lab Admin Dashboard** (accessible via `/admin-login`).\n"
-            "   - Lab Admins can manage appointments, upload reports, manage staff, and view earnings.\n\n"
+            "Your role is to assist users with navigating the website, booking diagnostic tests, and understanding our services.\n\n"
+            "--- ABOUT MEDIBOT ---\n"
+            "MediBot is a modern diagnostic booking platform. We bridge the gap between patients and laboratories, "
+            "making healthcare more accessible and digital.\n\n"
+            "--- CORE FEATURES ---\n"
+            "1. **Lab Search**: Users can find labs by name or location (e.g., Kanjirapally, Kochi). We use live OpenStreetMap data.\n"
+            "2. **Online Booking**: Seamlessly book tests like CBC, Lipid Profile, Thyroid tests, etc.\n"
+            "3. **Digital Reports**: View and download medical reports as PDFs directly from your dashboard.\n"
+            "4. **Prescription Analysis**: Upload a prescription, and our AI will detect the required tests.\n"
+            "5. **WhatsApp Bot**: Send prescriptions to our WhatsApp number for automated processing.\n"
+            "6. **Secure Payments**: Online payments via Razorpay (UPI, Cards, NetBanking) or choose 'Pay at Lab'.\n\n"
+            "--- NAVIGATION GUIDE ---\n"
+            "- **Home Page**: Overview of services and lab search.\n"
+            "- **Login/Signup**: Required for booking and viewing reports. Found at the top right of the landing page.\n"
+            "- **Profile**: Manage your age, gender, blood group, and contact details in the 'User Profile' section.\n"
+            "- **My Bookings**: Track status of your appointments (Confirmed, Pending, Completed).\n"
+            "- **Reports Tab**: View all your uploaded and processed diagnostic reports.\n\n"
+            "--- KEY LABORATORIES ---\n"
+            "Some of our top partners include Scanron Diagnostics, Royal Clinical Laboratory, and Dianova. "
+            "Each lab is fully equipped with modern diagnostic tools.\n\n"
+            "--- RECENT UPDATES ---\n"
+            "- Added interactive Laboratory Details with test lists and reviews.\n"
+            "- Improved WhatsApp OCR for better prescription test detection.\n"
+            "- Real-time notifications for report uploads.\n\n"
             "--- GUIDELINES ---\n"
-            " - **Be Helpful & Patient**: You are a friendly guide. Explain things simply.\n"
-            " - **Be Accurate**: Use the specific lab names (e.g. Scanron, Royal) and features mentioned above.\n"
-            " - **No Medical Advice**: If users ask for symptoms or diagnosis, politely state that you are an AI for booking assistance and advise them to consult a doctor.\n"
-            " - **Serious/Unknown Issues**: If the user reports a serious problem (e.g. 'wrong report', 'money deducted but not booked') or asks something you don't know, do NOT make up an answer. Instead, say: 'I apologize, but for this specific issue, please contact our **MediBot Support Team** directly at **support@medibot.com** or call **+91-9876543210** for immediate resolution.'\n"
-            " - **Payment Queries**: Confirm that 'Pay Online' uses Razorpay and is fully secure.\n"
-            " - Keep answers concise, professional, and friendly."
+            "- Be helpful, professional, and friendly.\n"
+            "- If users ask for medical advice, tell them you are an AI assistant for the platform and advise consulting a doctor.\n"
+            "- For support, refer them to support@medibot.com or +91-9876543210.\n"
+            "- Use the site's name 'MediBot' frequently to build trust.\n"
+            "- Keep responses concise and focused on site navigation and features."
         )
 
-        # Build clean history
         formatted_history = []
-        # Prepend system instruction
-        formatted_history.append({"role": "user", "parts": [f"SYSTEM INSTRUCTION: {system_instruction}\nPlease acknowledge and stay in character."] })
-        formatted_history.append({"role": "model", "parts": ["Acknowledged. I am MediBot. I will assist with site navigation and booking services professionally."] })
+        # System Message setup
+        formatted_history.append({"role": "user", "parts": [f"SYSTEM INSTRUCTION: {system_instruction}\nAcknowledge this as the platform assistant MediBot."] })
+        formatted_history.append({"role": "model", "parts": ["Understood. I am MediBot, your advanced healthcare assistant. I'm ready to help you with anything related to our services, labs, and bookings. How can I assist you today?"] })
 
+        # Process conversation history
         for msg in history:
             if 'type' in msg and 'text' in msg:
-                # Skip the default welcome msg from history sent by frontend
+                # Skip the default welcome msg
                 if "Welcome to MediBot" in msg['text']:
                     continue
                 role = "user" if msg['type'] == 'user' else "model"
                 formatted_history.append({"role": role, "parts": [msg['text']]})
 
-        # GEMINI STRICTNESS: 
-        # History MUST alternate User/Model. Combine consecutive messages of same role.
-        
+        # Gemini constraint: Role alternation
         final_history = []
         if formatted_history:
             current_role = formatted_history[0]['role']
@@ -3587,59 +3578,63 @@ def chat_bot():
             
             for msg in formatted_history[1:]:
                 if msg['role'] == current_role:
-                    # Combine consecutive
                     current_parts.extend(msg['parts'])
                 else:
                     final_history.append({"role": current_role, "parts": current_parts})
                     current_role = msg['role']
                     current_parts = msg['parts']
-            
             final_history.append({"role": current_role, "parts": current_parts})
 
-        # Ensure history ends with 'model' required for start_chat
+        # Ensure history ends with 'model' for send_message
         while final_history and final_history[-1]['role'] == 'user':
             final_history.pop()
 
-        # --- ROBUST MODEL GENERATION ---
+        # Try generating response
         try:
-            # ATTEMPT 1: Preferred Model (Flash 2.0) with History
+            model = genai.GenerativeModel('gemini-2.0-flash')
+            chat = model.start_chat(history=final_history)
+            response = chat.send_message(user_message)
+            return jsonify({"response": response.text}), 200
+        except Exception as e:
+            print(f"[ERROR] Chat attempt 1 failed: {e}")
+            # Fallback to 1.5-flash if 2.0 is unavailable
             try:
-                model = genai.GenerativeModel('models/gemini-2.0-flash')
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 chat = model.start_chat(history=final_history)
                 response = chat.send_message(user_message)
                 return jsonify({"response": response.text}), 200
-            except Exception as e1:
-                print(f"[WARN] Flash 2.0 Attempt 1 failed: {e1}. Retrying...")
-                
-                # ATTEMPT 2: Retry with same stable model
-                model = genai.GenerativeModel('models/gemini-2.0-flash')
-                chat = model.start_chat(history=final_history)
-                response = chat.send_message(user_message)
-                return jsonify({"response": response.text}), 200
-
-        except Exception as e2:
-            print(f"[WARN] Context history failed: {e2}. Trying stateless fallback...")
-            
-            # ATTEMPT 3: LAST RESORT - Stateless (No History)
-            try:
-                fallback_model = genai.GenerativeModel('models/gemini-2.0-flash')
-                # Inject system prompt manually since we aren't using chat history
-                full_prompt = (
-                    f"{system_instruction}\n\n"
-                    f"--- END INSTRUCTIONS ---\n\n"
-                    f"USER QUESTION: {user_message}"
-                )
-                response = fallback_model.generate_content(full_prompt)
-                return jsonify({"response": response.text}), 200
-            except Exception as e3:
-                print(f"[ERROR] All fallbacks failed: {e3}")
-                return jsonify({"response": "I am currently overloaded. Please try again in 10 seconds."}), 500
+            except Exception as e2:
+                print(f"[ERROR] Chat attempt 2 failed: {e2}")
+                # Last resort: Stateless
+                try:
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    response = model.generate_content(f"{system_instruction}\n\nUSER: {user_message}")
+                    return jsonify({"response": response.text}), 200
+                except Exception as e3:
+                    print(f"[ERROR] Chat attempt 3 failed: {e3}")
+                    # Rule-based fallback for site questions (Last resort)
+                    qa = {
+                        "book": "To book a test, find a lab on the home page, click 'Book Now', select your tests, and follow the prompts to payment.",
+                        "report": "Your medical reports are available in the 'Reports' tab. You can view them online or download them as PDFs.",
+                        "login": "Use the 'Login' button at the top right. If you're new, you can create an account using the 'Sign Up' link.",
+                        "payment": "We support online payments via Razorpay (UPI, Cards, NetBanking) and 'Pay at Lab'.",
+                        "whatsapp": "You can upload prescriptions via our WhatsApp bot for automated test detection.",
+                        "contact": "Contact us at support@medibot.com or +91-9876543210 for any assistance.",
+                        "price": "Prices vary by test, but a typical test costs around ₹150 plus the laboratory's booking fee.",
+                        "lab": "We partner with verified labs like Scanron, Royal Clinical Lab, and Dianova. You can search for them on our home page."
+                    }
+                    lower_msg = user_message.lower()
+                    for kw, ans in qa.items():
+                        if kw in lower_msg:
+                            return jsonify({"response": ans}), 200
+                    
+                    return jsonify({"response": "I'm currently having a minor technical glitch, but I'm still here to help! Most site features like booking tests and viewing reports are available from your dashboard. For specific help, feel free to ask about 'booking', 'reports', or 'payments'."}), 200
 
     except Exception as outer_e:
-        print(f"[ERROR] Chat Bot Outer Exception: {outer_e}")
-        return jsonify({"response": "An unexpected error occurred."}), 500
+        print(f"[CRITICAL] Chat Exception: {outer_e}")
+        return jsonify({"response": "I'm having a bit of trouble connecting to my brain right now. Please try again soon!"}), 500
 
-# Duplicate route removed to avoid conflict - using the one at line 2314
+# Duplicate route removed to avoid conflict
 
 # --- Razorpay Payment Routes ---
 @app.route('/api/create-payment-order', methods=['POST'])

@@ -4,7 +4,7 @@ import json
 try:
     response = requests.post(
         'http://localhost:5000/api/chat',
-        json={'message': 'Hello', 'history': []},
+        json={'message': 'How to book a test?', 'history': []},
         timeout=30
     )
     print(f"Status: {response.status_code}")
