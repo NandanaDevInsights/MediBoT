@@ -1591,23 +1591,56 @@ def get_admin_appointments():
     if not session.get("user_id"):
         return jsonify({"message": "Not authenticated"}), 401
     
+    user_id = session.get("user_id")
+    role = session.get("role")
+    
     # Optional: Verify role
-    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+    if role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
         return jsonify({"message": "Unauthorized access."}), 403
 
     conn = get_connection()
     try:
         cur = conn.cursor()
-        # Fetch all appointments with user contact info
-        cur.execute("""
-            SELECT 
-                a.id, a.user_id, a.patient_name, a.lab_name, a.doctor_name, 
-                a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
-                up.contact_number
-            FROM appointments a
-            LEFT JOIN user_profile up ON a.user_id = up.user_id
-            ORDER BY a.created_at DESC
-        """)
+        
+        # Get lab admin's laboratory name if they are a lab admin
+        lab_admin_lab_name = None
+        if role == "LAB_ADMIN":
+            cur.execute("""
+                SELECT lab_name FROM lab_admin_profile WHERE user_id=%s LIMIT 1
+            """, (user_id,))
+            lab_row = cur.fetchone()
+            if lab_row and lab_row[0]:
+                lab_admin_lab_name = lab_row[0]
+        
+        # Build query based on role
+        if role == "SUPER_ADMIN":
+            # Super Admin sees all appointments
+            cur.execute("""
+                SELECT 
+                    a.id, a.user_id, a.patient_name, a.lab_name, a.doctor_name, 
+                    a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
+                    up.contact_number
+                FROM appointments a
+                LEFT JOIN user_profile up ON a.user_id = up.user_id
+                ORDER BY a.created_at DESC
+            """)
+        else:
+            # Lab Admin sees only appointments for their laboratory
+            if not lab_admin_lab_name:
+                # Lab admin hasn't set up their profile yet, return empty list
+                return jsonify([]), 200
+            
+            cur.execute("""
+                SELECT 
+                    a.id, a.user_id, a.patient_name, a.lab_name, a.doctor_name, 
+                    a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
+                    up.contact_number
+                FROM appointments a
+                LEFT JOIN user_profile up ON a.user_id = up.user_id
+                WHERE a.lab_name = %s
+                ORDER BY a.created_at DESC
+            """, (lab_admin_lab_name,))
+        
         rows = cur.fetchall()
         cur.close()
 
@@ -2716,8 +2749,9 @@ def admin_profile():
         cur = conn.cursor()
         if request.method == "GET":
              # Join with users to get email, use LEFT JOIN to ensure we get user info even if profile doesn't exist yet
+
              cur.execute("""
-                SELECT u.email, p.lab_name, p.address, p.contact_number, p.admin_name 
+                SELECT u.email, p.lab_name, p.address, p.contact_number, p.admin_name, p.lab_id
                 FROM users u 
                 LEFT JOIN lab_admin_profile p ON u.id = p.user_id 
                 WHERE u.id=%s
@@ -2729,7 +2763,8 @@ def admin_profile():
                      "lab_name": row[1] or "", 
                      "address": row[2] or "", 
                      "contact": row[3] or "",
-                     "admin_name": row[4] or ""
+                     "admin_name": row[4] or "",
+                     "lab_id": row[5]
                  }), 200
              return jsonify({}), 404
         else:
@@ -2775,7 +2810,152 @@ def admin_profile():
         conn.close()
 
 
-@app.post("/api/logout")
+
+
+@app.route("/api/admin/lab-settings", methods=["GET", "POST"])
+def manage_lab_settings():
+    user_id = session.get("user_id")
+    role = session.get("role")
+    if not user_id or role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+         return jsonify({"message": "Unauthorized"}), 403
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+        # Find the lab_id for this admin
+        cur.execute("SELECT lab_id, lab_name, address FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+        p_row = cur.fetchone()
+        
+        lab_id = None
+        lab_name = None
+        if p_row:
+            lab_id = p_row.get('lab_id')
+            lab_name = p_row.get('lab_name')
+        
+        if not lab_id and lab_name:
+            # Try to find lab by name
+            cur.execute("SELECT id FROM laboratories WHERE name=%s LIMIT 1", (lab_name,))
+            l_row = cur.fetchone()
+            if l_row:
+                lab_id = l_row['id']
+            else:
+                # Create lab entry if it doesn't exist
+                cur.execute("INSERT INTO laboratories (name, address) VALUES (%s, %s)", (lab_name, p_row.get('address', '')))
+                lab_id = cur.lastrowid
+            
+            # Sync back to profile
+            if lab_id:
+                cur.execute("UPDATE lab_admin_profile SET lab_id=%s WHERE user_id=%s", (lab_id, user_id))
+                conn.commit()
+
+        if not lab_id:
+             return jsonify({"message": "Lab not assigned to this admin. Please complete your profile first."}), 404
+             
+        if request.method == "GET":
+            cur.execute("SELECT tests_config, working_hours, working_days FROM laboratories WHERE id=%s", (lab_id,))
+            row = cur.fetchone()
+            if row:
+                import json
+                # Convert JSON strings to objects if they are strings
+                def load_json(val):
+                    if not val: return None
+                    if isinstance(val, (dict, list)): return val
+                    try: return json.loads(val)
+                    except: return None
+
+                return jsonify({
+                    "tests": load_json(row.get('tests_config')),
+                    "workingHours": load_json(row.get('working_hours')),
+                    "workingDays": load_json(row.get('working_days'))
+                }), 200
+            return jsonify({}), 404
+        else:
+            data = request.get_json()
+            import json
+            # Save JSON strings
+            cur.execute("""
+                UPDATE laboratories 
+                SET tests_config=%s, working_hours=%s, working_days=%s 
+                WHERE id=%s
+            """, (
+                json.dumps(data.get('tests')),
+                json.dumps(data.get('workingHours')),
+                json.dumps(data.get('workingDays')),
+                lab_id
+            ))
+            conn.commit()
+            return jsonify({"message": "Settings Saved"}), 200
+    except Exception as e:
+        print(f"[ERROR] Lab settings failed: {e}")
+        return jsonify({"message": f"Server Error: {str(e)}"}), 500
+    finally:
+        conn.close()
+
+
+@app.get("/api/labs/public-settings")
+def get_public_lab_settings_by_name():
+    """Public endpoint to fetch lab-specific settings by name for landing page."""
+    lab_name = request.args.get("name")
+    if not lab_name:
+        return jsonify({"message": "Lab name required"}), 400
+        
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+        # Try finding by name
+        cur.execute("SELECT tests_config, working_hours, working_days, address, location FROM laboratories WHERE name=%s LIMIT 1", (lab_name,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"message": "Lab not found in database"}), 404
+            
+        import json
+        def load_json(val):
+            if not val: return None
+            if isinstance(val, (dict, list)): return val
+            try: return json.loads(val)
+            except: return None
+
+        return jsonify({
+            "tests": load_json(row.get('tests_config')),
+            "workingHours": load_json(row.get('working_hours')),
+            "workingDays": load_json(row.get('working_days')),
+            "address": row.get('address'),
+            "location": row.get('location')
+        }), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+    finally:
+        conn.close()
+
+@app.get("/api/labs/<int:lab_id>/settings")
+
+def get_public_lab_settings(lab_id):
+    """Public endpoint to fetch lab-specific settings (tests, hours) for landing page."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT tests_config, working_hours, working_days FROM laboratories WHERE id=%s", (lab_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"message": "Lab not found"}), 404
+            
+        import json
+        def load_json(val):
+            if not val: return None
+            if isinstance(val, (dict, list)): return val
+            try: return json.loads(val)
+            except: return None
+
+        return jsonify({
+            "tests": load_json(row.get('tests_config')),
+            "workingHours": load_json(row.get('working_hours')),
+            "workingDays": load_json(row.get('working_days'))
+        }), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+    finally:
+        conn.close()
+
 def logout():
     session.clear()
     resp = jsonify({"message": "Logged out"})
