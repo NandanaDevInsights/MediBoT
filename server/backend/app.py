@@ -1261,6 +1261,298 @@ def ensure_lab_staff_table():
 
 ensure_lab_staff_table()
 
+def ensure_lab_settings_table():
+    """Create lab_settings table if not exists."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS lab_settings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                lab_id INT,
+                lab_name VARCHAR(255),
+                working_hours_start VARCHAR(10),
+                working_hours_end VARCHAR(10),
+                working_days_json TEXT,
+                tests_json LONGTEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_lab_settings (lab_id, lab_name)
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Lab Settings table check failed: {e}")
+    finally:
+        conn.close()
+
+ensure_lab_settings_table()
+
+def ensure_lab_feedback_table():
+    """Create lab_feedback table if not exists."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS lab_feedback (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                lab_id INT,
+                lab_name VARCHAR(255),
+                patient_name VARCHAR(255),
+                username VARCHAR(255),
+                rating INT,
+                comment TEXT,
+                category VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_lab_id (lab_id),
+                INDEX idx_lab_name (lab_name)
+            )
+        """)
+        conn.commit()
+        # Migrating existing table to include username if missing
+        cur.execute("SHOW COLUMNS FROM lab_feedback LIKE 'username'")
+        if not cur.fetchone():
+            print("[INFO] Adding 'username' column to lab_feedback...")
+            cur.execute("ALTER TABLE lab_feedback ADD COLUMN username VARCHAR(255) AFTER patient_name")
+            # Populate with patient_name as default for existing data
+            cur.execute("UPDATE lab_feedback SET username = LOWER(REPLACE(patient_name, ' ', '_')) WHERE username IS NULL")
+        
+        conn.commit()
+    finally:
+        conn.close()
+
+ensure_lab_feedback_table()
+
+@app.get("/api/admin/lab-feedback")
+def get_lab_feedback():
+    """Get feedback for the authenticated lab admin's laboratory."""
+    user_id = session.get("user_id")
+    role = session.get("role")
+    
+    if not user_id or role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        print(f"[AUTH] Feedback request rejected: user_id={user_id}, role={role}")
+        return jsonify({"feedback": [], "message": "Unauthorized", "debug_user": user_id}), 403
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Get lab admin profile to find lab_id and lab_name
+        cur.execute("""
+            SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s LIMIT 1
+        """, (user_id,))
+        
+        profile_row = cur.fetchone()
+        
+        if not profile_row:
+            print(f"[AUTH] No lab profile found for user_id={user_id}")
+            return jsonify({
+                "feedback": [], 
+                "status": "no_profile", 
+                "debug_user": user_id
+            }), 200
+        
+        lab_id, lab_name = profile_row
+        
+        # Fetch feedback - using flexible matching and trimming for safety
+        # We match by lab_id OR lab_name (exact) OR lab_name (partial/subset)
+        cur.execute("""
+            SELECT id, patient_name, username, rating, comment, category, created_at
+            FROM lab_feedback
+            WHERE (lab_id IS NOT NULL AND lab_id != 0 AND lab_id = %s) 
+               OR (TRIM(lab_name) = TRIM(%s))
+               OR (lab_name LIKE CONCAT('%%', %s, '%%'))
+               OR (%s LIKE CONCAT('%%', lab_name, '%%'))
+            ORDER BY created_at DESC
+        """, (lab_id, lab_name, lab_name, lab_name))
+        
+        rows = cur.fetchall()
+        cur.close()
+        
+        feedback = []
+        for row in rows:
+            # SELECT id(0), patient_name(1), username(2), rating(3), comment(4), category(5), created_at(6)
+            formatted_date = row[6].strftime("%Y-%m-%d") if row[6] else "N/A"
+            
+            feedback.append({
+                "id": row[0],
+                "patient": row[1],
+                "username": row[2] or row[1] or "Anonymous",
+                "rating": row[3],
+                "comment": row[4],
+                "category": row[5] or "General",
+                "date": formatted_date
+            })
+        
+        return jsonify({
+            "feedback": feedback, 
+            "count": len(feedback)
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch lab feedback: {e}")
+        return jsonify({"feedback": [], "error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.get("/api/labs/working-hours")
+def get_lab_working_hours():
+    """Public endpoint to get working hours for a specific lab."""
+    lab_name = request.args.get('name', '')
+    
+    if not lab_name:
+        return jsonify({"message": "Lab name required"}), 400
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Fetch lab settings by name
+        cur.execute("""
+            SELECT working_hours_start, working_hours_end, working_days_json
+            FROM lab_settings
+            WHERE lab_name=%s
+            LIMIT 1
+        """, (lab_name,))
+        
+        settings_row = cur.fetchone()
+        cur.close()
+        
+        if not settings_row:
+            return jsonify({}), 200
+        
+        import json
+        working_hours_start, working_hours_end, working_days_json = settings_row
+        
+        return jsonify({
+            "workingHours": {
+                "start": working_hours_start or "09:00",
+                "end": working_hours_end or "19:00"
+            },
+            "workingDays": json.loads(working_days_json) if working_days_json else {}
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch working hours: {e}")
+        return jsonify({}), 200
+    finally:
+        conn.close()
+
+@app.get("/api/admin/lab-settings")
+def get_lab_settings():
+    """Get lab settings for the authenticated lab admin."""
+    user_id = session.get("user_id")
+    role = session.get("role")
+    
+    if not user_id or role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Get lab info for this admin
+        cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+        lab_info = cur.fetchone()
+        
+        if not lab_info:
+            return jsonify({}), 200
+        
+        lab_id, lab_name = lab_info
+        
+        # Fetch lab settings
+        cur.execute("""
+            SELECT working_hours_start, working_hours_end, working_days_json, tests_json
+            FROM lab_settings
+            WHERE (lab_id=%s OR lab_name=%s)
+            LIMIT 1
+        """, (lab_id, lab_name))
+        
+        settings_row = cur.fetchone()
+        cur.close()
+        
+        if not settings_row:
+            return jsonify({}), 200
+        
+        import json
+        working_hours_start, working_hours_end, working_days_json, tests_json = settings_row
+        
+        return jsonify({
+            "workingHours": {
+                "start": working_hours_start or "09:00",
+                "end": working_hours_end or "19:00"
+            },
+            "workingDays": json.loads(working_days_json) if working_days_json else {},
+            "tests": json.loads(tests_json) if tests_json else []
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch lab settings: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
+@app.post("/api/admin/lab-settings")
+def save_lab_settings():
+    """Save lab settings for the authenticated lab admin."""
+    user_id = session.get("user_id")
+    role = session.get("role")
+    
+    if not user_id or role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    data = request.get_json() or {}
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Get lab info for this admin
+        cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+        lab_info = cur.fetchone()
+        
+        if not lab_info:
+            return jsonify({"message": "Lab profile not found"}), 404
+        
+        lab_id, lab_name = lab_info
+        
+        import json
+        working_hours = data.get("workingHours", {})
+        working_days = data.get("workingDays", {})
+        tests = data.get("tests", [])
+        
+        # Insert or update settings
+        cur.execute("""
+            INSERT INTO lab_settings (lab_id, lab_name, working_hours_start, working_hours_end, working_days_json, tests_json)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                working_hours_start=%s,
+                working_hours_end=%s,
+                working_days_json=%s,
+                tests_json=%s
+        """, (
+            lab_id, lab_name,
+            working_hours.get("start", "09:00"),
+            working_hours.get("end", "19:00"),
+            json.dumps(working_days),
+            json.dumps(tests),
+            working_hours.get("start", "09:00"),
+            working_hours.get("end", "19:00"),
+            json.dumps(working_days),
+            json.dumps(tests)
+        ))
+        
+        conn.commit()
+        cur.close()
+        
+        return jsonify({"message": "Settings saved successfully"}), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to save lab settings: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
 @app.post("/api/admin/appointments")
 def create_appointment():
     # Check authentication
@@ -2611,7 +2903,7 @@ def get_staff():
             if row:
                 l_id = row['lab_id']
                 if l_id:
-                    where_clause = " WHERE lab_id = %s OR (lab_id IS NULL AND 1=0)"
+                    where_clause = " WHERE lab_id = %s OR lab_id IS NULL"
                     params = [l_id]
                 else:
                     # Allow admins without a lab to see 'unassigned' staff
