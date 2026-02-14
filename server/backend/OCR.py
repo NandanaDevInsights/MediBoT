@@ -20,7 +20,7 @@ def sync_local_prescriptions():
         cur = conn.cursor()
         
         # Get existing file paths from DB
-        cur.execute("SELECT file_path FROM prescriptions")
+        cur.execute("SELECT file_path FROM prescription")
         existing_paths = {row[0] for row in cur.fetchall() if row[0]}
         
         files = [f for f in os.listdir(presc_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
@@ -37,7 +37,7 @@ def sync_local_prescriptions():
                 # Add to DB
                 # Unpack: id, user_id, mobile_number, file_path, file_type, extracted_text, test_type, status, created_at, image_url
                 cur.execute("""
-                    INSERT INTO prescriptions (file_path, file_type, status, test_type)
+                    INSERT INTO prescription (file_path, file_type, status, test_type)
                     VALUES (%s, %s, %s, %s)
                 """, (db_path, "image", "pending", "Sync Upload"))
                 new_count += 1
@@ -53,7 +53,7 @@ def sync_local_prescriptions():
 
 if __name__ == "__main__":
     # Run sync before starting server
-    sync_local_prescriptions()
+    # sync_local_prescriptions() # Disabled to prevent junk data as per user request
     
     print("🚀 Starting MediBot Server (OCR Integrated)...")
     app.run(host="0.0.0.0", port=5000, debug=True)

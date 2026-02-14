@@ -2,7 +2,7 @@ from db_connect import get_connection
 
 conn = get_connection()
 cur = conn.cursor()
-cur.execute('SHOW COLUMNS FROM lab_staff')
+cur.execute('SHOW COLUMNS FROM prescription')
 cols = cur.fetchall()
 with open('cols.txt', 'w') as f:
     for c in cols:
