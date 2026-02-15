@@ -73,6 +73,7 @@ import uuid
 import time
 
 import razorpay
+from super_admin_endpoints import register_super_admin_endpoints
 
 
 
@@ -113,6 +114,7 @@ app = Flask(__name__)
 CORS(app, origins=get_cors_origins(), supports_credentials=True)
 
 app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret-change")
+register_super_admin_endpoints(app)
 
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
@@ -7042,20 +7044,45 @@ def upload_report():
         conn = get_connection()
         cur = conn.cursor()
         
-        # Get lab_id for the admin
+        # Get lab_id and lab_name for the admin
         cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
         lab_row = cur.fetchone()
         lab_id = lab_row[0] if lab_row else None
         lab_name = lab_row[1] if lab_row else "MediBot Lab"
 
+        # Lookup Patient Name
+        patient_name = "Unknown Patient"
+        u_row = None
+        # Try matching by Appointment ID first (most common for lab admin)
+        cur.execute("SELECT patient_name FROM appointments WHERE id = %s", (patient_id,))
+        appt_row = cur.fetchone()
+        if appt_row and appt_row[0]:
+            patient_name = appt_row[0]
+        else:
+            # Try matching by User ID
+            cur.execute("""
+                SELECT up.display_name, u.username 
+                FROM users u 
+                LEFT JOIN user_profile up ON u.id = up.user_id 
+                WHERE u.id = %s
+            """, (patient_id,))
+            u_row = cur.fetchone()
+            if u_row:
+                patient_name = u_row[0] if u_row[0] else u_row[1] # display_name if available, else username
+            
+        # Final fallback check
+        if not patient_name or patient_name == "Unknown Patient":
+            if u_row and len(u_row) > 1 and u_row[1]: patient_name = u_row[1] # username
+
         # Insert into reports table
         # Status 'Completed' makes it show up in 'Lab Results' generated tab
         cur.execute("""
-            INSERT INTO reports (patient_id, test_name, file_path, status, lab_id, uploaded_at)
-            VALUES (%s, %s, %s, 'Completed', %s, NOW())
-        """, (patient_id, test_name, db_file_path, lab_id))
+            INSERT INTO reports (patient_id, patient_name, test_name, file_path, status, lab_id, lab_name, uploaded_at)
+            VALUES (%s, %s, %s, %s, 'Completed', %s, %s, NOW())
+        """, (patient_id, patient_name, test_name, db_file_path, lab_id, lab_name))
         
         conn.commit()
+
 
         # Send WhatsApp Notification (Best Effort)
         try:
