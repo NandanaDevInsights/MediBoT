@@ -656,7 +656,7 @@ def send_otp_email(to_email: str, otp_code: str):
 
 
 
-def send_whatsapp_message(to_number: str, message_body: str):
+def send_whatsapp_message(to_number: str, message_body: str, media_url: str = None):
 
     """Send WhatsApp message using Twilio."""
 
@@ -691,8 +691,9 @@ def send_whatsapp_message(to_number: str, message_body: str):
     
 
     # Simple sanitization
-
     clean_number = to_number.strip().replace(" ", "").replace("-", "")
+    if clean_number.lower().startswith("whatsapp:"):
+        clean_number = clean_number[9:]
 
     if not clean_number.startswith("+"):
 
@@ -708,22 +709,17 @@ def send_whatsapp_message(to_number: str, message_body: str):
 
     formatted_to = f"whatsapp:{clean_number}"
 
-
-
     try:
-
         client = Client(account_sid, auth_token)
+        msg_params = {
+            "from_": from_number,
+            "body": message_body,
+            "to": formatted_to
+        }
+        if media_url:
+            msg_params["media_url"] = [media_url]
 
-        message = client.messages.create(
-
-            from_=from_number,
-
-            body=message_body,
-
-            to=formatted_to
-
-        )
-
+        message = client.messages.create(**msg_params)
         print(f"[DEBUG] WhatsApp sent to {formatted_to}: {message.sid}")
 
     except Exception as e:
@@ -3321,22 +3317,27 @@ def get_user_reports():
         
 
         # Also fetch from 'reports' table (Generated Lab Results)
+        # These are results uploaded by the Lab Admin. 
+        # We also check for appointment IDs because some reports might be linked via appt_id instead of user_id.
+        cur.execute("SELECT id FROM appointments WHERE user_id=%s", (user_id,))
+        appt_ids = [str(r[0]) for r in cur.fetchall()]
+        
+        # All possible identifiers that could be in patient_id column
+        identifiers = [str(user_id)]
+        if username: identifiers.append(username)
+        if contact: identifiers.append(contact)
+        identifiers.extend(appt_ids)
 
-        # These are results uploaded by the Lab Admin
-
-        cur.execute("""
-
+        placeholders = ', '.join(['%s'] * len(identifiers))
+        cur.execute(f"""
             SELECT id, file_path, test_name, status, uploaded_at
-
             FROM reports
-
-            WHERE patient_id=%s OR patient_id=%s OR patient_id=%s
-
+            WHERE patient_id IN ({placeholders})
             ORDER BY uploaded_at DESC
-
-        """, (str(user_id), username, contact))
+        """, tuple(identifiers))
 
         report_rows = cur.fetchall()
+
 
         cur.close()
 
@@ -3440,7 +3441,13 @@ def get_user_reports():
 
             if fpath and not fpath.startswith('http'):
 
-                full_path = f"/static/{fpath}"
+                if fpath.startswith('static/'):
+
+                    full_path = f"/{fpath}"
+
+                else:
+
+                    full_path = f"/static/{fpath}"
 
                 
 
@@ -4355,100 +4362,78 @@ def get_patient_history(user_id):
             apt_rows = cur.fetchall()
 
             for r in apt_rows:
-
                 appointments.append({
-
                     "id": r['id'],
-
                     "date": str(r['appointment_date']),
-
                     "time": str(r['appointment_time']),
-
                     "test": r['test_type'],
-
                     "status": r['status']
-
                 })
 
+            # Fetch reports from 'reports' table (Lab Uploads)
+            cur.execute("""
+                SELECT id, test_name, file_path, status, uploaded_at
+                FROM reports
+                WHERE patient_id=%s
+                ORDER BY uploaded_at DESC
+            """, (uid,))
+            report_rows = cur.fetchall()
+            
+            for r in report_rows:
+                 # Standardize to match prescription structure for UI
+                 f_path = r['file_path']
+                 # Ensure full URL if relative
+                 if f_path and not f_path.startswith('http'):
+                     if f_path.startswith('/'):
+                         f_path = f"{request.host_url.rstrip('/')}{f_path}"
+                     else:
+                         f_path = f"{request.host_url}static/{f_path}"
 
+                 prescriptions.append({
+                     "id": f"rep-{r['id']}",
+                     "type": r['test_name'] or "Lab Report",
+                     "date": r['uploaded_at'].strftime('%Y-%m-%d') if r['uploaded_at'] else "N/A",
+                     "status": r['status'],
+                     "image_url": f_path # UI uses this field for viewing
+                 })
 
         # Process Prescriptions
-
         for r in rx_rows:
-
             # Use image_url or file_path
-
             path_val = r['file_path'] if r['file_path'] else r['image_url']
-
             img_src = path_val
 
-
-
             if path_val:
-
                 path_val = path_val.replace('\\', '/')
-
                 # Force local static URL if it looks like a local path but isn't a full URL
-
-                if not path_val.startswith('http') and not path_val.startswith('/'):
-
-                     img_src = f"{request.host_url}static/{path_val}"
-
-                elif not path_val.startswith('http') and path_val.startswith('/'):
-
-                     img_src = f"{request.host_url.rstrip('/')}{path_val}"
-
-                
-
-                # Special handling for filename extraction if needed by frontend
-
-                if '/' in path_val:
-
-                    filename = path_val.split('/')[-1].split('?')[0]
-
-                else:
-
-                    filename = path_val.split('?')[0]
-
-
-
+                if not path_val.startswith('http'):
+                     if path_val.startswith('/'):
+                         img_src = f"{request.host_url.rstrip('/')}{path_val}"
+                     else:
+                         img_src = f"{request.host_url}static/{path_val}"
+            
             prescriptions.append({
-
                 "id": r['id'],
-
-                "image_url": img_src,
-
                 "type": r['test_type'] or "Prescription",
-
+                "date": r['created_at'].strftime('%Y-%m-%d') if r['created_at'] else "N/A",
                 "status": r['status'],
-
-                "date": r['created_at'].strftime("%Y-%m-%d") if r['created_at'] else ""
-
+                "image_url": img_src
             })
-
-
-
+            
         return jsonify({
-
             "details": patient_details,
-
-            "prescriptions": prescriptions,
-
+            "prescriptions": prescriptions, # Includes both uploaded reports and user prescriptions
             "appointments": appointments
-
         }), 200
 
-
-
     except Exception as e:
-
         print(f"[ERROR] Fetch history failed: {e}")
-
-        return jsonify({"message": f"Server error: {str(e)}"}), 500
+        return jsonify({"message": "Server error"}), 500
 
     finally:
-
         conn.close()
+
+
 
 
 
@@ -5203,142 +5188,65 @@ def update_appointment_status(id):
         
 
         # Create Notification if Confirmed
-
         if new_status == "Confirmed":
-
-            cur.execute("""
-
-                SELECT 
-
-                    a.user_id, a.tests, a.appointment_date, a.lab_name, a.contact_number,
-
-                    up.contact_number, a.patient_name, a.appointment_time
-
-                FROM appointments a
-
-                LEFT JOIN user_profile up ON a.user_id = up.user_id
-
-                WHERE a.id=%s
-
-            """, (id,))
-
-            appt = cur.fetchone()
-
-            
-
-            if appt and appt[0]:
-
-                uid, tests, date, lab_name, apt_contact, prof_contact, patient_name, appt_time = appt
-
-                
-
-                # Format test names properly
-
-                if tests:
-
-                    # Handle multiple tests separated by comma
-
-                    test_list = [t.strip() for t in tests.split(',') if t.strip()]
-
-                    if len(test_list) > 1:
-
-                        test_display = f"{test_list[0]} and {len(test_list)-1} others"
-
-                    elif len(test_list) == 1:
-
-                        test_display = test_list[0]
-
-                    else:
-
-                        test_display = "your test"
-
-                else:
-
-                    test_display = "your test"
-
-                
-
-                # Format date nicely as DD/MM/YYYY
-
+                # Notification Logic - Wrapped to prevent blocking status update
                 try:
-
-                    from datetime import datetime
-
-                    if isinstance(date, str):
-
-                        date_obj = datetime.strptime(str(date), '%Y-%m-%d')
-
-                    else:
-
-                        date_obj = date
-
-                    date_display = date_obj.strftime('%d/%m/%Y')
-
-                except:
-
-                    date_display = str(date)
-
-                
-
-                # Create notification message in EXACT requested format
-
-                msg = (
-
-                    "Booking Confirmed ✅\n\n"
-
-                    f"Your booking is confirmed for {test_display} at {lab_name if lab_name else 'Royal Clinical Laboratory'} on {date_display} at {appt_time if appt_time else '10:30 AM'}.\n\n"
-
-                    "Please arrive 10 minutes early and carry a valid ID proof."
-
-                )
-
-                
-
-                # Db Notification
-
-                cur.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (uid, msg))
-
-                
-
-                # Add to Reports (Prescriptions)
-
-                try:
-
                     cur.execute("""
+                        SELECT 
+                            a.user_id, a.tests, a.appointment_date, a.lab_name, a.contact_number,
+                            up.contact_number, a.patient_name, a.appointment_time, a.payment_status,
+                            u.phone_number
+                        FROM appointments a
+                        LEFT JOIN user_profile up ON a.user_id = up.user_id
+                        LEFT JOIN users u ON a.user_id = u.id
+                        WHERE a.id=%s
+                    """, (id,))
+                    appt = cur.fetchone()
+                    
+                    if appt and appt[0]:
+                        uid, tests, date, lab_name, apt_contact, prof_contact, patient_name, appt_time, payment_status, user_phone = appt
+                        
+                        # Format date nicely
+                        try:
+                            from datetime import datetime
+                            if isinstance(date, str):
+                                date_obj = datetime.strptime(str(date), '%Y-%m-%d')
+                            else:
+                                date_obj = date
+                            date_display = date_obj.strftime('%d/%m/%Y')
+                        except:
+                            date_display = str(date)
+                        
+                        # Create notification message
+                        msg = (
+                            f"✅ *MediBot Booking Confirmed*\n\n"
+                            f"👤 *Patient:* {patient_name}\n"
+                            f"🧪 *Tests:* {tests}\n"
+                            f"📅 *Date:* {date_display} at {appt_time if appt_time else '10:30 AM'}\n"
+                            f"🏥 *Lab:* {lab_name if lab_name else 'Royal Clinical Laboratory'}\n"
+                            f"💳 *Status:* {payment_status if payment_status else 'Pending'}\n\n"
+                            f"Thank you for choosing MediBot! Type 'Hi' for assistance."
+                        )
 
-                        INSERT INTO prescription (
+                        # Db Notification (Landing Page)
+                        try:
+                            cur.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (uid, msg))
+                        except Exception as dbe:
+                            print(f"[WARN] Failed to insert notification: {dbe}")
 
-                            user_id, patient_name, lab_name, test_type, status, created_at, file_path
+                        # WhatsApp Notifications
+                        final_contact = apt_contact if apt_contact else (prof_contact if prof_contact else user_phone)
 
-                        ) VALUES (%s, %s, %s, %s, %s, NOW(), '')
-
-                    """, (uid, patient_name, lab_name, tests, 'Confirmed'))
-
-                except Exception as e:
-
-                    print(f"Error adding to reports: {e}")
-
-
-
-                # WhatsApp Notifications
-
-                final_contact = apt_contact if apt_contact else prof_contact
-
-                if final_contact:
-
-                    # 1. Send to corresponding user (patient)
-
-                    threading.Thread(target=send_whatsapp_message, args=(final_contact, msg)).start()
-
+                        if final_contact:
+                            # 1. Send to corresponding user (patient)
+                            threading.Thread(target=send_whatsapp_message, args=(final_contact, msg)).start()
+                        
+                        # 2. Send to the Twilio monitor number (Always send as requested)
+                        admin_notify_number = "9847458290" 
+                        threading.Thread(target=send_whatsapp_message, args=(admin_notify_number, msg)).start()
                 
-
-                # 2. Send to the Twilio monitor number along with patient name
-
-                admin_notify_number = "+919847458290" 
-
-                admin_msg = f"Patient Name: {patient_name}\n\n{msg}"
-
-                threading.Thread(target=send_whatsapp_message, args=(admin_notify_number, admin_msg)).start()
+                except Exception as notify_err:
+                    print(f"[ERROR] Notification Logic Failed: {notify_err}")
 
 
 
@@ -6798,8 +6706,10 @@ def delete_user_appointment(appointment_id):
 
 
 
-@app.get("/api/admin/reports")
+# Duplicate endpoint removed to allow the correct implementation at line 3251 to handle reports.
 
+
+@app.get("/api/admin/reports")
 def get_all_reports():
 
     current_role = session.get("role")
@@ -6861,46 +6771,38 @@ def get_all_reports():
 
 
         cur.execute(f"""
-
-            SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at, u.username
-
+            SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at, u.username, r.patient_id
             FROM reports r
-
             LEFT JOIN users u ON r.patient_id = u.id
-
             {where_clause_reports}
-
             ORDER BY r.uploaded_at DESC
-
         """, [params[0]] if where_clause_reports else [])
 
         rows = cur.fetchall()
-
         reports = []
-
         for row in rows:
-
             p_name = row[6] if len(row) > 6 and row[6] else (row[1] or "Unknown")
+            
+            # Ensure full URL for file path
+            f_path = row[3]
+            if f_path and not f_path.startswith('http'):
+                 if f_path.startswith('static'):
+                      f_path = f"{request.host_url}{f_path}"
+                 elif f_path.startswith('/'):
+                      f_path = f"{request.host_url.rstrip('/')}{f_path}"
+                 else:
+                      f_path = f"{request.host_url}static/{f_path}"
 
             reports.append({
-
                 "id": f"R-{row[0]}",
-
                 "patient": p_name, 
-
                 "test": row[2],
-
-                "file_path": row[3],
-
+                "file_path": f_path,
                 "status": row[4],
-
-                "date": row[5].strftime("%Y-%m-%d") if row[5] else ""
-
+                "date": row[5].strftime("%Y-%m-%d") if row[5] else "",
+                "patient_id": row[7],
+                "test_name": row[2] # Ensuring we have a test_name field matching frontend logic
             })
-
-            
-
-        # Add Appointments as Pending Reports
 
         cur.execute(f"""
 
@@ -7037,7 +6939,39 @@ def delete_notification(id):
         conn.close()
 
 
+def send_whatsapp_message(to_number, body_text, media_url=None):
+    try:
+        account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+        auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+        from_number = os.environ.get('TWILIO_WHATSAPP_NUMBER')
+        
+        # basic validation
+        if not account_sid or not auth_token or not from_number:
+            print("[ERROR] Twilio credentials missing in environment variables")
+            return
 
+        client = Client(account_sid, auth_token)
+        
+        # Ensure 'whatsapp:' prefix
+        if not to_number.startswith("whatsapp:"):
+            to_number = f"whatsapp:{to_number}"
+        if not from_number.startswith("whatsapp:"):
+            from_number = f"whatsapp:{from_number}"
+            
+        message_args = {
+            'from_': from_number,
+            'body': body_text,
+            'to': to_number
+        }
+        
+        if media_url:
+            message_args['media_url'] = [media_url]
+
+        message = client.messages.create(**message_args)
+        print(f"[INFO] WhatsApp sent to {to_number}: {message.sid}")
+        
+    except Exception as e:
+        print(f"[ERROR] Logic error in send_whatsapp_message: {e}")
 
 
 @app.post("/api/admin/upload-report")
@@ -7074,83 +7008,121 @@ def upload_report():
 
 
 
-    if file:
-
-        filename = f"{int(datetime.now().timestamp())}_{file.filename}"
-
-        save_path = os.path.join("static", "reports", filename)
-
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
+    # Validations
+    if not patient_id:
+        return jsonify({"message": "Patient ID is required"}), 400
+    if not test_name:
+        return jsonify({"message": "Test Name is required"}), 400
+    if not file:
+        return jsonify({"message": "No file uploaded"}), 400
+        
+    try:
+        # Secure filename
+        original_filename = file.filename
+        extension = os.path.splitext(original_filename)[1]
+        unique_filename = f"report_{patient_id}_{int(datetime.now().timestamp())}{extension}"
+        
+        # Ensure static/reports directory exists
+        relative_path = os.path.join("static", "reports")
+        full_dir_path = os.path.join(app.root_path, relative_path)
+        os.makedirs(full_dir_path, exist_ok=True)
+        
+        # Save file
+        save_path = os.path.join(full_dir_path, unique_filename)
         file.save(save_path)
-
         
-
-        # Save to DB
-
-        file_url = f"http://localhost:5000/static/reports/{filename}"
-
+        # Construct consistent relative URL path
+        # It's better to store relative path 'static/reports/...' so frontend can prepend host
+        # But legacy code uses full URL. Let's stick to full URL or consistent relative.
+        # Given previous fixes, storing relative path is safer if domain changes.
+        # specific fix: store 'static/reports/filename'
         
-
+        db_file_path = f"static/reports/{unique_filename}"
+        
         conn = get_connection()
+        cur = conn.cursor()
+        
+        # Get lab_id for the admin
+        cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+        lab_row = cur.fetchone()
+        lab_id = lab_row[0] if lab_row else None
+        lab_name = lab_row[1] if lab_row else "MediBot Lab"
 
+        # Insert into reports table
+        # Status 'Completed' makes it show up in 'Lab Results' generated tab
+        cur.execute("""
+            INSERT INTO reports (patient_id, test_name, file_path, status, lab_id, uploaded_at)
+            VALUES (%s, %s, %s, 'Completed', %s, NOW())
+        """, (patient_id, test_name, db_file_path, lab_id))
+        
+        conn.commit()
+
+        # Send WhatsApp Notification (Best Effort)
         try:
+            # 1. Get Public Base URL
+            base_url = request.host_url # Fallback
+            if os.path.exists("WEBHOOK_URL.txt"):
+                with open("WEBHOOK_URL.txt", "r") as f:
+                    webhook_url = f.read().strip()
+                    if webhook_url.startswith("http"):
+                         from urllib.parse import urlparse
+                         parsed = urlparse(webhook_url)
+                         base_url = f"{parsed.scheme}://{parsed.netloc}/"
 
-            cur = conn.cursor()
+            public_file_url = f"{base_url}static/reports/{unique_filename}"
+            print(f"[DEBUG] Public Report URL: {public_file_url}")
 
-            
-
-            # Get lab_id for the admin
-
-            cur.execute("SELECT lab_id FROM lab_admin_profile WHERE user_id=%s", (user_id,))
-
-            lab_row = cur.fetchone()
-
-            lab_id = lab_row[0] if lab_row else None
-
-
-
+            # 2. Get Patient Phone
             cur.execute("""
-
-                INSERT INTO reports (patient_id, test_name, file_path, status, lab_id)
-
-                VALUES (%s, %s, %s, 'Uploaded', %s)
-
-            """, (patient_id, test_name, file_url, lab_id))
-
+                SELECT up.contact_number, u.phone_number 
+                FROM users u 
+                LEFT JOIN user_profile up ON u.id = up.user_id 
+                WHERE u.id=%s
+            """, (patient_id,))
+            p_row = cur.fetchone()
             
+            patient_phone = None
+            if p_row:
+                patient_phone = p_row[0] if p_row[0] else p_row[1]
+            
+            if patient_phone:
+                 msg_body = (
+                     f"📄 *Lab Report Ready*\n\n"
+                     f"Your report for *{test_name}* is now available.\n"
+                     f"Please find the attached PDF."
+                 )
+                 media_link = public_file_url if unique_filename.lower().endswith('.pdf') else None
+                 
+                 if not media_link:
+                     msg_body += f"\n\nView here: {public_file_url}"
 
-            # Auto-update prescription status
+                 threading.Thread(target=send_whatsapp_message, args=(patient_phone, msg_body, media_link)).start()
+            else:
+                 print(f"[WARN] No phone number found for patient {patient_id}")
 
-            try:
+        except Exception as wa_err:
+            print(f"[ERROR] Failed to send report WhatsApp: {wa_err}")
 
-                cur.execute("""
-
-                    UPDATE prescription 
-
-                    SET status='Completed' 
-
-                    WHERE user_id=%s AND status='Pending' 
-
-                    ORDER BY created_at DESC LIMIT 1
-
-                """, (patient_id,))
-
-            except Exception:
-
-                pass
-
-
-
+        # Auto-update prescription status (Best Effort)
+        try:
+            cur.execute("""
+                UPDATE prescription 
+                SET status='Completed' 
+                WHERE user_id=%s AND status='Pending' 
+                ORDER BY created_at DESC LIMIT 1
+            """, (patient_id,))
             conn.commit()
+        except Exception:
+            pass
 
-            return jsonify({"message": "Report Uploaded"}), 201
+        return jsonify({"message": "Report Uploaded"}), 201
 
-        finally:
-
+    except Exception as e:
+        print(f"[ERROR] Upload Report Failed: {e}")
+        return jsonify({"message": f"Upload failed: {str(e)}"}), 500
+    finally:
+        if 'conn' in locals() and conn.is_connected():
             conn.close()
-
-    return jsonify({"message": "Upload failed"}), 500
 
 
 
