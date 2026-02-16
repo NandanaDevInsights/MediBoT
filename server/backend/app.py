@@ -3834,23 +3834,16 @@ def get_admin_appointments():
         if role == "SUPER_ADMIN":
 
             # Super Admin sees all appointments
-
             cur.execute("""
-
                 SELECT 
-
                     a.id, a.user_id, a.patient_name, a.lab_name, a.doctor_name, 
-
                     a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
-
-                    up.contact_number, a.payment_status, a.technician, a.sample_type, a.report_status
-
+                    up.contact_number, a.payment_status, a.technician, a.sample_type, a.report_status,
+                    u.username, u.email
                 FROM appointments a
-
                 LEFT JOIN user_profile up ON a.user_id = up.user_id
-
+                LEFT JOIN users u ON a.user_id = u.id
                 ORDER BY a.created_at DESC
-
             """)
 
         else:
@@ -3866,24 +3859,18 @@ def get_admin_appointments():
             
 
             cur.execute("""
-
                 SELECT 
-
                     a.id, a.user_id, a.patient_name, a.lab_name, a.doctor_name, 
-
                     a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
-
-                    up.contact_number, a.payment_status, a.technician, a.sample_type, a.report_status
-
+                    up.contact_number, a.payment_status, a.technician, a.sample_type, a.report_status,
+                    u.username, u.email
                 FROM appointments a
-
                 LEFT JOIN user_profile up ON a.user_id = up.user_id
-
+                LEFT JOIN users u ON a.user_id = u.id
                 WHERE a.lab_name = %s
-
                 ORDER BY a.created_at DESC
-
             """, (lab_admin_lab_name,))
+            
 
         
 
@@ -3896,41 +3883,25 @@ def get_admin_appointments():
         appointments = []
 
         for row in rows:
-
-            aid, uid, p_name, l_name, d_name, tests, a_date, a_time, status, loc, contact, pay_status, tech, sample, rep_status = row
-
+            aid, uid, p_name, l_name, d_name, tests, a_date, a_time, status, loc, contact, pay_status, tech, sample, rep_status, username, email = row
             appointments.append({
-
                 "id": aid,
-
                 "user_id": uid,
-
                 "patient": p_name,
-
+                "username": username,
+                "email": email,
                 "labName": l_name,
-
                 "doctor": d_name,
-
                 "technician": tech if tech else d_name, # Map doctor to technician for UI
-
                 "test": tests,
-
                 "date": str(a_date),
-
                 "time": str(a_time),
-
                 "status": status,
-
                 "location": loc,
-
                 "contact": contact or "N/A",
-
                 "paymentStatus": pay_status or "Pending",
-
                 "sampleType": sample or "N/A",
-
                 "reportStatus": rep_status or "Pending"
-
             })
 
 
@@ -3956,72 +3927,60 @@ def get_admin_appointments():
 
 
 @app.get("/api/admin/patients")
-
 def get_admin_patients():
-
     current_role = session.get("role")
-
+    user_id = session.get("user_id")
     if current_role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
-
         return jsonify({"message": "Unauthorized"}), 403
 
-
-
     conn = get_connection()
-
     try:
-
         cur = conn.cursor()
-
         
+        # Determine lab_name for filtering if LAB_ADMIN
+        lab_name_filter = None
+        if current_role == "LAB_ADMIN":
+            cur.execute("SELECT lab_name FROM lab_admin_profile WHERE user_id=%s LIMIT 1", (user_id,))
+            lab_row = cur.fetchone()
+            if lab_row:
+                lab_name_filter = lab_row[0]
+            
+            if not lab_name_filter:
+                return jsonify([]), 200
 
-        # 1. Active Registered Users
+        # 1. Active Registered Users (Filtered by appointment at the specific lab)
+        if current_role == "LAB_ADMIN":
+            # Only users who have made an appointment at this lab
+            where_condition = "WHERE u.role='USER' AND u.id IN (SELECT user_id FROM appointments WHERE lab_name = %s)"
+            params = (lab_name_filter,)
+        else:
+            # For SUPER_ADMIN, only include users who have made AT LEAST ONE appointment anywhere
+            where_condition = "WHERE u.role='USER' AND u.id IN (SELECT user_id FROM appointments)"
+            params = ()
 
-        query_users = """
-
+        query_users = f"""
             SELECT 
-
                 u.id, 
-
                 u.email, 
-
                 u.created_at,
-
                 (SELECT COUNT(*) FROM prescription p WHERE p.user_id = u.id) as reports_count,
-
                 (SELECT mobile_number FROM prescription p WHERE p.user_id = u.id AND mobile_number IS NOT NULL ORDER BY created_at DESC LIMIT 1) as phone,
-
                 (SELECT file_path FROM prescription p WHERE p.user_id = u.id ORDER BY created_at DESC LIMIT 1) as latest_rx,
-
                 up.display_name,
-
                 up.age,
-
                 up.gender,
-
                 up.blood_group,
-
                 up.contact_number,
-
                 up.address,
-
                 up.profile_pic_url,
-
                 u.username,
-
                 (SELECT test_type FROM appointments a WHERE a.user_id = u.id ORDER BY created_at DESC LIMIT 1) as latest_test,
-
                 (SELECT test_type FROM prescription p WHERE p.user_id = u.id OR (p.username = u.username AND p.username IS NOT NULL) ORDER BY created_at DESC LIMIT 1) as presc_test
-
             FROM users u 
-
             LEFT JOIN user_profile up ON u.id = up.user_id
-
-            WHERE u.role='USER'
-
+            {where_condition}
         """
-
-        cur.execute(query_users)
+        cur.execute(query_users, params)
 
         user_rows = cur.fetchall()
 
@@ -4092,26 +4051,28 @@ def get_admin_patients():
 
 
         # 2. Add Guest Patients from Appointments
-
         # Fetch distinct guests by identifying info (phone or name+email)
-
-        query_guests = """
-
-            SELECT DISTINCT patient_name, contact_number, email, age, gender, created_at, test_type
-
-            FROM appointments 
-
-            WHERE user_id IS NULL OR user_id = 0
-
-            GROUP BY patient_name, contact_number, email
-
-            ORDER BY created_at DESC
-
-        """
+        if current_role == "LAB_ADMIN":
+            query_guests = """
+                SELECT DISTINCT patient_name, contact_number, email, age, gender, created_at, test_type
+                FROM appointments 
+                WHERE (user_id IS NULL OR user_id = 0) AND lab_name = %s
+                GROUP BY patient_name, contact_number, email
+                ORDER BY created_at DESC
+            """
+            guest_params = (lab_name_filter,)
+        else:
+            query_guests = """
+                SELECT DISTINCT patient_name, contact_number, email, age, gender, created_at, test_type
+                FROM appointments 
+                WHERE user_id IS NULL OR user_id = 0
+                GROUP BY patient_name, contact_number, email
+                ORDER BY created_at DESC
+            """
+            guest_params = ()
 
         try:
-
-             cur.execute(query_guests)
+             cur.execute(query_guests, guest_params)
 
              guest_rows = cur.fetchall()
 
