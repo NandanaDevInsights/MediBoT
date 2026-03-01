@@ -942,6 +942,7 @@ def login_user():
 
         # Using ID from users table as the primary source of truth
 
+        session.clear()
         session["user_id"] = user_id
 
         session["email"] = email
@@ -1168,6 +1169,7 @@ def login_lab_admin():
 
       # Success - Set Session
 
+      session.clear()
       session["user_id"] = uid
 
       session["email"] = email
@@ -1280,6 +1282,7 @@ def verify_otp():
 
         # Set Session
 
+        session.clear()
         session["user_id"] = user_id
 
         session["email"] = email

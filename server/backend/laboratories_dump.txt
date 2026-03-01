@@ -1,0 +1,4 @@
+{'id': -5, 'name': 'Sri Diagnostics Pvt (Ltd)', 'location': 'Kanjirapally, Kottayam'}
+{'id': -4, 'name': 'DDRC SRL Diagnostic Center', 'location': 'Kanjirapally, Kottayam'}
+{'id': -3, 'name': 'Marymatha Clinical Laboratory', 'location': 'Kanjirapally, Kottayam'}
+{'id': 2, 'name': 'Royal Clinical Laboratory', 'location': 'Kanjirappally, Kottayam'}

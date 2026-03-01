@@ -1,0 +1,8 @@
+LAB: 'Royal Clinical Laboratory' | LOC: 'Kanjirappally, Kottayam'
+LAB: 'Royal Clinical Laboratory' | LOC: 'Kanjirappally, Kottayam'
+LAB: 'Royal Clinical Laboratory' | LOC: 'Kanjirappally, Kottayam'
+LAB: 'Royal Clinical Laboratory' | LOC: 'Kanjirappally, Kottayam'
+LAB: 'Medivison' | LOC: 'Nearby'
+LAB: 'Royal Clinical Laboratory' | LOC: 'Kanjirappally, Kottayam'
+LAB: 'Medivison' | LOC: 'Nearby'
+LAB: 'Medivison' | LOC: 'Nearby'

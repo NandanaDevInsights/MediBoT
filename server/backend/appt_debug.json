@@ -1,0 +1,42 @@
+[
+  {
+    "id": 3,
+    "lab_name": "Royal Clinical Laboratory",
+    "location": "Kanjirappally, Kottayam"
+  },
+  {
+    "id": 4,
+    "lab_name": "Royal Clinical Laboratory",
+    "location": "Kanjirappally, Kottayam"
+  },
+  {
+    "id": 5,
+    "lab_name": "Royal Clinical Laboratory",
+    "location": "Kanjirappally, Kottayam"
+  },
+  {
+    "id": 6,
+    "lab_name": "Royal Clinical Laboratory",
+    "location": "Kanjirappally, Kottayam"
+  },
+  {
+    "id": 8,
+    "lab_name": "Medivison",
+    "location": "Nearby"
+  },
+  {
+    "id": 9,
+    "lab_name": "Royal Clinical Laboratory",
+    "location": "Kanjirappally, Kottayam"
+  },
+  {
+    "id": 10,
+    "lab_name": "Medivison",
+    "location": "Nearby"
+  },
+  {
+    "id": 11,
+    "lab_name": "Medivison",
+    "location": "Nearby"
+  }
+]

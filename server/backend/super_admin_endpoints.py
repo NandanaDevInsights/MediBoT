@@ -91,28 +91,39 @@ def register_super_admin_endpoints(app):
 
     @app.get("/api/super-admin/all-bookings")
     def get_all_bookings():
+        role = session.get("role")
+        print(f"[DEBUG] /api/super-admin/all-bookings requested by role: {role}")
         if not check_super_admin():
+            print("[DEBUG] Unauthorized access to bookings.")
             return jsonify({"message": "Unauthorized"}), 403
             
         conn = get_connection()
         try:
             cur = conn.cursor(dictionary=True)
-            cur.execute("""
+            # Fetch from both appointments and bookings table to be exhaustive
+            # Joined with laboratories to get names for the 'bookings' table records
+            query = """
                 SELECT 
-                    id, 
-                    patient_name as patient, 
-                    lab_name as lab, 
-                    test_type as test, 
-                    location, 
-                    appointment_time as time,
-                    appointment_date as date,
-                    payment_status as payment,
-                    status
-                FROM appointments
-                ORDER BY created_at DESC
-                LIMIT 100
-            """)
+                    CONCAT('APP-', a.id) as id, 
+                    a.patient_name as patient, 
+                    COALESCE(a.lab_name, l.name, 'External Lab') as lab, 
+                    COALESCE(a.tests, a.test_type, 'General Checkup') as test, 
+                    COALESCE(a.location, l.location, 'Remote/Home') as location, 
+                    CAST(a.appointment_time AS CHAR) as time,
+                    CAST(a.appointment_date AS CHAR) as date,
+                    a.payment_status as payment,
+                    a.status,
+                    a.created_at
+                FROM appointments a
+                LEFT JOIN laboratories l ON a.lab_id = l.id
+                ORDER BY a.created_at DESC
+                LIMIT 1000
+            """
+            cur.execute(query)
             rows = cur.fetchall()
+            print(f"[DEBUG] Returning {len(rows)} combined records.")
+            if len(rows) > 0:
+                print(f"[DEBUG] Sample record: {rows[0]}")
             return jsonify(rows), 200
         except Exception as e:
             return jsonify({"message": str(e)}), 500
@@ -127,7 +138,34 @@ def register_super_admin_endpoints(app):
         conn = get_connection()
         try:
             cur = conn.cursor(dictionary=True)
-            cur.execute("SELECT username as name, role, email, created_at as date FROM users")
+            # Combine all logins from 'users' and 'lab_admin_users'
+            # We want both lab admins and patients, avoiding duplicates by email.
+            query = """
+                SELECT * FROM (
+                    SELECT 
+                        COALESCE(lp.admin_name, up.display_name, ups.display_name, u.username, u.email) as name, 
+                        u.role, 
+                        u.email, 
+                        u.created_at as date 
+                    FROM users u
+                    LEFT JOIN user_profile up ON u.id = up.user_id
+                    LEFT JOIN user_profiles ups ON u.id = ups.user_id
+                    LEFT JOIN lab_admin_profile lp ON u.id = lp.user_id
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        email as name, 
+                        role, 
+                        email, 
+                        created_at as date 
+                    FROM lab_admin_users
+                    WHERE email NOT IN (SELECT email FROM users)
+                ) as combined
+                WHERE role IN ('USER', 'LAB_ADMIN')
+                ORDER BY date DESC
+            """
+            cur.execute(query)
             rows = cur.fetchall()
             return jsonify(rows), 200
         except Exception as e:
