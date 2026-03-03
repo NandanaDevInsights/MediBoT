@@ -5161,7 +5161,7 @@ def update_appointment_status(id):
                         SELECT 
                             a.user_id, a.tests, a.appointment_date, a.lab_name, a.contact_number,
                             up.contact_number, a.patient_name, a.appointment_time, a.payment_status,
-                            u.phone_number
+                            u.phone_number, u.username
                         FROM appointments a
                         LEFT JOIN user_profile up ON a.user_id = up.user_id
                         LEFT JOIN users u ON a.user_id = u.id
@@ -5170,7 +5170,7 @@ def update_appointment_status(id):
                     appt = cur.fetchone()
                     
                     if appt and appt[0]:
-                        uid, tests, date, lab_name, apt_contact, prof_contact, patient_name, appt_time, payment_status, user_phone = appt
+                        uid, tests, date, lab_name, apt_contact, prof_contact, patient_name, appt_time, payment_status, user_phone, username = appt
                         
                         # Format date nicely
                         try:
@@ -5187,7 +5187,8 @@ def update_appointment_status(id):
                         msg = (
                             f"✅ *MediBot Booking Confirmed*\n\n"
                             f"👤 *Patient:* {patient_name}\n"
-                            f"🧪 *Tests:* {tests}\n"
+                            f"🔑 *Login Name:* {username if username else 'N/A'}\n"
+                            f"🧪 *Tests:* {tests if tests else 'General'}\n"
                             f"📅 *Date:* {date_display} at {appt_time if appt_time else '10:30 AM'}\n"
                             f"🏥 *Lab:* {lab_name if lab_name else 'Royal Clinical Laboratory'}\n"
                             f"💳 *Status:* {payment_status if payment_status else 'Pending'}\n\n"
@@ -6905,41 +6906,61 @@ def delete_notification(id):
         conn.close()
 
 
+# --- Unified WhatsApp Messaging Logic ---
 def send_whatsapp_message(to_number, body_text, media_url=None):
+    """
+    Unified WhatsApp sender using Twilio with robust number formatting.
+    """
     try:
         account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
         auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-        from_number = os.environ.get('TWILIO_WHATSAPP_NUMBER')
+        from_number = os.environ.get('TWILIO_WHATSAPP_NUMBER') or os.environ.get('TWILIO_PHONE_NUMBER')
         
-        # basic validation
+        # Validation
         if not account_sid or not auth_token or not from_number:
-            print("[ERROR] Twilio credentials missing in environment variables")
+            print("[ERROR] Twilio credentials (SID/Token/From) missing in environment variables.")
             return
 
-        client = Client(account_sid, auth_token)
+        # Sanitize 'to_number'
+        # Remove any non-digit chars except '+' for E.164 consistency
+        clean_to = str(to_number).strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        if clean_to.lower().startswith("whatsapp:"):
+            clean_to = clean_to[9:]
+
+        # Auto-prefix with +91 if it's 10 digits without country code (Context: India default)
+        if not clean_to.startswith("+"):
+            if len(clean_to) == 10:
+                clean_to = "+91" + clean_to
+            else:
+                # Still try to use it, but Twilio might reject if not E.164
+                pass
+
+        final_to = f"whatsapp:{clean_to}"
         
-        # Ensure 'whatsapp:' prefix
-        if not to_number.startswith("whatsapp:"):
-            to_number = f"whatsapp:{to_number}"
-        if not from_number.startswith("whatsapp:"):
-            from_number = f"whatsapp:{from_number}"
+        # Sanitize 'from_number'
+        clean_from = str(from_number).strip()
+        if not clean_from.lower().startswith("whatsapp:"):
+            clean_from = f"whatsapp:{clean_from}"
+
+        client = Client(account_sid, auth_token)
             
         message_args = {
-            'from_': from_number,
+            'from_': clean_from,
             'body': body_text,
-            'to': to_number
+            'to': final_to
         }
         
         if media_url:
             message_args['media_url'] = [media_url]
 
         message = client.messages.create(**message_args)
-        print(f"[INFO] WhatsApp sent to {to_number}: {message.sid}")
+        print(f"[INFO] WhatsApp sent successfully to {final_to}! SID: {message.sid}")
         
     except Exception as e:
-        print(f"[ERROR] Logic error in send_whatsapp_message: {e}")
+        print(f"[ERROR] Twilio integration failure: {e}")
 
 
+# --- Lab Admin Report Upload Flow ---
 @app.post("/api/admin/upload-report")
 
 def upload_report():
@@ -7077,19 +7098,29 @@ def upload_report():
                 patient_phone = p_row[0] if p_row[0] else p_row[1]
             
             if patient_phone:
-                 msg_body = (
-                     f"📄 *Lab Report Ready*\n\n"
-                     f"Your report for *{test_name}* is now available.\n"
-                     f"Please find the attached PDF."
-                 )
-                 media_link = public_file_url if unique_filename.lower().endswith('.pdf') else None
-                 
-                 if not media_link:
-                     msg_body += f"\n\nView here: {public_file_url}"
+                now = datetime.now()
+                date_str = now.strftime('%d-%b-%Y')
+                time_str = now.strftime('%I:%M %p')
 
-                 threading.Thread(target=send_whatsapp_message, args=(patient_phone, msg_body, media_link)).start()
+                msg_body = (
+                    f"📄 *LAB REPORT ATTACHED*\n\n"
+                    f"Hello *{patient_name}*,\n\n"
+                    f"Your diagnostic report is now available. Please find the details below:\n\n"
+                    f"━━━━━━━━━━━━━━\n"
+                    f"👤 *Patient:* {patient_name}\n"
+                    f"🧪 *Test Ordered:* {test_name}\n"
+                    f"📅 *Date:* {date_str}\n"
+                    f"🕒 *Time:* {time_str}\n"
+                    f"━━━━━━━━━━━━━━\n\n"
+                    f"You can also download your report using the link below:\n"
+                    f"🔗 {public_file_url}\n\n"
+                    f"Thank you for choosing *{lab_name}*!"
+                )
+                media_link = public_file_url if unique_filename.lower().endswith('.pdf') else None
+                
+                threading.Thread(target=send_whatsapp_message, args=(patient_phone, msg_body, media_link)).start()
             else:
-                 print(f"[WARN] No phone number found for patient {patient_id}")
+                print(f"[WARN] No phone number found for patient {patient_id}")
 
         except Exception as wa_err:
             print(f"[ERROR] Failed to send report WhatsApp: {wa_err}")
@@ -8408,7 +8439,39 @@ def create_user_booking():
         
         cur.execute(query, (user_id, patient_name, lab_name, date_str, time_str, tests_str, location, payment_status))
         conn.commit()
+
         new_id = cur.lastrowid
+
+        
+
+        # Add Notification to Super Admin (Platform-wide Alert)
+
+        try:
+
+            notif_query = """
+
+                INSERT INTO admin_notifications 
+
+                (title, description, type, icon) 
+
+                VALUES (%s, %s, 'info', '📅')
+
+            """
+
+            notif_title = f"New Appointment: {patient_name}"
+
+            notif_desc = f"New booking for {lab_name} on {date_str} at {time_str}. Test: {tests_str}"
+
+            cur.execute(notif_query, (notif_title, notif_desc))
+
+            conn.commit()
+
+        except Exception as ne:
+
+            print(f"[ERROR] Failed to insert admin notification: {ne}")
+
+
+
         cur.close()
 
         # Try to send WhatsApp notification

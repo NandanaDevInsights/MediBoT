@@ -69,6 +69,9 @@ def register_super_admin_endpoints(app):
                     l.id, 
                     l.name, 
                     l.location,
+                    l.address,
+                    l.working_hours as openingHours,
+                    l.tests_config,
                     (SELECT COUNT(*) FROM appointments a WHERE a.lab_name = l.name) as bookings,
                     (SELECT COUNT(*) FROM appointments a WHERE a.lab_name = l.name AND a.status = 'Confirmed') as active,
                     (SELECT COUNT(*) FROM appointments a WHERE a.lab_name = l.name AND a.status = 'Completed') as completed,
@@ -178,11 +181,69 @@ def register_super_admin_endpoints(app):
         if not check_super_admin():
             return jsonify({"message": "Unauthorized"}), 403
             
-        # Generates last 7 days chart data
-        data = []
-        for i in range(6, -1, -1):
-            date = datetime.date.today() - datetime.timedelta(days=i)
-            day = date.strftime('%a')
-            data.append({"name": day, "bookings": 0, "revenue": 0})
+        conn = get_connection()
+        try:
+            cur = conn.cursor(dictionary=True)
+            data = []
+            for i in range(6, -1, -1):
+                date = datetime.date.today() - datetime.timedelta(days=i)
+                date_str = date.strftime('%Y-%m-%d')
+                day_name = date.strftime('%a')
+                
+                # Count bookings for this day
+                cur.execute("SELECT COUNT(*) as count FROM appointments WHERE appointment_date = %s", (date_str,))
+                bookings = cur.fetchone()['count']
+                
+                # Revenue (Mocking based on bookings or status)
+                cur.execute("SELECT COUNT(*) as count FROM appointments WHERE appointment_date = %s AND payment_status = 'Paid'", (date_str,))
+                paid_count = cur.fetchone()['count']
+                revenue = paid_count * 500
+                
+                data.append({"name": day_name, "bookings": bookings, "revenue": revenue, "date": date_str})
+                
+            return jsonify(data), 200
+        except Exception as e:
+            print(f"Chart Data Error: {e}")
+            return jsonify([])
+        finally:
+            conn.close()
+
+
+
+    @app.get("/api/super-admin/notifications")
+
+    def get_admin_notifications():
+
+        if not check_super_admin():
+
+            return jsonify({"message": "Unauthorized"}), 403
+
             
-        return jsonify(data), 200
+
+        conn = get_connection()
+
+        try:
+
+            cur = conn.cursor(dictionary=True)
+
+            cur.execute("SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 50")
+
+            rows = cur.fetchall()
+
+            # Format time for frontend (e.g. "10 mins ago")
+
+            # For now, just return the ISO string
+
+            for row in rows:
+
+                row['created_at'] = row['created_at'].isoformat()
+
+            return jsonify(rows), 200
+
+        except Exception as e:
+
+            return jsonify({"message": str(e)}), 500
+
+        finally:
+
+            conn.close()
