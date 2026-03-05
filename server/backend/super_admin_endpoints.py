@@ -165,7 +165,6 @@ def register_super_admin_endpoints(app):
                     FROM lab_admin_users
                     WHERE email NOT IN (SELECT email FROM users)
                 ) as combined
-                WHERE role IN ('USER', 'LAB_ADMIN')
                 ORDER BY date DESC
             """
             cur.execute(query)
@@ -226,7 +225,7 @@ def register_super_admin_endpoints(app):
 
             cur = conn.cursor(dictionary=True)
 
-            cur.execute("SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 50")
+            cur.execute("SELECT * FROM admin_notification ORDER BY created_at DESC LIMIT 50")
 
             rows = cur.fetchall()
 
@@ -236,7 +235,11 @@ def register_super_admin_endpoints(app):
 
             for row in rows:
 
-                row['created_at'] = row['created_at'].isoformat()
+                if row.get('created_at'):
+
+                    row['created_at'] = row['created_at'].isoformat()
+
+                row['type'] = row.get('notification_type', 'info')
 
             return jsonify(rows), 200
 

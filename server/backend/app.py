@@ -953,7 +953,18 @@ def login_user():
 
         session.permanent = True
 
-        
+        # Add notification for admin login
+        try:
+            cur_notif = conn.cursor()
+            notif_query = "INSERT INTO admin_notification (title, description, notification_type, icon) VALUES (%s, %s, 'info', %s)"
+            notif_title = f"Admin Login: {email}"
+            notif_desc = f"{role} {email} logged in successfully."
+            icon = '🛡️' if role == 'SUPER_ADMIN' else '🏢'
+            cur_notif.execute(notif_query, (notif_title, notif_desc, icon))
+            conn.commit()
+            cur_notif.close()
+        except Exception as ne:
+            print(f"[ERROR] Failed to insert admin login notification: {ne}")
 
         return jsonify({
 
@@ -1178,7 +1189,18 @@ def login_lab_admin():
 
       session["is_admin_table"] = True 
 
-      
+      # Add notification for lab admin login
+      try:
+          cur_notif = conn.cursor()
+          notif_query = "INSERT INTO admin_notification (title, description, notification_type, icon) VALUES (%s, %s, 'info', %s)"
+          notif_title = f"Admin Login: {email}"
+          notif_desc = f"{role} {email} logged in successfully."
+          icon = '🛡️' if role == 'SUPER_ADMIN' else '🏢'
+          cur_notif.execute(notif_query, (notif_title, notif_desc, icon))
+          conn.commit()
+          cur_notif.close()
+      except Exception as ne:
+          print(f"[ERROR] Failed to insert admin login notification: {ne}")
 
       return jsonify({
 
@@ -1293,7 +1315,17 @@ def verify_otp():
 
         session.permanent = True
 
-
+        # Add notification for patient login
+        try:
+            cur_notif = conn.cursor()
+            notif_query = "INSERT INTO admin_notification (title, description, notification_type, icon) VALUES (%s, %s, 'info', '👤')"
+            notif_title = f"Patient Login: {db_username}"
+            notif_desc = f"Patient {db_username} ({email}) logged in successfully."
+            cur_notif.execute(notif_query, (notif_title, notif_desc))
+            conn.commit()
+            cur_notif.close()
+        except Exception as ne:
+            print(f"[ERROR] Failed to insert login notification: {ne}")
 
         # Strict Whitelist Check for Lab Admin
 
@@ -1836,6 +1868,19 @@ def google_callback():
     session["role"] = role
 
     session.permanent = True
+
+    # Add notification for login
+    try:
+        cur_notif = conn.cursor()
+        notif_query = "INSERT INTO admin_notification (title, description, notification_type, icon) VALUES (%s, %s, 'info', %s)"
+        notif_title = f"{role.replace('_', ' ').title()} Login (Google): {email}"
+        notif_desc = f"{role} {email} logged in successfully via Google."
+        icon = '🛡️' if role == 'SUPER_ADMIN' else ('🏢' if role == 'LAB_ADMIN' else '👤')
+        cur_notif.execute(notif_query, (notif_title, notif_desc, icon))
+        conn.commit()
+        cur_notif.close()
+    except Exception as ne:
+        print(f"[ERROR] Failed to insert google login notification: {ne}")
 
   finally:
 
@@ -7071,32 +7116,80 @@ def upload_report():
 
         # Send WhatsApp Notification (Best Effort)
         try:
-            # 1. Get Public Base URL
-            base_url = request.host_url # Fallback
+            # 1. Resolve Patient ID to a real User ID if it's an Appointment ID
+            # Frontend often passes 'A-xxx' or user_id 'xxx'
+            search_id = str(patient_id).replace('A-', '').replace('R-', '').strip()
+            
+            # 1a. Try to get user_id, patient_name, and contact from appointment first
+            cur.execute("SELECT user_id, patient_name, contact_number FROM appointments WHERE id = %s", (search_id,))
+            appt_data = cur.fetchone()
+            
+            p_user_id = None
+            appt_contact = None
+            if appt_data:
+                p_user_id = appt_data[0]
+                if not patient_name or patient_name == "Unknown Patient":
+                    patient_name = appt_data[1] or "Patient"
+                appt_contact = appt_data[2]
+            
+            # 1b. If p_user_id is still None, patient_id might be the user_id itself (numeric)
+            if not p_user_id:
+                try:
+                    p_user_id = int(search_id)
+                except ValueError:
+                    # Not a numeric ID, might be a username if passed as ID (Legacy fallback)
+                    pass
+
+            # 2. Get Public Base URL from NGrok / Webhook if available
+            base_url = request.host_url # Default
             if os.path.exists("WEBHOOK_URL.txt"):
                 with open("WEBHOOK_URL.txt", "r") as f:
                     webhook_url = f.read().strip()
                     if webhook_url.startswith("http"):
-                         from urllib.parse import urlparse
-                         parsed = urlparse(webhook_url)
-                         base_url = f"{parsed.scheme}://{parsed.netloc}/"
-
-            public_file_url = f"{base_url}static/reports/{unique_filename}"
-            print(f"[DEBUG] Public Report URL: {public_file_url}")
-
-            # 2. Get Patient Phone
-            cur.execute("""
-                SELECT up.contact_number, u.phone_number 
-                FROM users u 
-                LEFT JOIN user_profile up ON u.id = up.user_id 
-                WHERE u.id=%s
-            """, (patient_id,))
-            p_row = cur.fetchone()
+                        from urllib.parse import urlparse
+                        parsed = urlparse(webhook_url)
+                        base_url = f"{parsed.scheme}://{parsed.netloc}/"
             
+            public_file_url = f"{base_url.rstrip('/')}/static/reports/{unique_filename}"
+            print(f"[DEBUG] Public Report URL for WhatsApp: {public_file_url}")
+
+            # 3. Get Patient Phone Number (PRIORITY: prescription -> appointment -> profile)
             patient_phone = None
-            if p_row:
-                patient_phone = p_row[0] if p_row[0] else p_row[1]
             
+            # 3a. Check Prescription Table (Targeting "same number through which prescription was uploaded")
+            if p_user_id:
+                cur.execute("""
+                    SELECT mobile_number FROM prescription 
+                    WHERE user_id=%s AND mobile_number IS NOT NULL 
+                    ORDER BY created_at DESC LIMIT 1
+                """, (p_user_id,))
+                p_res = cur.fetchone()
+                if p_res and p_res[0]:
+                    patient_phone = p_res[0]
+                    print(f"[INFO] Using source phone from prescription: {patient_phone}")
+
+            # 3b. Check Appointment Contact (if no prescription number found)
+            if not patient_phone and appt_contact:
+                patient_phone = appt_contact
+                print(f"[INFO] Using contact from appointment: {patient_phone}")
+
+            # 3c. Fallback to User Profile / Users Table
+            if not patient_phone and p_user_id:
+                cur.execute("""
+                    SELECT up.contact_number, u.phone_number, up.display_name
+                    FROM users u 
+                    LEFT JOIN user_profile up ON u.id = up.user_id 
+                    WHERE u.id=%s
+                """, (p_user_id,))
+                p_row = cur.fetchone()
+                if p_row:
+                    patient_phone = p_row[0] if p_row[0] else p_row[1]
+                    # Refine name if missing
+                    if not patient_name or patient_name == "Unknown Patient":
+                        patient_name = p_row[2] or "Patient"
+                    print(f"[INFO] Using phone from user profile: {patient_phone}")
+
+            # 4. Construct and Send Message
             if patient_phone:
                 now = datetime.now()
                 date_str = now.strftime('%d-%b-%Y')
@@ -7105,25 +7198,30 @@ def upload_report():
                 msg_body = (
                     f"📄 *LAB REPORT ATTACHED*\n\n"
                     f"Hello *{patient_name}*,\n\n"
-                    f"Your diagnostic report is now available. Please find the details below:\n\n"
+                    f"Your diagnostic report from *{lab_name}* is now available. Please find the details below:\n\n"
                     f"━━━━━━━━━━━━━━\n"
                     f"👤 *Patient:* {patient_name}\n"
                     f"🧪 *Test Ordered:* {test_name}\n"
                     f"📅 *Date:* {date_str}\n"
-                    f"🕒 *Time:* {time_str}\n"
+                    f"🕒 *Time:* {time_str}\n" 
+                    f"🏥 *Laboratory:* {lab_name}\n"
                     f"━━━━━━━━━━━━━━\n\n"
-                    f"You can also download your report using the link below:\n"
+                    f"You can also download your report directly using this secure link:\n"
                     f"🔗 {public_file_url}\n\n"
+                    f"Please consult your physician for interpretation of these results.\n\n"
                     f"Thank you for choosing *{lab_name}*!"
                 )
+                
+                # Attachment logic (Twilio WhatsApp supports PDF)
                 media_link = public_file_url if unique_filename.lower().endswith('.pdf') else None
                 
+                print(f"[INFO] Triggering WhatsApp for patient {patient_name} ({patient_phone})")
                 threading.Thread(target=send_whatsapp_message, args=(patient_phone, msg_body, media_link)).start()
             else:
-                print(f"[WARN] No phone number found for patient {patient_id}")
+                print(f"[WARN] No valid phone number found for patient/user {search_id}")
 
         except Exception as wa_err:
-            print(f"[ERROR] Failed to send report WhatsApp: {wa_err}")
+            print(f"[ERROR] Critical failure in Report WhatsApp process: {wa_err}")
 
         # Auto-update prescription status (Best Effort)
         try:
@@ -8450,9 +8548,9 @@ def create_user_booking():
 
             notif_query = """
 
-                INSERT INTO admin_notifications 
+                INSERT INTO admin_notification 
 
-                (title, description, type, icon) 
+                (title, description, notification_type, icon) 
 
                 VALUES (%s, %s, 'info', '📅')
 
@@ -8463,8 +8561,16 @@ def create_user_booking():
             notif_desc = f"New booking for {lab_name} on {date_str} at {time_str}. Test: {tests_str}"
 
             cur.execute(notif_query, (notif_title, notif_desc))
-
             conn.commit()
+
+            # Add revenue notification if paid
+            if payment_status == 'Paid':
+                amount_str = f"₹{total_amount}" if total_amount else "Market Price"
+                rev_query = "INSERT INTO admin_notification (title, description, notification_type, icon) VALUES (%s, %s, 'success', '💰')"
+                rev_title = f"Revenue Generated: {lab_name}"
+                rev_desc = f"Revenue of {amount_str} received from {patient_name} for booking at {lab_name}."
+                cur.execute(rev_query, (rev_title, rev_desc))
+                conn.commit()
 
         except Exception as ne:
 

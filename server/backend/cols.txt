@@ -1,14 +1,1 @@
-id
-username
-mobile_number
-file_path
-file_type
-extracted_text
-test_type
-status
-created_at
-image_url
-lab_id
-lab_name
-patient_name
-user_id
+id,lab_id,lab_name,user_id,title,description,notification_type,icon,is_read,created_at,updated_at
