@@ -7112,6 +7112,28 @@ def upload_report():
         """, (patient_id, patient_name, test_name, db_file_path, lab_id, lab_name))
         
         conn.commit()
+        report_id = cur.lastrowid
+        
+        # Take the pdf from reports table in the database
+        cur.execute("SELECT patient_name, test_name, file_path, lab_name, uploaded_at FROM reports WHERE id=%s", (report_id,))
+        report_data = cur.fetchone()
+        
+        date_str = ""
+        time_str = ""
+        if report_data:
+            db_patient_name, db_test_name, db_file, db_lab_name, db_uploaded_at = report_data
+            patient_name = db_patient_name or patient_name
+            test_name = db_test_name or test_name
+            lab_name = db_lab_name or lab_name
+            
+            # Use uploaded_at timestamp
+            if db_uploaded_at:
+                date_str = db_uploaded_at.strftime('%d-%b-%Y')
+                time_str = db_uploaded_at.strftime('%I:%M %p')
+            
+            # Format filename to match DB
+            if db_file:
+                 unique_filename = os.path.basename(db_file)
 
 
         # Send WhatsApp Notification (Best Effort)
@@ -7157,6 +7179,7 @@ def upload_report():
             patient_phone = None
             
             # 3a. Check Prescription Table (Targeting "same number through which prescription was uploaded")
+            # First try by user_id
             if p_user_id:
                 cur.execute("""
                     SELECT mobile_number FROM prescription 
@@ -7166,7 +7189,32 @@ def upload_report():
                 p_res = cur.fetchone()
                 if p_res and p_res[0]:
                     patient_phone = p_res[0]
-                    print(f"[INFO] Using source phone from prescription: {patient_phone}")
+                    print(f"[INFO] Using source phone from prescription (by user_id): {patient_phone}")
+            
+            # 3a-fallback. If no phone found by user_id, try by patient_name
+            # Many WhatsApp prescriptions have user_id=NULL but store the sender number
+            if not patient_phone and patient_name and patient_name not in ("Unknown Patient", "Patient", "Guest User"):
+                cur.execute("""
+                    SELECT mobile_number FROM prescription 
+                    WHERE patient_name=%s AND mobile_number IS NOT NULL 
+                    ORDER BY created_at DESC LIMIT 1
+                """, (patient_name,))
+                p_res = cur.fetchone()
+                if p_res and p_res[0]:
+                    patient_phone = p_res[0]
+                    print(f"[INFO] Using source phone from prescription (by patient_name): {patient_phone}")
+            
+            # 3a-fallback2. Try matching any prescription with a mobile_number (most recent)
+            if not patient_phone:
+                cur.execute("""
+                    SELECT mobile_number FROM prescription 
+                    WHERE mobile_number IS NOT NULL 
+                    ORDER BY created_at DESC LIMIT 1
+                """)
+                p_res = cur.fetchone()
+                if p_res and p_res[0]:
+                    patient_phone = p_res[0]
+                    print(f"[INFO] Using most recent prescription phone as fallback: {patient_phone}")
 
             # 3b. Check Appointment Contact (if no prescription number found)
             if not patient_phone and appt_contact:
@@ -7191,9 +7239,10 @@ def upload_report():
 
             # 4. Construct and Send Message
             if patient_phone:
-                now = datetime.now()
-                date_str = now.strftime('%d-%b-%Y')
-                time_str = now.strftime('%I:%M %p')
+                if not date_str:
+                    now = datetime.now()
+                    date_str = now.strftime('%d-%b-%Y')
+                    time_str = now.strftime('%I:%M %p')
 
                 msg_body = (
                     f"📄 *LAB REPORT ATTACHED*\n\n"
@@ -7213,10 +7262,23 @@ def upload_report():
                 )
                 
                 # Attachment logic (Twilio WhatsApp supports PDF)
-                media_link = public_file_url if unique_filename.lower().endswith('.pdf') else None
+                # Ensure we have a string for the filename and use Case-Insensitive check
+                filename_str = str(unique_filename or "")
+                media_link = None
+                
+                if filename_str.lower().endswith(".pdf"):
+                    media_link = str(public_file_url)
+                    print(f"[DEBUG] Valid PDF detected for WhatsApp. Link: {media_link}")
+                else:
+                    print(f"[DEBUG] No PDF extension for {filename_str}, sending text only.")
+
+                # Force absolute URL for media_link if base_url is known
+                if media_link and not media_link.startswith("http"):
+                     media_link = f"{base_url.rstrip('/')}/{media_link.lstrip('/')}"
                 
                 print(f"[INFO] Triggering WhatsApp for patient {patient_name} ({patient_phone})")
-                threading.Thread(target=send_whatsapp_message, args=(patient_phone, msg_body, media_link)).start()
+                import threading as _threading
+                _threading.Thread(target=send_whatsapp_message, args=(patient_phone, msg_body, media_link)).start()
             else:
                 print(f"[WARN] No valid phone number found for patient/user {search_id}")
 
