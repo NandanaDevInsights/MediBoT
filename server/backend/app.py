@@ -6289,8 +6289,8 @@ def manage_lab_settings():
 
                     "workingHours": load_json(row.get('working_hours')),
 
-                    "workingDays": load_json(row.get('working_days'))
-
+                    "workingDays": load_json(row.get('working_days')),
+                    "holidays": load_json(row.get('holidays'))
                 }), 200
 
             return jsonify({}), 404
@@ -6307,7 +6307,7 @@ def manage_lab_settings():
 
                 UPDATE laboratories 
 
-                SET tests_config=%s, working_hours=%s, working_days=%s 
+                SET tests_config=%s, working_hours=%s, working_days=%s, holidays=%s 
 
                 WHERE id=%s
 
@@ -6318,7 +6318,7 @@ def manage_lab_settings():
                 json.dumps(data.get('workingHours')),
 
                 json.dumps(data.get('workingDays')),
-
+                json.dumps(data.get('holidays')),
                 lab_id
 
             ))
@@ -6363,7 +6363,7 @@ def get_public_lab_settings_by_name():
 
         # Try finding by name (case-insensitive and trimmed)
 
-        cur.execute("SELECT tests_config, working_hours, working_days, address, location FROM laboratories WHERE LOWER(TRIM(name))=LOWER(TRIM(%s)) LIMIT 1", (lab_name,))
+        cur.execute("SELECT tests_config, working_hours, working_days, holidays, address, location FROM laboratories WHERE LOWER(TRIM(name))=LOWER(TRIM(%s)) LIMIT 1", (lab_name,))
 
         row = cur.fetchone()
 
@@ -6394,7 +6394,7 @@ def get_public_lab_settings_by_name():
             "workingHours": load_json(row.get('working_hours')),
 
             "workingDays": load_json(row.get('working_days')),
-
+            "holidays": load_json(row.get('holidays')),
             "address": row.get('address'),
 
             "location": row.get('location')
@@ -6425,7 +6425,7 @@ def get_public_lab_settings(lab_id):
 
         cur = conn.cursor(dictionary=True)
 
-        cur.execute("SELECT tests_config, working_hours, working_days FROM laboratories WHERE id=%s", (lab_id,))
+        cur.execute("SELECT tests_config, working_hours, working_days, holidays FROM laboratories WHERE id=%s", (lab_id,))
 
         row = cur.fetchone()
 
@@ -6455,8 +6455,8 @@ def get_public_lab_settings(lab_id):
 
             "workingHours": load_json(row.get('working_hours')),
 
-            "workingDays": load_json(row.get('working_days'))
-
+            "workingDays": load_json(row.get('working_days')),
+            "holidays": load_json(row.get('holidays'))
         }), 200
 
     except Exception as e:
@@ -6798,7 +6798,7 @@ def get_all_reports():
 
 
         cur.execute(f"""
-            SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at, u.username, r.patient_id
+            SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at, u.username, r.patient_id, r.appointment_id
             FROM reports r
             LEFT JOIN users u ON r.patient_id = u.id
             {where_clause_reports}
@@ -6806,62 +6806,113 @@ def get_all_reports():
         """, [params[0]] if where_clause_reports else [])
 
         rows = cur.fetchall()
-        reports = []
+        reports_list = []
+        reported_appointment_ids = set()
+
         for row in rows:
             p_name = row[6] if len(row) > 6 and row[6] else (row[1] or "Unknown")
-            
-            reports.append({
+            if row[8]: reported_appointment_ids.add(row[8])
+
+            reports_list.append({
                 "id": row[0],
                 "patient_name": p_name,
                 "email": row[1],
                 "test_name": row[2],
                 "file_path": f"{request.host_url.rstrip('/')}/api/view-report/{row[0]}",
-                "status": row[4],
+                "status": "Available",
                 "uploaded_at": str(row[5]) if row[5] else 'N/A',
-                "patient_id": row[7]
+                "patient_id": row[7],
+                "type": "report"
             })
 
+        # Fetch Confirmed Appointments that don't have a report yet
         cur.execute(f"""
-
-            SELECT id, patient_name, test_type, appointment_date, status, user_id 
-
+            SELECT id, patient_name, test_type, appointment_date, status, user_id, tests
             FROM appointments 
-
             {where_clause_appts}
-
-            ORDER BY appointment_date DESC LIMIT 50
-
+            ORDER BY appointment_date DESC
         """, params if where_clause_appts else [])
 
         appt_rows = cur.fetchall()
-
         for a in appt_rows:
+            # Only include confirmed appointments that don't already have a report
+            if a[4] == 'Confirmed' and a[0] not in reported_appointment_ids:
+                reports_list.append({
+                    "id": f"A-{a[0]}",
+                    "patient_name": a[1] or "Guest",
+                    "test_name": a[2] or a[6] or "Unknown Test",
+                    "file_path": "",
+                    "status": "Pending Upload",
+                    "uploaded_at": str(a[3]),
+                    "patient_id": a[5],
+                    "type": "appointment_entry"
+                })
 
-            reports.append({
+        # Sort by date
+        reports_list.sort(key=lambda x: x['uploaded_at'], reverse=True)
 
-                "id": f"A-{a[0]}",
+        return jsonify(reports_list), 200
 
-                "patient": a[1] or "Guest",
-
-                "test": a[2],
-
-                "file_path": "",
-
-                "status": "Pending Upload",
-
-                "date": str(a[3]),
-
-                "type": "appointment_entry" 
-
-            })
-
-
-
-        return jsonify(reports), 200
-
+    except Exception as e:
+        print(f"[ERROR] Fetch reports failed: {e}")
+        return jsonify({"message": "Server error"}), 500
     finally:
-
         conn.close()
+
+@app.post("/api/admin/reports/upload")
+def upload_lab_report():
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    # Get file and appointment id
+    report_file = request.files.get('report')
+    appointment_id_str = request.form.get('appointment_id')
+    
+    if not report_file or not appointment_id_str:
+        return jsonify({"message": "Report file and Appointment ID required"}), 400
+        
+    # Clean appointment ID
+    appointment_id = appointment_id_str.replace('A-', '')
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+        # Fetch appointment details
+        cur.execute("SELECT * FROM appointments WHERE id = %s", (appointment_id,))
+        appt = cur.fetchone()
+        if not appt:
+            return jsonify({"message": "Appointment not found"}), 404
+            
+        # Read file content for BLOB storage
+        file_content = report_file.read()
+        
+        # Insert into reports table
+        cur.execute("""
+            INSERT INTO reports (patient_id, test_name, file_path, status, uploaded_at, lab_id, appointment_id, report_content)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            appt['user_id'],
+            appt['test_type'] or appt['tests'],
+            f"reports/{report_file.filename}", # Dummy path, we use BLOB
+            'Completed',
+            datetime.now(),
+            appt.get('lab_id'),
+            appointment_id,
+            file_content
+        ))
+        
+        # Update appointment status if needed? User didn't ask for it, but it makes sense.
+        # User said "first it must be uplod on that report then after uploading pdf change upload to view"
+        # We'll just rely on the existence of report record for the view button.
+
+        conn.commit()
+        return jsonify({"message": "Report uploaded successfully"}), 200
+    except Exception as e:
+        print(f"[ERROR] Report upload failed: {e}")
+        return jsonify({"message": "Upload failed"}), 500
+    finally:
+        conn.close()
+
 
 
 

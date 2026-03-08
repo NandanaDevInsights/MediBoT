@@ -1,0 +1,18 @@
+[INIT] Twilio SID: AC87e1526e...
+[INFO] prescription table ready with all required fields.
+{'id': 3, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Royal Clinical Laboratory', 'patient_name': 'keerthanapramod55'}
+{'id': 4, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Royal Clinical Laboratory', 'patient_name': 'jewelbiju2028'}
+{'id': 5, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Royal Clinical Laboratory', 'patient_name': 'nandanapramod329'}
+{'id': 6, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Royal Clinical Laboratory', 'patient_name': 'jewelbiju2028'}
+{'id': 8, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Medivison', 'patient_name': 'nandanapramod329'}
+{'id': 9, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Royal Clinical Laboratory', 'patient_name': 'Sherya'}
+{'id': 10, 'status': 'Confirmed', 'lab_id': None, 'lab_name': 'Medivison', 'patient_name': 'Sherya'}
+{'id': 11, 'status': 'Confirmed', 'lab_id': None, 'lab_name': 'Medivison', 'patient_name': 'Ankith'}
+{'id': 12, 'status': 'Pending', 'lab_id': None, 'lab_name': 'Marymatha Clinical Laboratory', 'patient_name': 'Sherya'}
+{'id': 13, 'status': 'Pending', 'lab_id': None, 'lab_name': "Lissy's Clinical Labortary", 'patient_name': 'Sherya'}
+{'id': 14, 'status': 'Pending', 'lab_id': None, 'lab_name': 'Medline Diagnostics Center', 'patient_name': 'Sherya'}
+{'id': 15, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Royal Clinical Laboratory', 'patient_name': 'James'}
+{'id': 18, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Royal Clinical Laboratory', 'patient_name': 'Ankith'}
+{'id': 19, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Marymatha Clinical Laboratory', 'patient_name': 'Ankith'}
+{'id': 20, 'status': 'Pending', 'lab_id': None, 'lab_name': 'Dianova Laboratory', 'patient_name': 'Sherya'}
+{'id': 21, 'status': 'Completed', 'lab_id': None, 'lab_name': 'Royal Clinical Laboratory', 'patient_name': 'Rakesh'}
