@@ -38,7 +38,7 @@ from email.message import EmailMessage
 
 from urllib.parse import urlencode
 
-from flask import Flask, jsonify, redirect, request, session
+from flask import Flask, jsonify, redirect, request, session, send_file
 
 from flask_cors import CORS
 
@@ -658,75 +658,89 @@ def send_otp_email(to_email: str, otp_code: str):
 
 
 
-def send_whatsapp_message(to_number: str, message_body: str, media_url: str = None):
 
-    """Send WhatsApp message using Twilio."""
-
-    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
-
-    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
-
-    from_number = os.environ.get("TWILIO_PHONE_NUMBER") # e.g. "whatsapp:+14155238886"
-
-
-
-    if not account_sid or not auth_token or not from_number:
-
-        print("[DEBUG] Twilio credentials missing. WhatsApp skipped.")
-
-        return
-
-
-
-    if not to_number:
-
-        return
-
-
-
-    # Ensure to_number has 'whatsapp:' prefix
-
-    # Assuming to_number comes as "+919999999999" or "9999999999"
-
-    # We need strictly E.164 format with "whatsapp:" prefix
-
-    
-
-    # Simple sanitization
-    clean_number = to_number.strip().replace(" ", "").replace("-", "")
-    if clean_number.lower().startswith("whatsapp:"):
-        clean_number = clean_number[9:]
-
-    if not clean_number.startswith("+"):
-
-        # Default to India if no country code? Or just warn?
-
-        # Let's assume user provides country code or we default to +91 for this context if missing
-
-        if len(clean_number) == 10:
-
-             clean_number = "+91" + clean_number
-
-    
-
-    formatted_to = f"whatsapp:{clean_number}"
-
+def send_appointment_notification(appointment_id, cur):
+    """
+    Helper to send in-app and WhatsApp notifications when an appointment 
+    is confirmed or completed.
+    """
     try:
-        client = Client(account_sid, auth_token)
-        msg_params = {
-            "from_": from_number,
-            "body": message_body,
-            "to": formatted_to
-        }
-        if media_url:
-            msg_params["media_url"] = [media_url]
+        # Fetch details (Removed u.phone_number which doesn't exist)
+        cur.execute("""
+            SELECT 
+                a.user_id, a.tests, a.appointment_date, a.lab_name, a.contact_number,
+                up.contact_number, a.patient_name, a.appointment_time, a.payment_status,
+                u.username
+            FROM appointments a
+            LEFT JOIN user_profile up ON a.user_id = up.user_id
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.id=%s
+        """, (appointment_id,))
+        appt = cur.fetchone()
+        
+        if appt:
+            uid, tests, date, lab_name, apt_contact, prof_contact, patient_name, appt_time, payment_status, username = appt
+            
+            # Format date nicely
+            try:
+                from datetime import datetime
+                if isinstance(date, str):
+                    date_obj = datetime.strptime(str(date), '%Y-%m-%d')
+                else:
+                    date_obj = date
+                date_display = date_obj.strftime('%d/%m/%Y')
+            except:
+                date_display = str(date)
+            
+            # Create notification message
+            msg = (
+                f"✅ *MediBot Booking Confirmed*\n\n"
+                f"👤 *Patient:* {patient_name}\n"
+                f"🔑 *Login Name:* {username if username else 'N/A'}\n"
+                f"🧪 *Tests:* {tests if tests else 'General'}\n"
+                f"📅 *Date:* {date_display} at {appt_time if appt_time else '10:30 AM'}\n"
+                f"🏥 *Lab:* {lab_name if lab_name else 'Royal Clinical Laboratory'}\n"
+                f"💳 *Status:* {payment_status if payment_status else 'Pending'}\n\n"
+                f"Thank you for choosing MediBot! Type 'Hi' for assistance."
+            )
 
-        message = client.messages.create(**msg_params)
-        print(f"[DEBUG] WhatsApp sent to {formatted_to}: {message.sid}")
+            # 1. Db Notification (Landing Page) - only if user_id exists
+            if uid:
+                try:
+                    cur.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (uid, msg))
+                except Exception as dbe:
+                    print(f"[WARN] Failed to insert notification: {dbe}")
 
-    except Exception as e:
+            # 2. WhatsApp Notifications
+            # Final contact priority: appointment contact -> profile contact
+            final_contact = apt_contact if apt_contact else prof_contact
 
-        print(f"[ERROR] Failed to send WhatsApp: {e}")
+            if final_contact:
+                # Send to corresponding patient
+                threading.Thread(target=send_whatsapp_message, args=(final_contact, msg)).start()
+            
+            # 3. Always notify admin monitor
+            # Ensure number is in E.164 format for WhatsApp. 
+            # If 11 digits starting with 9, it might be an Indian number with extra '0' or missing '+91'
+            admin_notify_number = "98474458290" 
+            clean_admin_no = admin_notify_number.strip()
+            if not clean_admin_no.startswith('+'):
+                if len(clean_admin_no) == 10:
+                    clean_admin_no = "+91" + clean_admin_no
+                elif len(clean_admin_no) == 11 and clean_admin_no.startswith('9'):
+                    # Suspected Indian number with extra digit or typo, but we'll try to add +91 or just +
+                    clean_admin_no = "+" + clean_admin_no
+                else:
+                    # Default fallback
+                    clean_admin_no = "+" + clean_admin_no
+            
+            print(f"[INFO] Sending Admin Notification to {clean_admin_no}")
+            threading.Thread(target=send_whatsapp_message, args=(clean_admin_no, msg)).start()
+            
+    except Exception as notify_err:
+        print(f"[ERROR] Notification Helper Failed: {notify_err}")
+
+# Redundant send_whatsapp_message removed to use unified version at line 6953
 
 
 
@@ -1775,6 +1789,12 @@ def health():
 
 def google_start():
 
+  from urllib.parse import urlparse
+  frontend_origin = request.headers.get("Referer", "")
+  if frontend_origin:
+      parsed = urlparse(frontend_origin)
+      session["frontend_origin"] = f"{parsed.scheme}://{parsed.netloc}"
+
   flow = build_google_flow()
 
   auth_url, state = flow.authorization_url(
@@ -1890,7 +1910,9 @@ def google_callback():
 
   # Redirect to frontend based on role
 
-  origin = os.environ.get("CORS_ORIGIN", "http://localhost:5173").split(",")[0].strip()
+  origin = session.pop("frontend_origin", None)
+  if not origin:
+      origin = os.environ.get("CORS_ORIGIN", "http://localhost:5173").split(",")[0].strip()
 
   
 
@@ -2142,7 +2164,28 @@ def ensure_otp_table():
 
 ensure_otp_table()
 
+def ensure_notifications_table():
+    """Create notifications table if not exists."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT,
+                message TEXT,
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Notifications table check failed: {e}")
+    finally:
+        conn.close()
 
+ensure_notifications_table()
 
 def ensure_laboratories_table():
 
@@ -2840,6 +2883,35 @@ def get_lab_feedback():
 
     finally:
 
+        conn.close()
+@app.post("/api/labs/feedback")
+def submit_lab_feedback():
+    """Public endpoint to submit feedback for a laboratory."""
+    data = request.get_json() or {}
+    lab_id = data.get("lab_id")
+    lab_name = data.get("lab_name")
+    patient_name = data.get("patient_name") or "Anonymous"
+    username = data.get("username")
+    rating = data.get("rating")
+    comment = data.get("comment")
+    category = data.get("category", "General")
+
+    if not rating:
+        return jsonify({"message": "Rating is required"}), 400
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO lab_feedback (lab_id, lab_name, patient_name, username, rating, comment, category)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (lab_id, lab_name, patient_name, username, rating, comment, category))
+        conn.commit()
+        return jsonify({"message": "Feedback submitted successfully"}), 201
+    except Exception as e:
+        print(f"[ERROR] Failed to submit lab feedback: {e}")
+        return jsonify({"message": "Server error", "error": str(e)}), 500
+    finally:
         conn.close()
 
 
@@ -3974,6 +4046,54 @@ def get_admin_appointments():
 
 
 
+@app.get("/api/admin/payments")
+def get_admin_payments():
+    """Fetch all payments for Lab Admins / Super Admins."""
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    user_id = session.get("user_id")
+    role = session.get("role")
+    
+    if role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized access."}), 403
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True) # Use dictionary=True for easier mapping
+        
+        # Get lab admin's laboratory name
+        lab_admin_lab_name = None
+        if role == "LAB_ADMIN":
+            cur.execute("SELECT lab_name FROM lab_admin_profile WHERE user_id=%s LIMIT 1", (user_id,))
+            lab_row = cur.fetchone()
+            if lab_row and lab_row['lab_name']:
+                lab_admin_lab_name = lab_row['lab_name']
+        
+        # Build query
+        query = "SELECT * FROM payments"
+        params = []
+        
+        if role == "LAB_ADMIN":
+            if not lab_admin_lab_name:
+                return jsonify([]), 200
+            query += " WHERE lab_name = %s"
+            params = [lab_admin_lab_name]
+            
+        query += " ORDER BY created_at DESC"
+        
+        cur.execute(query, tuple(params))
+        rows = cur.fetchall()
+        
+        return jsonify(rows), 200
+
+    except Exception as e:
+        print(f"[ERROR] Fetch admin payments failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
+
 @app.get("/api/admin/patients")
 def get_admin_patients():
     current_role = session.get("role")
@@ -4202,6 +4322,40 @@ def get_admin_patients():
 
 
 
+@app.get("/api/view-report/<int:report_id>")
+def view_report(report_id):
+    """View a PDF report from the 'reports' table."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT test_name, file_path, report_content FROM reports WHERE id = %s", (report_id,))
+        report = cur.fetchone()
+        
+        if not report:
+            return "Report not found", 404
+            
+        # If BLOB content exists, serve it
+        if report.get('report_content'):
+            from io import BytesIO
+            return send_file(
+                BytesIO(report['report_content']),
+                mimetype='application/pdf',
+                as_attachment=False,
+                download_name=f"{report['test_name']}.pdf"
+            )
+            
+        # Otherwise serve from path
+        if report.get('file_path') and os.path.exists(report['file_path']):
+            return send_file(report['file_path'], mimetype='application/pdf')
+            
+        return "Report file not found", 404
+        
+    except Exception as e:
+        print(f"[ERROR] View report failed: {e}")
+        return "Internal server error", 500
+    finally:
+        conn.close()
+
 @app.get("/api/admin/patients/<string:user_id>/history")
 
 def get_patient_history(user_id):
@@ -4391,21 +4545,12 @@ def get_patient_history(user_id):
             report_rows = cur.fetchall()
             
             for r in report_rows:
-                 # Standardize to match prescription structure for UI
-                 f_path = r['file_path']
-                 # Ensure full URL if relative
-                 if f_path and not f_path.startswith('http'):
-                     if f_path.startswith('/'):
-                         f_path = f"{request.host_url.rstrip('/')}{f_path}"
-                     else:
-                         f_path = f"{request.host_url}static/{f_path}"
-
                  prescriptions.append({
                      "id": f"rep-{r['id']}",
+                     "image_url": f"{request.host_url.rstrip('/')}/api/view-report/{r['id']}",
                      "type": r['test_name'] or "Lab Report",
                      "date": r['uploaded_at'].strftime('%Y-%m-%d') if r['uploaded_at'] else "N/A",
-                     "status": r['status'],
-                     "image_url": f_path # UI uses this field for viewing
+                     "status": r['status']
                  })
 
         # Process Prescriptions
@@ -5083,91 +5228,66 @@ def manage_appointments():
 
 
 @app.put("/api/admin/appointments/<int:id>/details")
-
 def update_appointment_details(id):
-
-    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
-
+    user_id = session.get("user_id")
+    role = session.get("role")
+    
+    if role not in ["LAB_ADMIN", "SUPER_ADMIN"]:
         return jsonify({"message": "Unauthorized"}), 403
 
-    
-
-    data = request.get_json()
-
-    
-
-    # Allow updating standard fields
-
-    fields = {
-
-        "technician": data.get("technician"),
-
-        "sample_type": data.get("sampleType"),
-
-        "payment_status": data.get("paymentStatus"),
-
-        "report_status": data.get("reportStatus"),
-
-        "appointment_date": data.get("date"),
-
-        "appointment_time": data.get("time"),
-
-        "status": data.get("status")
-
-    }
-
-    
-
-    # Construct update query dynamically
-
-    updates = []
-
-    values = []
-
-    
-
-    for k, v in fields.items():
-
-        if v is not None:
-
-             updates.append(f"{k}=%s")
-
-             values.append(v)
-
-             
-
-    if not updates:
-
-        return jsonify({"message": "No changes provided"}), 400
-
-        
-
-    values.append(id)
-
-    query = f"UPDATE appointments SET {', '.join(updates)} WHERE id=%s"
-
-
-
     conn = get_connection()
-
     try:
-
         cur = conn.cursor()
+        
+        # Security: Lab Admin ownership verification
+        if role == "LAB_ADMIN":
+            cur.execute("SELECT lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+            admin_lab_row = cur.fetchone()
+            if not admin_lab_row or not admin_lab_row[0]:
+                return jsonify({"message": "Forbidden: Profile not set"}), 403
+            
+            admin_lab_name = admin_lab_row[0]
+            cur.execute("SELECT lab_name FROM appointments WHERE id=%s", (id,))
+            appt_lab = cur.fetchone()
+            if not appt_lab or appt_lab[0] != admin_lab_name:
+                 return jsonify({"message": "Access Denied: Appointment belongs to another lab"}), 403
 
+        data = request.get_json()
+        fields = {
+            "technician": data.get("technician"),
+            "sample_type": data.get("sampleType"),
+            "payment_status": data.get("paymentStatus"),
+            "report_status": data.get("reportStatus"),
+            "appointment_date": data.get("date"),
+            "appointment_time": data.get("time"),
+            "status": data.get("status")
+        }
+        
+        updates = []
+        values = []
+        for k, v in fields.items():
+            if v is not None:
+                updates.append(f"{k}=%s")
+                values.append(v)
+                
+        if not updates:
+            return jsonify({"message": "No changes provided"}), 400
+            
+        values.append(id)
+        query = f"UPDATE appointments SET {', '.join(updates)} WHERE id=%s"
         cur.execute(query, tuple(values))
+        
+        # Notify if status updated to certain values
+        new_status = fields.get("status")
+        if new_status in ["Confirmed", "Completed"]:
+            send_appointment_notification(id, cur)
 
         conn.commit()
-
         return jsonify({"message": "Details Updated"}), 200
-
     except Exception as e:
-
         print(f"Update Error: {e}")
-
         return jsonify({"message": "Update Failed"}), 500
-
     finally:
-
         conn.close()
 
 
@@ -5183,82 +5303,31 @@ def update_appointment_status(id):
     
 
     data = request.get_json()
-
     new_status = data.get("status")
-
+    user_id = session.get("user_id")
+    role = session.get("role")
     
-
     conn = get_connection()
-
     try:
-
         cur = conn.cursor()
+        
+        # Security: Lab Admin ownership verification
+        if role == "LAB_ADMIN":
+            cur.execute("SELECT lab_name FROM lab_admin_profile WHERE user_id=%s", (user_id,))
+            admin_lab_row = cur.fetchone()
+            if not admin_lab_row:
+                 return jsonify({"message": "Forbidden"}), 403
+            if admin_lab_row[0]:
+                 cur.execute("SELECT lab_name FROM appointments WHERE id=%s", (id,))
+                 appt_lab = cur.fetchone()
+                 if not appt_lab or appt_lab[0] != admin_lab_row[0]:
+                      return jsonify({"message": "Access Denied: Appointment belongs to another lab"}), 403
 
         cur.execute("UPDATE appointments SET status=%s WHERE id=%s", (new_status, id))
-
         
-
-        # Create Notification if Confirmed
-        if new_status == "Confirmed":
-                # Notification Logic - Wrapped to prevent blocking status update
-                try:
-                    cur.execute("""
-                        SELECT 
-                            a.user_id, a.tests, a.appointment_date, a.lab_name, a.contact_number,
-                            up.contact_number, a.patient_name, a.appointment_time, a.payment_status,
-                            u.phone_number, u.username
-                        FROM appointments a
-                        LEFT JOIN user_profile up ON a.user_id = up.user_id
-                        LEFT JOIN users u ON a.user_id = u.id
-                        WHERE a.id=%s
-                    """, (id,))
-                    appt = cur.fetchone()
-                    
-                    if appt and appt[0]:
-                        uid, tests, date, lab_name, apt_contact, prof_contact, patient_name, appt_time, payment_status, user_phone, username = appt
-                        
-                        # Format date nicely
-                        try:
-                            from datetime import datetime
-                            if isinstance(date, str):
-                                date_obj = datetime.strptime(str(date), '%Y-%m-%d')
-                            else:
-                                date_obj = date
-                            date_display = date_obj.strftime('%d/%m/%Y')
-                        except:
-                            date_display = str(date)
-                        
-                        # Create notification message
-                        msg = (
-                            f"✅ *MediBot Booking Confirmed*\n\n"
-                            f"👤 *Patient:* {patient_name}\n"
-                            f"🔑 *Login Name:* {username if username else 'N/A'}\n"
-                            f"🧪 *Tests:* {tests if tests else 'General'}\n"
-                            f"📅 *Date:* {date_display} at {appt_time if appt_time else '10:30 AM'}\n"
-                            f"🏥 *Lab:* {lab_name if lab_name else 'Royal Clinical Laboratory'}\n"
-                            f"💳 *Status:* {payment_status if payment_status else 'Pending'}\n\n"
-                            f"Thank you for choosing MediBot! Type 'Hi' for assistance."
-                        )
-
-                        # Db Notification (Landing Page)
-                        try:
-                            cur.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (uid, msg))
-                        except Exception as dbe:
-                            print(f"[WARN] Failed to insert notification: {dbe}")
-
-                        # WhatsApp Notifications
-                        final_contact = apt_contact if apt_contact else (prof_contact if prof_contact else user_phone)
-
-                        if final_contact:
-                            # 1. Send to corresponding user (patient)
-                            threading.Thread(target=send_whatsapp_message, args=(final_contact, msg)).start()
-                        
-                        # 2. Send to the Twilio monitor number (Always send as requested)
-                        admin_notify_number = "9847458290" 
-                        threading.Thread(target=send_whatsapp_message, args=(admin_notify_number, msg)).start()
-                
-                except Exception as notify_err:
-                    print(f"[ERROR] Notification Logic Failed: {notify_err}")
+        # Create Notification if Confirmed or Completed
+        if new_status in ["Confirmed", "Completed"]:
+            send_appointment_notification(id, cur)
 
 
 
@@ -5582,24 +5651,24 @@ def add_staff():
 
 
 
+        # Resolve lab_id: prefer data payload, fall back to session profile
+        lab_id = data.get('lab_id')
+        if not lab_id:
+            cur.execute("SELECT lab_id FROM lab_admin_profile WHERE user_id=%s", (session.get("user_id"),))
+            lab_row = cur.fetchone()
+            if lab_row:
+                lab_id = lab_row[0]
+
         query = """
-
             INSERT INTO lab_staff (
-
                 name, role, status, image_url, qualification,
-
                 staff_id, gender, dob, phone, email, address,
-
                 department, employment_type, joining_date, experience,
-
                 shift, working_days, working_hours, home_collection,
-
-                specializations, documents, emergency_name, emergency_relation, emergency_phone, internal_notes
-
+                specializations, documents, emergency_name, emergency_relation,
+                emergency_phone, internal_notes, lab_id
             )
-
-            VALUES (%s, %s, 'Available', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-
+            VALUES (%s, %s, 'Available', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
         
@@ -5613,90 +5682,36 @@ def add_staff():
 
 
         params = (
-
-            data.get('name'), 
-
-            data.get('role'), 
-
-            data.get('photoPreview'), # Mapping photoPreview to image_url for now
-
+            data.get('name'),
+            data.get('role'),
+            data.get('photoPreview'),       # image_url
             data.get('qualification', ''),
-
-            
-
             data.get('staffId'),
-
             data.get('gender'),
-
             clean_date(data.get('dob')),
-
             data.get('phone'),
-
             data.get('email'),
-
             data.get('address'),
-
-            
-
             data.get('department'),
-
-            data.get('type'), # employment_type
-
+            data.get('type'),               # employment_type
             clean_date(data.get('joiningDate')),
-
             data.get('experience'),
-
-            
-
             data.get('shift'),
-
             list_to_str(data.get('workingDays')),
-
             data.get('workingHours'),
-
             1 if data.get('homeCollection') else 0,
-
-            
-
             list_to_str(data.get('specializations')),
-
-            list_to_str(data.get('documents')), # Handle documents
-
+            list_to_str(data.get('documents')),
             data.get('emergencyName'),
-
             data.get('emergencyRelation'),
-
             data.get('emergencyPhone'),
-
             data.get('internalNotes'),
-
-            data.get('lab_id') # Ensure lab_id is passed from frontend or found here
-
+            lab_id
         )
-
-        
-
-        # If lab_id not in data, try to get from session admin profile
-
-        if not data.get('lab_id'):
-
-            cur.execute("SELECT lab_id FROM lab_admin_profile WHERE user_id=%s", (session.get("user_id"),))
-
-            lab_row = cur.fetchone()
-
-            if lab_row:
-
-                params = list(params)
-
-                params[-1] = lab_row[0]
-
-                params = tuple(params)
-
-
 
         try:
 
-            cur.execute(query.replace("emergency_phone, internal_notes", "emergency_phone, internal_notes, lab_id").replace("%s)", "%s, %s)"), params)
+            cur.execute(query, params)
 
             conn.commit()
 
@@ -6795,25 +6810,15 @@ def get_all_reports():
         for row in rows:
             p_name = row[6] if len(row) > 6 and row[6] else (row[1] or "Unknown")
             
-            # Ensure full URL for file path
-            f_path = row[3]
-            if f_path and not f_path.startswith('http'):
-                 if f_path.startswith('static'):
-                      f_path = f"{request.host_url}{f_path}"
-                 elif f_path.startswith('/'):
-                      f_path = f"{request.host_url.rstrip('/')}{f_path}"
-                 else:
-                      f_path = f"{request.host_url}static/{f_path}"
-
             reports.append({
-                "id": f"R-{row[0]}",
-                "patient": p_name, 
-                "test": row[2],
-                "file_path": f_path,
+                "id": row[0],
+                "patient_name": p_name,
+                "email": row[1],
+                "test_name": row[2],
+                "file_path": f"{request.host_url.rstrip('/')}/api/view-report/{row[0]}",
                 "status": row[4],
-                "date": row[5].strftime("%Y-%m-%d") if row[5] else "",
-                "patient_id": row[7],
-                "test_name": row[2] # Ensuring we have a test_name field matching frontend logic
+                "uploaded_at": str(row[5]) if row[5] else 'N/A',
+                "patient_id": row[7]
             })
 
         cur.execute(f"""
@@ -6957,6 +6962,7 @@ def send_whatsapp_message(to_number, body_text, media_url=None):
     Unified WhatsApp sender using Twilio with robust number formatting.
     """
     try:
+        print(f"[DEBUG] send_whatsapp_message (v2) triggered for {to_number}")
         account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
         auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
         from_number = os.environ.get('TWILIO_WHATSAPP_NUMBER') or os.environ.get('TWILIO_PHONE_NUMBER')
@@ -7106,10 +7112,16 @@ def upload_report():
 
         # Insert into reports table
         # Status 'Completed' makes it show up in 'Lab Results' generated tab
+        
+        # Read file as bytes for BLOB storage
+        file.seek(0)
+        report_content = file.read()
+        file.seek(0) # Reset pointer so it can be saved to disk too
+
         cur.execute("""
-            INSERT INTO reports (patient_id, patient_name, test_name, file_path, status, lab_id, lab_name, uploaded_at)
-            VALUES (%s, %s, %s, %s, 'Completed', %s, %s, NOW())
-        """, (patient_id, patient_name, test_name, db_file_path, lab_id, lab_name))
+            INSERT INTO reports (patient_id, patient_name, test_name, file_path, status, lab_id, lab_name, uploaded_at, report_content)
+            VALUES (%s, %s, %s, %s, 'Completed', %s, %s, NOW(), %s)
+        """, (patient_id, patient_name, test_name, db_file_path, lab_id, lab_name, report_content))
         
         conn.commit()
         report_id = cur.lastrowid
@@ -8514,6 +8526,19 @@ def verify_payment():
 
         
 
+        # New fields from frontend
+
+        amount = data.get('amount')
+
+        lab_name = data.get('lab_name')
+        patient_name = data.get('patient_name')
+        tests = data.get('tests')
+        appointment_date = data.get('appointment_date')
+
+        appointment_time = data.get('appointment_time')
+
+        
+
         params_dict = {
 
             'razorpay_order_id': razorpay_order_id,
@@ -8532,7 +8557,51 @@ def verify_payment():
 
         
 
-        return jsonify({"status": "Success", "message": "Payment verified successfully"}), 200
+        # Store in payments table
+
+        user_id = session.get("user_id")
+
+        conn = get_connection()
+
+        try:
+
+            cur = conn.cursor()
+
+            
+
+            # Use the updated schema with patient_name
+            # Map to ACTUAL schema found in DB
+            query = """
+                INSERT INTO payments 
+                (user_id, username, lab_name, patient_name, tests_booked, payment_amount, payment_method, payment_status, transaction_id, payment_date)
+                VALUES (%s, %s, %s, %s, %s, %s, 'Online', 'Paid', %s, NOW())
+            """
+            cur.execute(query, (
+                session.get("user_id"), 
+                session.get("username", "Guest"), 
+                lab_name, 
+                patient_name, 
+                tests, 
+                amount, 
+                razorpay_payment_id
+            ))
+            conn.commit()
+
+            cur.close()
+
+            print(f"[INFO] Payment details saved for order {razorpay_order_id}")
+
+        except Exception as db_e:
+
+            print(f"[ERROR] Failed to save payment to DB: {db_e}")
+
+        finally:
+
+            conn.close()
+
+        
+
+        return jsonify({"status": "Success", "message": "Payment verified and stored successfully"}), 200
 
         
 
@@ -8674,6 +8743,62 @@ def create_user_booking():
     except Exception as e:
         print(f"Booking Error: {e}")
         return jsonify({"message": "Failed to create booking."}), 500
+    finally:
+        conn.close()
+
+
+@app.get("/api/lab-feedback")
+def get_lab_feedback_api():
+    """Fetch all feedback for the authenticated Lab Admin's laboratory."""
+    if not session.get("user_id"):
+        return jsonify({"message": "Not authenticated"}), 401
+    
+    user_id = session.get("user_id")
+    role = session.get("role")
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+        
+        # Determine lab context
+        lab_name = None
+        lab_id = None
+        
+        if role == "LAB_ADMIN":
+            cur.execute("SELECT lab_id, lab_name FROM lab_admin_profile WHERE user_id=%s LIMIT 1", (user_id,))
+            prof = cur.fetchone()
+            if prof:
+                lab_id = prof['lab_id']
+                lab_name = prof['lab_name']
+        
+        # Build query
+        query = "SELECT * FROM lab_feedback"
+        params = []
+        
+        if role == "LAB_ADMIN":
+            if not lab_name and not lab_id:
+                return jsonify({"feedback": []}), 200
+            
+            conditions = []
+            if lab_id:
+                conditions.append("lab_id = %s")
+                params.append(lab_id)
+            if lab_name:
+                conditions.append("lab_name = %s")
+                params.append(lab_name)
+            
+            query += " WHERE " + " OR ".join(conditions)
+            
+        query += " ORDER BY created_at DESC"
+        
+        cur.execute(query, tuple(params))
+        rows = cur.fetchall()
+        
+        return jsonify({"feedback": rows}), 200
+
+    except Exception as e:
+        print(f"[ERROR] Fetch lab feedback failed: {e}")
+        return jsonify({"message": "Server error"}), 500
     finally:
         conn.close()
 
