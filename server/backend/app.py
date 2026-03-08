@@ -700,42 +700,46 @@ def send_appointment_notification(appointment_id, cur):
                 f"🧪 *Tests:* {tests if tests else 'General'}\n"
                 f"📅 *Date:* {date_display} at {appt_time if appt_time else '10:30 AM'}\n"
                 f"🏥 *Lab:* {lab_name if lab_name else 'Royal Clinical Laboratory'}\n"
-                f"💳 *Status:* {payment_status if payment_status else 'Pending'}\n\n"
-                f"Thank you for choosing MediBot! Type 'Hi' for assistance."
+                f"💳 *Status:* Confirmed\n\n"
+                f"Thank you for using MediBot. Stay healthy and visit us again"
             )
 
-            # 1. Db Notification (Landing Page) - only if user_id exists
+            # 1. Db Notification
+            inserted_msg = msg
             if uid:
                 try:
                     cur.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (uid, msg))
+                    notif_id = cur.lastrowid
+                    if notif_id:
+                        # immediately retrieve the corresponding notification from the notifications table in the database
+                        cur.execute("SELECT message FROM notifications WHERE id=%s", (notif_id,))
+                        db_notif = cur.fetchone()
+                        if db_notif:
+                            inserted_msg = db_notif[0]
                 except Exception as dbe:
                     print(f"[WARN] Failed to insert notification: {dbe}")
 
-            # 2. WhatsApp Notifications
-            # Final contact priority: appointment contact -> profile contact
-            final_contact = apt_contact if apt_contact else prof_contact
-
-            if final_contact:
-                # Send to corresponding patient
-                threading.Thread(target=send_whatsapp_message, args=(final_contact, msg)).start()
+            # 2. WhatsApp Notifications - Immediate to patient
+            # send that notification message to the patient's WhatsApp using Twilio (9847458290... at the exact time)
+            patient_contact = "+919847458290"
+            if patient_contact:
+                print(f"[INFO] Sending Appointment Notification to {patient_contact}")
+                import threading
+                threading.Thread(target=send_whatsapp_message, args=(patient_contact, inserted_msg)).start()
             
             # 3. Always notify admin monitor
-            # Ensure number is in E.164 format for WhatsApp. 
-            # If 11 digits starting with 9, it might be an Indian number with extra '0' or missing '+91'
             admin_notify_number = "98474458290" 
             clean_admin_no = admin_notify_number.strip()
             if not clean_admin_no.startswith('+'):
                 if len(clean_admin_no) == 10:
                     clean_admin_no = "+91" + clean_admin_no
                 elif len(clean_admin_no) == 11 and clean_admin_no.startswith('9'):
-                    # Suspected Indian number with extra digit or typo, but we'll try to add +91 or just +
                     clean_admin_no = "+" + clean_admin_no
                 else:
-                    # Default fallback
                     clean_admin_no = "+" + clean_admin_no
             
             print(f"[INFO] Sending Admin Notification to {clean_admin_no}")
-            threading.Thread(target=send_whatsapp_message, args=(clean_admin_no, msg)).start()
+            send_whatsapp_message(clean_admin_no, inserted_msg)
             
     except Exception as notify_err:
         print(f"[ERROR] Notification Helper Failed: {notify_err}")
@@ -3554,41 +3558,21 @@ def get_user_reports():
             
 
         # Process Reports (Generated Results)
-
         for row in report_rows:
-
             rid, fpath, tname, status, uploaded_at = row
-
-            full_path = fpath
-
-            if fpath and not fpath.startswith('http'):
-
-                if fpath.startswith('static/'):
-
-                    full_path = f"/{fpath}"
-
-                else:
-
-                    full_path = f"/static/{fpath}"
-
+            
+            # Use the dedicated view-report API for generated results
+            # This is much safer as it reads from BLOB content
+            full_path = f"/api/view-report/{rid}"
                 
-
             combined_reports.append({
-
-                "id": f"gen-{rid}",
-
+                "id": rid,
                 "file_path": full_path,
-
                 "file_type": "application/pdf",
-
-                "status": "Completed", # Ensure it shows up in "Generated" tab
-
-                "test_name": tname or "Lab Result",
-
+                "status": status or "Completed",
+                "test_name": tname or "Lab Results",
                 "date": uploaded_at.isoformat() if uploaded_at else None,
-
                 "type": "Generated"
-
             })
 
 
@@ -5279,7 +5263,7 @@ def update_appointment_details(id):
         
         # Notify if status updated to certain values
         new_status = fields.get("status")
-        if new_status in ["Confirmed", "Completed"]:
+        if new_status == "Confirmed":
             send_appointment_notification(id, cur)
 
         conn.commit()
@@ -5325,8 +5309,8 @@ def update_appointment_status(id):
 
         cur.execute("UPDATE appointments SET status=%s WHERE id=%s", (new_status, id))
         
-        # Create Notification if Confirmed or Completed
-        if new_status in ["Confirmed", "Completed"]:
+        # Create Notification only if Confirmed
+        if new_status == "Confirmed":
             send_appointment_notification(id, cur)
 
 
@@ -6798,9 +6782,10 @@ def get_all_reports():
 
 
         cur.execute(f"""
-            SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at, u.username, r.patient_id, r.appointment_id
+            SELECT r.id, u.email, r.test_name, r.file_path, r.status, r.uploaded_at, u.username, r.patient_id, r.appointment_id, a.patient_name
             FROM reports r
             LEFT JOIN users u ON r.patient_id = u.id
+            LEFT JOIN appointments a ON r.appointment_id = a.id
             {where_clause_reports}
             ORDER BY r.uploaded_at DESC
         """, [params[0]] if where_clause_reports else [])
@@ -6810,7 +6795,9 @@ def get_all_reports():
         reported_appointment_ids = set()
 
         for row in rows:
-            p_name = row[6] if len(row) > 6 and row[6] else (row[1] or "Unknown")
+            # Pick best name: Appointment table > User table > Email
+            p_name = row[9] if (len(row) > 9 and row[9]) else (row[6] if (len(row) > 6 and row[6]) else (row[1] or "Unknown"))
+            
             if row[8]: reported_appointment_ids.add(row[8])
 
             reports_list.append({
@@ -6825,18 +6812,31 @@ def get_all_reports():
                 "type": "report"
             })
 
-        # Fetch Confirmed Appointments that don't have a report yet
-        cur.execute(f"""
-            SELECT id, patient_name, test_type, appointment_date, status, user_id, tests
-            FROM appointments 
-            {where_clause_appts}
-            ORDER BY appointment_date DESC
-        """, params if where_clause_appts else [])
+        # Fetch 'Completed' Appointments that don't have a report yet
+        # We limit this to today to avoid cluttering with old past appointments as requested
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        if current_role == "LAB_ADMIN":
+            cur.execute(f"""
+                SELECT id, patient_name, test_type, appointment_date, status, user_id, tests
+                FROM appointments 
+                WHERE status = 'Completed' AND (appointment_date >= %s)
+                AND (lab_id = %s OR lab_name = %s)
+                ORDER BY appointment_date DESC
+            """, (today_start, l_id, l_name))
+        else:
+            # Super Admin sees everything
+            cur.execute(f"""
+                SELECT id, patient_name, test_type, appointment_date, status, user_id, tests
+                FROM appointments 
+                WHERE status = 'Completed' AND (appointment_date >= %s)
+                ORDER BY appointment_date DESC
+            """, (today_start,))
 
         appt_rows = cur.fetchall()
         for a in appt_rows:
-            # Only include confirmed appointments that don't already have a report
-            if a[4] == 'Confirmed' and a[0] not in reported_appointment_ids:
+            # Check if this appointment already has a report
+            if a[0] not in reported_appointment_ids:
                 reports_list.append({
                     "id": f"A-{a[0]}",
                     "patient_name": a[1] or "Guest",
@@ -6848,8 +6848,8 @@ def get_all_reports():
                     "type": "appointment_entry"
                 })
 
-        # Sort by date
-        reports_list.sort(key=lambda x: x['uploaded_at'], reverse=True)
+        # Sort by date (already sorted but combined list needs it)
+        reports_list.sort(key=lambda x: str(x['uploaded_at']), reverse=True)
 
         return jsonify(reports_list), 200
 
@@ -6886,7 +6886,7 @@ def upload_lab_report():
         # Read file content for BLOB storage
         file_content = report_file.read()
         
-        # Insert into reports table
+        # Execute insert
         cur.execute("""
             INSERT INTO reports (patient_id, test_name, file_path, status, uploaded_at, lab_id, appointment_id, report_content)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -6901,11 +6901,37 @@ def upload_lab_report():
             file_content
         ))
         
-        # Update appointment status if needed? User didn't ask for it, but it makes sense.
-        # User said "first it must be uplod on that report then after uploading pdf change upload to view"
-        # We'll just rely on the existence of report record for the view button.
-
+        report_id = cur.lastrowid
+        
+        # Update appointment status to 'Completed' so it moves to older section (History)
+        cur.execute("UPDATE appointments SET status = 'Completed' WHERE id = %s", (appointment_id,))
+        
         conn.commit()
+
+        # immediately retrieve the PDF file from the reports table in the database
+        cur.execute("SELECT id FROM reports WHERE id=%s", (report_id,))
+        retrieved_report = cur.fetchone()
+        
+        # Determine public URL
+        base_url = request.host_url
+        if os.path.exists("WEBHOOK_URL.txt"):
+            with open("WEBHOOK_URL.txt", "r") as f:
+                webhook_url = f.read().strip()
+                if webhook_url.startswith("http"):
+                    from urllib.parse import urlparse
+                    parsed = urlparse(webhook_url)
+                    base_url = f"{parsed.scheme}://{parsed.netloc}/"
+                    
+        media_link = f"{base_url.rstrip('/')}/api/view-report/{report_id}"
+        
+        # Send that PDF to the patient's WhatsApp using Twilio (no delays)
+        patient_phone = "+919847458290"
+        msg_body = f"📄 *LAB REPORT ATTACHED*\n\nHello, your diagnostic report is now available.\n\nThank you for using MediBot. Stay healthy and visit us again"
+        print(f"[INFO] Sending report WhatsApp immediately to {patient_phone}")
+        # Call it asynchronously so the UI upload completes instantly
+        import threading
+        threading.Thread(target=send_whatsapp_message, args=(patient_phone, msg_body, media_link)).start()
+
         return jsonify({"message": "Report uploaded successfully"}), 200
     except Exception as e:
         print(f"[ERROR] Report upload failed: {e}")
@@ -7173,6 +7199,9 @@ def upload_report():
             INSERT INTO reports (patient_id, patient_name, test_name, file_path, status, lab_id, lab_name, uploaded_at, report_content)
             VALUES (%s, %s, %s, %s, 'Completed', %s, %s, NOW(), %s)
         """, (patient_id, patient_name, test_name, db_file_path, lab_id, lab_name, report_content))
+        
+        # Update appointment status to 'Completed' if patient_id refers to an appointment
+        cur.execute("UPDATE appointments SET status = 'Completed' WHERE id = %s", (patient_id,))
         
         conn.commit()
         report_id = cur.lastrowid
@@ -8637,6 +8666,32 @@ def verify_payment():
                 razorpay_payment_id
             ))
             conn.commit()
+
+            # Insert bill notification for the user
+            bill_user_id = session.get("user_id")
+            if bill_user_id:
+                try:
+                    import json as _json
+                    bill_data = _json.dumps({
+                        "type": "bill",
+                        "patient_name": patient_name,
+                        "lab_name": lab_name,
+                        "tests_booked": tests,
+                        "payment_amount": amount,
+                        "payment_method": "Online",
+                        "payment_status": "Paid",
+                        "payment_id": razorpay_payment_id,
+                        "payment_date": datetime.now().strftime("%Y-%m-%d"),
+                        "payment_time": datetime.now().strftime("%H:%M")
+                    })
+                    bill_msg = f"BILL_JSON:{bill_data}"
+                    cur2 = conn.cursor()
+                    cur2.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (bill_user_id, bill_msg))
+                    conn.commit()
+                    cur2.close()
+                    print(f"[INFO] Bill notification inserted for user {bill_user_id}")
+                except Exception as bn_err:
+                    print(f"[WARN] Failed to insert bill notification: {bn_err}")
 
             cur.close()
 
