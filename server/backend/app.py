@@ -1,6 +1,6 @@
 """
 
-Flask signup service for EcoGrow.
+Flask signup service for MediBot.
 
 
 
@@ -3096,7 +3096,7 @@ def get_lab_settings():
 
             },
 
-            "workingDays": json.loads(working_days_json) if working_days_json else {},
+            "workingDays": json.loads(working_days_json) if working_days_json else [],
 
             "tests": json.loads(tests_json) if tests_json else []
 
@@ -4388,36 +4388,46 @@ def get_patient_history(user_id):
 
         if is_guest:
 
-            # GUEST LOGIC (By Phone/ID)
+            # GUEST LOGIC (By Phone/Name)
 
-            mobile = user_id
+            # Strip the 'guest-' prefix that was added when building the patient list
+            raw_key = user_id
+            if raw_key.startswith('guest-'):
+                raw_key = raw_key[len('guest-'):]
+
+            mobile = raw_key  # could be a phone number or a name
 
             patient_details = {
 
-                "id": mobile,
+                "id": user_id,
 
                 "email": "N/A",
 
-                "phone": mobile,
+                "phone": mobile if mobile.startswith('+') or mobile.isdigit() else "N/A",
 
-                "name": f"Guest ({mobile[-4:]})" if len(mobile) > 4 else f"Guest ({mobile})"
+                "name": mobile
 
             }
 
-            # Fetch prescriptions from 'prescription' table
+            # Try to get a better name from the prescription table's patient_name column
+            cur.execute("""
+                SELECT patient_name FROM prescription
+                WHERE (mobile_number=%s OR username=%s OR patient_name=%s)
+                AND patient_name IS NOT NULL AND patient_name != ''
+                LIMIT 1
+            """, (mobile, mobile, mobile))
+            name_row = cur.fetchone()
+            if name_row and name_row['patient_name']:
+                patient_details['name'] = name_row['patient_name']
+
+            # Fetch prescriptions from 'prescription' table by phone OR name
 
             cur.execute("""
-
-                SELECT id, file_path, file_type, status, created_at, test_type, image_url, username
-
+                SELECT id, file_path, file_type, status, created_at, test_type, image_url, username, patient_name
                 FROM prescription
-
-                WHERE (mobile_number=%s OR username=%s OR patient_name=%s) AND (user_id IS NULL)
-
+                WHERE (mobile_number=%s OR username=%s OR patient_name=%s)
                 ORDER BY created_at DESC
-
             """, (mobile, mobile, mobile))
-
             rx_rows = cur.fetchall()
 
             
@@ -4477,19 +4487,17 @@ def get_patient_history(user_id):
             
 
             # Fetch prescriptions from 'prescription' table
+            # Search by user_id, username, AND display_name (patient_name) to catch WhatsApp uploads
+            display_name = patient_details.get('name', '')
 
             cur.execute("""
-
-                SELECT id, file_path, file_type, status, created_at, test_type, image_url, username
-
+                SELECT id, file_path, file_type, status, created_at, test_type, image_url, username, patient_name
                 FROM prescription
-
-                WHERE user_id=%s OR (username=%s AND username IS NOT NULL)
-
+                WHERE user_id=%s
+                   OR (username=%s AND username IS NOT NULL AND username != '')
+                   OR (patient_name=%s AND patient_name IS NOT NULL AND patient_name != '')
                 ORDER BY created_at DESC
-
-            """, (uid, username))
-
+            """, (uid, username, display_name))
             rx_rows = cur.fetchall()
 
             
@@ -4557,7 +4565,8 @@ def get_patient_history(user_id):
                 "type": r['test_type'] or "Prescription",
                 "date": r['created_at'].strftime('%Y-%m-%d') if r['created_at'] else "N/A",
                 "status": r['status'],
-                "image_url": img_src
+                "image_url": img_src,
+                "patient_name": r['patient_name'] or r['username'] or "Unknown Sender"
             })
             
         return jsonify({
@@ -4689,7 +4698,7 @@ def get_admin_stats():
 
         
 
-        cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE status = 'Available' {where_clause_staff}", params_staff)
+        cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE status IN ('Available', 'Active') {where_clause_staff}", params_staff)
 
         available_staff = cur.fetchone()[0]
 
