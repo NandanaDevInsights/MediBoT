@@ -6927,18 +6927,18 @@ def get_all_reports():
             cur.execute(f"""
                 SELECT id, patient_name, test_type, appointment_date, status, user_id, tests
                 FROM appointments 
-                WHERE status = 'Completed' AND (appointment_date >= %s)
+                WHERE status IN ('Confirmed', 'Completed')
                 AND (lab_id = %s OR lab_name = %s)
                 ORDER BY appointment_date DESC
-            """, (today_start, l_id, l_name))
+            """, (l_id, l_name))
         else:
             # Super Admin sees everything
             cur.execute(f"""
                 SELECT id, patient_name, test_type, appointment_date, status, user_id, tests
                 FROM appointments 
-                WHERE status = 'Completed' AND (appointment_date >= %s)
+                WHERE status IN ('Confirmed', 'Completed')
                 ORDER BY appointment_date DESC
-            """, (today_start,))
+            """)
 
         appt_rows = cur.fetchall()
         for a in appt_rows:
@@ -6949,7 +6949,7 @@ def get_all_reports():
                     "patient_name": a[1] or "Guest",
                     "test_name": a[2] or a[6] or "Unknown Test",
                     "file_path": "",
-                    "status": "Pending Upload",
+                    "status": "Pending Upload" if a[4] == 'Confirmed' else "Available",
                     "uploaded_at": str(a[3]),
                     "patient_id": a[5],
                     "type": "appointment_entry"
