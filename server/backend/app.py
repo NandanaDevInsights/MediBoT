@@ -666,20 +666,28 @@ def send_appointment_notification(appointment_id, cur):
     """
     try:
         # Fetch details (Removed u.phone_number which doesn't exist)
+        # Fetch details
         cur.execute("""
             SELECT 
                 a.user_id, a.tests, a.appointment_date, a.lab_name, a.contact_number,
                 up.contact_number, a.patient_name, a.appointment_time, a.payment_status,
-                u.username
+                u.username, s.token_number
             FROM appointments a
             LEFT JOIN user_profile up ON a.user_id = up.user_id
             LEFT JOIN users u ON a.user_id = u.id
+            LEFT JOIN slot s ON (
+                a.lab_name = s.lab_name AND 
+                a.appointment_date = s.date AND 
+                a.appointment_time = s.time AND 
+                (a.user_id = s.user_id OR (a.user_id IS NULL AND s.user_id IS NULL))
+            )
             WHERE a.id=%s
+            LIMIT 1
         """, (appointment_id,))
         appt = cur.fetchone()
-        
+
         if appt:
-            uid, tests, date, lab_name, apt_contact, prof_contact, patient_name, appt_time, payment_status, username = appt
+            uid, tests, date, lab_name, apt_contact, prof_contact, patient_name, appt_time, payment_status, username, token_no = appt
             
             # Format date nicely
             try:
@@ -697,6 +705,7 @@ def send_appointment_notification(appointment_id, cur):
                 f"✅ *MediBot Booking Confirmed*\n\n"
                 f"👤 *Patient:* {patient_name}\n"
                 f"🔑 *Login Name:* {username if username else 'N/A'}\n"
+                f"🎟️ *Token Number:* {token_no if token_no else 'Pending'}\n"
                 f"🧪 *Tests:* {tests if tests else 'General'}\n"
                 f"📅 *Date:* {date_display} at {appt_time if appt_time else '10:30 AM'}\n"
                 f"🏥 *Lab:* {lab_name if lab_name else 'Royal Clinical Laboratory'}\n"
@@ -705,41 +714,32 @@ def send_appointment_notification(appointment_id, cur):
             )
 
             # 1. Db Notification
-            inserted_msg = msg
             if uid:
                 try:
                     cur.execute("INSERT INTO notifications (user_id, message) VALUES (%s, %s)", (uid, msg))
-                    notif_id = cur.lastrowid
-                    if notif_id:
-                        # immediately retrieve the corresponding notification from the notifications table in the database
-                        cur.execute("SELECT message FROM notifications WHERE id=%s", (notif_id,))
-                        db_notif = cur.fetchone()
-                        if db_notif:
-                            inserted_msg = db_notif[0]
                 except Exception as dbe:
-                    print(f"[WARN] Failed to insert notification: {dbe}")
+                    print(f"[WARN] Failed to insert notification into DB: {dbe}")
 
-            # 2. WhatsApp Notifications - Immediate to patient
+            # 2. WhatsApp Notifications - Immediate to patient (threaded)
             # send that notification message to the patient's WhatsApp using Twilio (9847458290... at the exact time)
             patient_contact = "+919847458290"
             if patient_contact:
-                print(f"[INFO] Sending Appointment Notification to {patient_contact}")
+                print(f"[INFO] Threading Patient WhatsApp to {patient_contact}")
                 import threading
-                threading.Thread(target=send_whatsapp_message, args=(patient_contact, inserted_msg)).start()
+                threading.Thread(target=send_whatsapp_message, args=(patient_contact, msg)).start()
             
-            # 3. Always notify admin monitor
+            # 3. Always notify admin monitor (threaded)
             admin_notify_number = "98474458290" 
             clean_admin_no = admin_notify_number.strip()
             if not clean_admin_no.startswith('+'):
                 if len(clean_admin_no) == 10:
                     clean_admin_no = "+91" + clean_admin_no
-                elif len(clean_admin_no) == 11 and clean_admin_no.startswith('9'):
-                    clean_admin_no = "+" + clean_admin_no
-                else:
-                    clean_admin_no = "+" + clean_admin_no
+                elif len(clean_admin_no) == 11 and (clean_admin_no.startswith('9') or clean_admin_no.startswith('0')):
+                    # Likely missing or having extra prefix, try to coerce it
+                    pass
             
-            print(f"[INFO] Sending Admin Notification to {clean_admin_no}")
-            send_whatsapp_message(clean_admin_no, inserted_msg)
+            print(f"[INFO] Threading Admin WhatsApp to {clean_admin_no}")
+            threading.Thread(target=send_whatsapp_message, args=(clean_admin_no, msg)).start()
             
     except Exception as notify_err:
         print(f"[ERROR] Notification Helper Failed: {notify_err}")
@@ -3943,10 +3943,11 @@ def get_admin_appointments():
                     a.id, a.user_id, a.patient_name, a.lab_name, a.doctor_name, 
                     a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
                     up.contact_number, a.payment_status, a.technician, a.sample_type, a.report_status,
-                    u.username, u.email
+                    u.username, u.email, s.token_number
                 FROM appointments a
                 LEFT JOIN user_profile up ON a.user_id = up.user_id
                 LEFT JOIN users u ON a.user_id = u.id
+                LEFT JOIN slot s ON a.lab_name = s.lab_name AND a.appointment_date = s.date AND a.appointment_time = s.time AND a.user_id = s.user_id
                 ORDER BY a.created_at DESC
             """)
 
@@ -3967,10 +3968,11 @@ def get_admin_appointments():
                     a.id, a.user_id, a.patient_name, a.lab_name, a.doctor_name, 
                     a.tests, a.appointment_date, a.appointment_time, a.status, a.location,
                     up.contact_number, a.payment_status, a.technician, a.sample_type, a.report_status,
-                    u.username, u.email
+                    u.username, u.email, s.token_number
                 FROM appointments a
                 LEFT JOIN user_profile up ON a.user_id = up.user_id
                 LEFT JOIN users u ON a.user_id = u.id
+                LEFT JOIN slot s ON a.lab_name = s.lab_name AND a.appointment_date = s.date AND a.appointment_time = s.time AND a.user_id = s.user_id
                 WHERE a.lab_name = %s
                 ORDER BY a.created_at DESC
             """, (lab_admin_lab_name,))
@@ -3987,7 +3989,7 @@ def get_admin_appointments():
         appointments = []
 
         for row in rows:
-            aid, uid, p_name, l_name, d_name, tests, a_date, a_time, status, loc, contact, pay_status, tech, sample, rep_status, username, email = row
+            aid, uid, p_name, l_name, d_name, tests, a_date, a_time, status, loc, contact, pay_status, tech, sample, rep_status, username, email, t_num = row
             appointments.append({
                 "id": aid,
                 "user_id": uid,
@@ -4005,7 +4007,8 @@ def get_admin_appointments():
                 "contact": contact or "N/A",
                 "paymentStatus": pay_status or "Pending",
                 "sampleType": sample or "N/A",
-                "reportStatus": rep_status or "Pending"
+                "reportStatus": rep_status or "Pending",
+                "tokenNumber": t_num
             })
 
 
@@ -5090,7 +5093,7 @@ def manage_appointments():
 
                    a.contact_number, a.technician, a.sample_type, a.payment_status, a.report_status, a.source, u.username,
 
-                   a.age, a.gender, a.email
+                   a.age, a.gender, a.email, a.token_number
 
             FROM appointments a
 
@@ -5204,7 +5207,9 @@ def manage_appointments():
 
                 "gender": r[16],
 
-                "email": r[17]
+                "email": r[17],
+
+                "token_number": r[18]
 
             })
 
@@ -5330,6 +5335,101 @@ def update_appointment_status(id):
 
     finally:
 
+        conn.close()
+
+
+
+@app.get("/api/admin/tokens")
+def get_tokens():
+    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    lab_name = request.args.get("lab_name")
+    date = request.args.get("date")
+    time = request.args.get("time")
+    
+    if not lab_name or not date or not time:
+        return jsonify({"message": "Missing parameters"}), 400
+        
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+        
+        # 1. Automatic Status Reset: Reset tokens that have passed their appointment date
+        reset_query = """
+            UPDATE slot 
+            SET slot_status = 'available', user_id = NULL 
+            WHERE date < CURDATE()
+            AND slot_status = 'booked'
+        """
+        cur.execute(reset_query)
+        conn.commit()
+        
+        # 2. Fetch current tokens for this lab and date (across all times today)
+        cur.execute("""
+            SELECT token_number, slot_status, user_id, num_seats
+            FROM slot 
+            WHERE lab_name = %s AND date = %s
+        """, (lab_name, date))
+        
+        tokens = cur.fetchall()
+        return jsonify(tokens), 200
+    except Exception as e:
+        print(f"Token Fetch Error: {e}")
+        return jsonify({"message": str(e)}), 500
+    finally:
+        conn.close()
+
+@app.post("/api/admin/tokens/book")
+def book_token():
+    if session.get("role") not in ["LAB_ADMIN", "SUPER_ADMIN"]:
+        return jsonify({"message": "Unauthorized"}), 403
+        
+    data = request.get_json()
+    lab_name = data.get("lab_name")
+    date = data.get("date")
+    time = data.get("time")
+    token_number = data.get("token_number")
+    user_id = data.get("user_id")
+    num_seats = data.get("num_seats", 10) # default capacity if not exists
+    
+    if not all([lab_name, date, time, token_number]):
+        return jsonify({"message": "Missing required fields"}), 400
+        
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Check if token entry exists
+        # Check if token entry exists for this lab, date and token_number
+        cur.execute("""
+            SELECT slot_id, slot_status 
+            FROM slot 
+            WHERE lab_name = %s AND date = %s AND token_number = %s
+        """, (lab_name, date, str(token_number)))
+        
+        existing = cur.fetchone()
+        
+        if existing:
+            slot_id, current_status = existing
+            cur.execute("""
+                UPDATE slot 
+                SET slot_status = 'booked', user_id = %s, num_seats = %s, time = %s
+                WHERE slot_id = %s
+            """, (user_id, num_seats, time, slot_id))
+        else:
+            # Create new entry
+            cur.execute("""
+                INSERT INTO slot (lab_name, date, time, num_seats, token_number, user_id, slot_status)
+                VALUES (%s, %s, %s, %s, %s, %s, 'booked')
+            """, (lab_name, date, time, num_seats, str(token_number), user_id))
+            
+        conn.commit()
+        return jsonify({"message": "Token booked successfully"}), 200
+    except Exception as e:
+        print(f"Token Booking Error: {e}")
+        return jsonify({"message": str(e)}), 500
+    finally:
         conn.close()
 
 
@@ -6583,9 +6683,7 @@ def get_user_appointments():
         cur.execute("""
 
             SELECT id, lab_name, patient_name, test_type, appointment_date, appointment_time, 
-
-                   status, location, contact_number, created_at
-
+                   status, location, contact_number, created_at, token_number
             FROM appointments 
 
             WHERE user_id=%s 
@@ -6640,8 +6738,8 @@ def get_user_appointments():
 
                 "contact": r[8] or "N/A",
 
-                "created_at": r[9].isoformat() if r[9] else None
-
+                "created_at": r[9].isoformat() if r[9] else None,
+                "tokenNumber": r[10]
             })
 
         
@@ -7064,13 +7162,18 @@ def send_whatsapp_message(to_number, body_text, media_url=None):
         if clean_to.lower().startswith("whatsapp:"):
             clean_to = clean_to[9:]
 
-        # Auto-prefix with +91 if it's 10 digits without country code (Context: India default)
+        # Auto-prefix for common scenarios (Context: India +91 default)
         if not clean_to.startswith("+"):
             if len(clean_to) == 10:
                 clean_to = "+91" + clean_to
+            elif len(clean_to) == 12 and clean_to.startswith("91"):
+                clean_to = "+" + clean_to
+            elif len(clean_to) == 11 and clean_to.startswith("0"):
+                clean_to = "+91" + clean_to[1:]
             else:
-                # Still try to use it, but Twilio might reject if not E.164
-                pass
+                # If it's long but no plus, assume it needs one if it looks like E.164 already
+                if len(clean_to) > 10:
+                    clean_to = "+" + clean_to
 
         final_to = f"whatsapp:{clean_to}"
         
@@ -8916,6 +9019,101 @@ def get_lab_feedback_api():
         return jsonify({"message": "Server error"}), 500
     finally:
         conn.close()
+
+# --- Slot / Seat Management for Lab Admin Dashboard ---
+
+@app.get("/api/admin/slots")
+def get_slots():
+    """Fetch booked slots for a given lab, date, and time."""
+    lab_name = request.args.get("lab_name")
+    date = request.args.get("date")
+    time_val = request.args.get("time") # renamed time to time_val
+    
+    if not lab_name or not date:
+        return jsonify({"message": "lab_name and date are required"}), 400
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+        # Auto-reset expired slots first
+        now = datetime.now()
+        cur.execute("""
+            UPDATE slot 
+            SET slot_status = 'available', user_id = NULL 
+            WHERE (date < CURDATE()) OR (date = CURDATE() AND time < CURTIME())
+        """)
+        conn.commit()
+        
+        # Now fetch active booked slots
+        query = "SELECT * FROM slot WHERE lab_name=%s AND date=%s"
+        params = [lab_name, date]
+        if time_val:
+            query += " AND time=%s"
+            params.append(time_val)
+        
+        cur.execute(query, tuple(params))
+        rows = cur.fetchall()
+        
+        # Standardize time format for JSON
+        for row in rows:
+            if row['time']:
+                row['time'] = str(row['time'])
+        
+        return jsonify(rows), 200
+    except Exception as e:
+        print(f"[ERROR] Fetch slots failed: {e}")
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
+@app.post("/api/admin/slots/book")
+def book_slot():
+    """Book a specific seat/token."""
+    data = request.json
+    lab_name = data.get("lab_name")
+    date = data.get("date")
+    time_val = data.get("time")
+    token_number = data.get("token_number")
+    user_id = data.get("user_id")
+    appointment_id = data.get("appointment_id")
+    
+    if not all([lab_name, date, time_val, token_number]):
+        return jsonify({"message": "lab_name, date, time, and token_number are required"}), 400
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Check if already booked
+        cur.execute("""
+            SELECT slot_id FROM slot 
+            WHERE lab_name=%s AND date=%s AND time=%s AND token_number=%s AND slot_status='booked'
+        """, (lab_name, date, time_val, token_number))
+        
+        if cur.fetchone():
+            return jsonify({"message": "Seat already booked"}), 409
+        
+        # Insert or Update slot
+        cur.execute("""
+            INSERT INTO slot (lab_name, date, time, token_number, user_id, slot_status)
+            VALUES (%s, %s, %s, %s, %s, 'booked')
+            ON DUPLICATE KEY UPDATE user_id=%s, slot_status='booked'
+        """, (lab_name, date, time_val, token_number, user_id, user_id))
+        
+        # Update appointments table with the token number
+        if appointment_id:
+            numeric_id = str(appointment_id).replace("A-", "")
+            cur.execute("UPDATE appointments SET token_number=%s WHERE id=%s", (token_number, numeric_id))
+        
+        conn.commit()
+        return jsonify({"message": "Seat booked successfully", "token_number": token_number}), 200
+    except Exception as e:
+        print(f"[ERROR] Book slot failed: {e}")
+        conn.rollback()
+        return jsonify({"message": "Server error"}), 500
+    finally:
+        conn.close()
+
 
 if __name__ == '__main__':
     print(" * MediBot Python Backend Starting on Port 5000 *")
