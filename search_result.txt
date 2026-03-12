@@ -1,0 +1,43 @@
+﻿363 if (activeSection === 'Overview') {
+375 if (activeSection === 'Appointments' || activeSection === 'Payments') url = 'http://localhost:5000/a
+376 if (activeSection === 'Test Orders') url = 'http://localhost:5000/api/admin/test-orders';
+377 if (activeSection === 'Lab Staff') url = 'http://localhost:5000/api/admin/staff';
+378 if (url || activeSection === 'Reports') {
+379 const fetchUrl = activeSection === 'Reports' ? 'http://localhost:5000/api/admin/patients' : url;
+392 if ((activeSection === 'Appointments' || activeSection === 'Payments') && Array.isArray(data)) {
+395 if (activeSection === 'Test Orders' && Array.isArray(data)) setTestOrders(data);
+396 if (activeSection === 'Lab Staff' && Array.isArray(data)) {
+405 if (activeSection === 'Reports' && Array.isArray(data)) setPatients(data); // Reusing patients state
+406 if (activeSection === 'Settings' || activeSection === 'Profile') {
+418 if (activeSection === 'Lab Staff') setLoadingStaff(false);
+421 if (activeSection === 'Lab Staff') setLoadingStaff(false);
+426 if (activeSection === 'Lab Staff') setLoadingStaff(true);
+429 if (activeSection === 'Patients') {
+897 className={`med-nav-item ${activeSection === item.section ? 'active' : ''}`}
+933 <h2 className="med-page-title">{activeSection === 'Landing' ? '' : activeSection}</h2>
+1514 if (activeSection === 'Overview') {
+1526 if (activeSection === 'Appointments' || activeSection === 'Payments') url = 'http://localhost:5000/a
+1527 if (activeSection === 'Test Orders') url = 'http://localhost:5000/api/admin/test-orders';
+1528 if (activeSection === 'Lab Staff') url = 'http://localhost:5000/api/admin/staff';
+1529 if (url || activeSection === 'Reports') {
+1530 const fetchUrl = activeSection === 'Reports' ? 'http://localhost:5000/api/admin/patients' : url;
+1543 if ((activeSection === 'Appointments' || activeSection === 'Payments') && Array.isArray(data)) {
+1546 if (activeSection === 'Test Orders' && Array.isArray(data)) setTestOrders(data);
+1547 if (activeSection === 'Lab Staff' && Array.isArray(data)) {
+1556 if (activeSection === 'Reports' && Array.isArray(data)) setPatients(data); // Reusing patients state
+1557 if (activeSection === 'Settings' || activeSection === 'Profile') {
+1569 if (activeSection === 'Lab Staff') setLoadingStaff(false);
+1572 if (activeSection === 'Lab Staff') setLoadingStaff(false);
+1577 if (activeSection === 'Lab Staff') setLoadingStaff(true);
+1580 if (activeSection === 'Patients') {
+2048 className={`med-nav-item ${activeSection === item.section ? 'active' : ''}`}
+2084 <h2 className="med-page-title">{activeSection === 'Landing' ? '' : activeSection}</h2>
+4259 {activeSection === 'Overview' && renderOverview()}
+4260 {activeSection === 'Appointments' && renderAppointments()}
+4261 {activeSection === 'Test Orders' && renderTestOrders()}
+4262 {activeSection === 'Patients' && renderPatients()}
+4263 {activeSection === 'Reports' && renderReports()}
+4264 {activeSection === 'Lab Staff' && renderStaff()}
+4265 {activeSection === 'Settings' && renderSettings()}
+4266 {activeSection === 'Profile' && renderProfile()}
+4268 {activeSection === 'Payments' && renderPayments()}

@@ -77,6 +77,11 @@ const LoginPage = () => {
     const role = result.role || 'USER';
     sessionStorage.setItem('auth_role', role);
 
+    // Store user data required by LandingPage
+    if (result.username) sessionStorage.setItem('username', result.username);
+    if (result.user_id) sessionStorage.setItem('user_id', result.user_id);
+    if (result.email) sessionStorage.setItem('email', result.email);
+
     // Redirect based on role
     if (role === 'LAB_ADMIN') {
       navigate('/lab-admin-dashboard', { replace: true })

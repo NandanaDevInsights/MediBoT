@@ -132,3 +132,34 @@ export const getUserNotifications = async () => {
   return parseResponse(res)
 }
 
+// --- Super Admin Endpoints ---
+export const getSuperAdminStats = async () => {
+  const res = await fetch(`${API_BASE}/super-admin/dashboard-stats`, { credentials: 'include' })
+  return parseResponse(res)
+}
+
+export const getSuperAdminLabs = async () => {
+  const res = await fetch(`${API_BASE}/super-admin/labs-performance`, { credentials: 'include' })
+  return parseResponse(res)
+}
+
+export const getSuperAdminBookings = async () => {
+  const res = await fetch(`${API_BASE}/super-admin/all-bookings`, { credentials: 'include' })
+  return parseResponse(res)
+}
+
+export const getSuperAdminUsers = async () => {
+  const res = await fetch(`${API_BASE}/super-admin/all-users`, { credentials: 'include' })
+  return parseResponse(res)
+}
+
+export const getSuperAdminChartData = async () => {
+  const res = await fetch(`${API_BASE}/super-admin/chart-data`, { credentials: 'include' })
+  return parseResponse(res)
+}
+
+export const getSuperAdminNotifications = async () => {
+  const res = await fetch(`${API_BASE}/super-admin/notifications`, { credentials: 'include' })
+  return parseResponse(res)
+}
+

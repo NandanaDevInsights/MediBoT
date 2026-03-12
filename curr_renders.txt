@@ -1,0 +1,26 @@
+﻿868 const renderSidebar = () => {
+912 const renderHeader = () => (
+1071 const renderBillModal = () => {
+2019 const renderSidebar = () => {
+2063 const renderHeader = () => (
+2222 const renderBillModal = () => {
+2303 const renderOverview = () => (
+2502 const renderAppointments = () => {
+2520 const renderAppointmentTable = (apptList, title, emptyMsg) => (
+2745 const renderTestOrders = () => {
+2958 const renderPatients = () => {
+3092 const renderReports = () => {
+3200 const renderStaff = () => {
+3702 const renderSettings = () => {
+3898 const renderProfile = () => (
+3971 const renderPatientHistoryModal = () => {
+4100 const renderPayments = () => {
+4259 {activeSection === 'Overview' && renderOverview()}
+4260 {activeSection === 'Appointments' && renderAppointments()}
+4261 {activeSection === 'Test Orders' && renderTestOrders()}
+4262 {activeSection === 'Patients' && renderPatients()}
+4263 {activeSection === 'Reports' && renderReports()}
+4264 {activeSection === 'Lab Staff' && renderStaff()}
+4265 {activeSection === 'Settings' && renderSettings()}
+4268 {activeSection === 'Payments' && renderPayments()}
+4273 {renderPatientHistoryModal()}

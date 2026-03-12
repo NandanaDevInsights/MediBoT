@@ -98,6 +98,18 @@ const IconX = ({ size = 24, ...props }) => (
   </svg>
 );
 
+const IconChevronLeft = ({ size = 24, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+);
+
+const IconChevronRight = ({ size = 24, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+);
+
 const IconEye = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -158,6 +170,33 @@ const IconUploadCloud = ({ size = 20 }) => (
 const IconMessageCircle = ({ size = 24, ...props }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+  </svg>
+);
+
+const IconMicroscope = ({ size = 20, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M6 18h8" />
+    <path d="M3 22h18" />
+    <path d="M14 22a7 7 0 1 0 0-14h-1" />
+    <path d="M9 14h2" />
+    <path d="M9 12a2 2 0 1 1-2-2V6h6v4a2 2 0 1 1-2 2z" />
+    <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" />
+  </svg>
+);
+
+const IconPrescription = ({ size = 20, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z" />
+    <path d="M7 7h10" />
+    <path d="M7 12h10" />
+    <path d="M7 17h6" />
+  </svg>
+);
+
+const IconClipboard = ({ size = 20, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
   </svg>
 );
 
@@ -304,27 +343,608 @@ const ALL_TESTS = [
 
 // LABS_DATA removed - Using OpenStreetMap Live Data
 
-const TEST_CATEGORIES = {
+
+// Test Pricing Structure - Each test has its actual price
+const TEST_PRICING = {
   "Blood Tests": [
-    "Complete Blood Count (CBC)", "Hemoglobin (Hb)", "Blood Group & Rh Factor", "ESR (Erythrocyte Sedimentation Rate)",
-    "Peripheral Smear", "Fasting Blood Sugar (FBS)", "Postprandial Blood Sugar (PPBS)", "Random Blood Sugar (RBS)",
-    "HbA1c", "Lipid Profile", "Liver Function Test (LFT)", "Kidney Function Test (KFT)", "Thyroid Profile (T3, T4, TSH)",
-    "C-Reactive Protein (CRP)", "Widal Test", "VDRL", "HIV", "HBsAg", "Anti-HCV", "Dengue (NS1, IgG, IgM)",
-    "Malaria (Antigen / Smear)", "PT / INR"
+    { name: "Complete Blood Count (CBC)", price: 300 },
+    { name: "Hemoglobin (Hb)", price: 150 },
+    { name: "Blood Group & Rh Factor", price: 200 },
+    { name: "ESR (Erythrocyte Sedimentation Rate)", price: 100 },
+    { name: "Peripheral Smear", price: 250 },
+    { name: "Fasting Blood Sugar (FBS)", price: 80 },
+    { name: "Postprandial Blood Sugar (PPBS)", price: 80 },
+    { name: "Random Blood Sugar (RBS)", price: 70 },
+    { name: "HbA1c", price: 400 },
+    { name: "Lipid Profile", price: 600 },
+    { name: "Liver Function Test (LFT)", price: 700 },
+    { name: "Kidney Function Test (KFT)", price: 650 },
+    { name: "Thyroid Profile (T3, T4, TSH)", price: 500 },
+    { name: "C-Reactive Protein (CRP)", price: 350 },
+    { name: "Widal Test", price: 200 },
+    { name: "VDRL", price: 250 },
+    { name: "HIV", price: 500 },
+    { name: "HBsAg", price: 350 },
+    { name: "Anti-HCV", price: 450 },
+    { name: "Dengue (NS1, IgG, IgM)", price: 850 },
+    { name: "Malaria (Antigen / Smear)", price: 300 },
+    { name: "PT / INR", price: 250 }
   ],
   "Urine Tests": [
-    "Urine Routine Examination", "Urine Microscopy", "Urine Sugar", "Urine Protein / Albumin", "Ketone Bodies",
-    "Bile Salts & Bile Pigments", "Urine Culture & Sensitivity", "Pregnancy Test (hCG)", "Microalbuminuria",
-    "24-Hour Urine Protein", "Creatinine Clearance"
+    { name: "Urine Routine Examination", price: 150 },
+    { name: "Urine Microscopy", price: 180 },
+    { name: "Urine Sugar", price: 100 },
+    { name: "Urine Protein / Albumin", price: 120 },
+    { name: "Ketone Bodies", price: 150 },
+    { name: "Bile Salts & Bile Pigments", price: 200 },
+    { name: "Urine Culture & Sensitivity", price: 600 },
+    { name: "Pregnancy Test (hCG)", price: 250 },
+    { name: "Microalbuminuria", price: 400 },
+    { name: "24-Hour Urine Protein", price: 500 },
+    { name: "Creatinine Clearance", price: 450 }
   ],
   "Sputum Tests": [
-    "Sputum AFB (ZN Stain)", "Sputum AFB (Fluorescent)", "CBNAAT / GeneXpert", "Sputum Culture & Sensitivity",
-    "Gram Stain", "Fungal Culture", "Sputum Cytology"
+    { name: "Sputum AFB (ZN Stain)", price: 200 },
+    { name: "Sputum AFB (Fluorescent)", price: 350 },
+    { name: "CBNAAT / GeneXpert", price: 1500 },
+    { name: "Sputum Culture & Sensitivity", price: 700 },
+    { name: "Gram Stain", price: 150 },
+    { name: "Fungal Culture", price: 800 },
+    { name: "Sputum Cytology", price: 600 }
   ],
   "Stool Tests": [
-    "Stool Routine Examination", "Stool Microscopy", "Ova & Cyst", "Stool Culture", "Occult Blood Test",
-    "H. pylori Antigen (Stool)", "Fecal Fat", "Calprotectin", "Reducing Substances"
+    { name: "Stool Routine Examination", price: 180 },
+    { name: "Stool Microscopy", price: 200 },
+    { name: "Ova & Cyst", price: 250 },
+    { name: "Stool Culture", price: 650 },
+    { name: "Occult Blood Test", price: 220 },
+    { name: "H. pylori Antigen (Stool)", price: 850 },
+    { name: "Fecal Fat", price: 400 },
+    { name: "Calprotectin", price: 1200 },
+    { name: "Reducing Substances", price: 300 }
+  ],
+  "Scanning": [
+    { name: "X-Ray Chest", price: 500 },
+    { name: "USG Abdomen", price: 1200 },
+    { name: "CT Scan Brain", price: 3500 },
+    { name: "MRI Spine", price: 6500 },
+    { name: "ECG", price: 300 },
+    { name: "Echo Cardiogram", price: 1500 }
   ]
+};
+
+// Legacy TEST_CATEGORIES for backward compatibility - now references TEST_PRICING
+const TEST_CATEGORIES = {
+  "Blood Tests": TEST_PRICING["Blood Tests"].map(test => test.name),
+  "Urine Tests": TEST_PRICING["Urine Tests"].map(test => test.name),
+  "Sputum Tests": TEST_PRICING["Sputum Tests"].map(test => test.name),
+  "Stool Tests": TEST_PRICING["Stool Tests"].map(test => test.name),
+  "Scanning": TEST_PRICING["Scanning"].map(test => test.name)
+};
+
+const ENHANCED_LAB_DATA = {
+  "Royal Clinical Laboratory": {
+    description: "Royal Clinical Laboratory is a trusted diagnostic center located in Kanjirappally, Kottayam, offering reliable clinical testing services for patients and healthcare providers. The laboratory focuses on providing accurate and timely diagnostic results using modern equipment and experienced technicians. It specializes in routine blood tests, urine analysis, and preventive health screenings. With efficient sample processing and quick report delivery, Royal Clinical Laboratory ensures quality diagnostic support for early disease detection and patient care.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "8:30 AM – 5:30 PM",
+      services: "Blood Tests, Urine Analysis, Lipid Profile, LFT, KFT, Diabetes Screening",
+      homeCollection: "Available",
+      reportDelivery: "Same day for routine tests",
+      staff: "Lab Technician, Phlebotomist, Receptionist",
+      rating: "New"
+    }
+  },
+  "Marymatha Clinical Laboratory": {
+    description: "Marymatha Clinical Laboratory is a well-equipped diagnostic facility providing 24-hour laboratory services in Kanjirappally. The lab is known for its continuous availability and reliable clinical testing for blood, urine, and other specimens. With skilled laboratory professionals and advanced diagnostic methods, Marymatha Clinical Laboratory ensures accurate results and fast turnaround time. The facility supports both walk-in patients and doctor referrals while also offering convenient home sample collection services.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "Open 24 Hours",
+      services: "CBC, Thyroid Profile, Blood Sugar Test, Urine Test, Pregnancy Test",
+      homeCollection: "Available",
+      reportDelivery: "6–12 hours for routine tests",
+      staff: "Pathologist, Lab Technician, Sample Collector",
+      rating: "New"
+    }
+  },
+  "DDRC SRL Diagnostic Center": {
+    description: "DDRC SRL Diagnostic Center is a reputed diagnostic laboratory known for advanced medical testing and high-quality laboratory standards. Located in Kanjirappally, the center provides a wide range of diagnostic services including specialized blood tests, hormone testing, and preventive health packages. With experienced pathologists and modern laboratory equipment, DDRC SRL ensures precise and reliable diagnostic reports. The center also supports home sample collection and offers comprehensive diagnostic services for both individuals and healthcare institutions.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "9:15 AM – 6:30 PM",
+      services: "Advanced Blood Tests, Hormone Testing, Allergy Testing, Cancer Markers, Health Checkups",
+      homeCollection: "Available",
+      reportDelivery: "24–48 hours depending on test",
+      staff: "Pathologist, Microbiologist, Lab Technologists",
+      rating: "5.0"
+    }
+  },
+  "Sri Diagnostics Pvt (Ltd)": {
+    description: "Sri Diagnostics Pvt Ltd is a clinical and medical laboratory providing reliable pathology and diagnostic testing services. The laboratory offers a wide range of routine and specialized tests including blood analysis, urine testing, and cholesterol screening. With trained laboratory technicians and a patient-friendly environment, Sri Diagnostics focuses on delivering accurate reports and quality healthcare support. The lab also offers convenient sample collection services and quick report processing for patient convenience.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "9:15 AM – 7:00 PM",
+      services: "Pathology Tests, Blood Tests, Urine Analysis, Cholesterol Test, Vitamin Tests",
+      homeCollection: "Available",
+      reportDelivery: "Same day for routine tests",
+      staff: "Lab Technicians, Sample Collectors",
+      rating: "New"
+    }
+  },
+  "Usha Clinic Laboratory": {
+    description: "Usha Clinic Laboratory is a diagnostic facility associated with Usha Clinic that provides routine medical testing and diagnostic services for patients. The laboratory focuses on essential clinical tests including blood sugar analysis, CBC tests, and urine examination. With experienced medical staff and basic diagnostic equipment, the laboratory supports doctors in diagnosing and monitoring patient health conditions. It is known for providing reliable and affordable diagnostic services for the local community.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "8:00 AM – 6:30 PM",
+      services: "Blood Sugar Testing, CBC, Urine Test, ECG, Health Screening",
+      homeCollection: "Limited availability",
+      reportDelivery: "Same day",
+      staff: "Physician, Lab Technician",
+      rating: "4.0"
+    }
+  },
+  "Dianova Laboratory": {
+    description: "Dianova Laboratory is a diagnostic testing center offering 24-hour clinical laboratory services for patients requiring urgent and routine medical tests. The laboratory provides accurate diagnostic support through blood tests, urine tests, and infection screening. With trained laboratory staff and reliable testing procedures, Dianova ensures quality healthcare services and timely diagnostic results for effective medical treatment.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "Open 24 Hours",
+      services: "Blood Tests, Urine Tests, Infection Screening, Liver Function Tests, Kidney Function Tests",
+      homeCollection: "Available",
+      reportDelivery: "12–24 hours",
+      staff: "Lab Technologists, Sample Collectors",
+      rating: "New"
+    }
+  },
+  "Dianova Clinical Laboratory": {
+    description: "Dianova Clinical Laboratory is a diagnostic center providing routine laboratory testing services including blood tests and urine analysis. The laboratory focuses on delivering accurate results with efficient sample handling and reliable testing procedures. With experienced technicians and quality diagnostic support, the laboratory helps doctors and patients monitor health conditions and detect diseases early.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "9:45 AM – 4:30 PM",
+      services: "Blood Tests, Urine Routine Test, Thyroid Tests, CBC",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Technicians",
+      rating: "New"
+    }
+  },
+  "Amala Laboratory": {
+    description: "Amala Laboratory is a medical diagnostic laboratory providing a variety of routine clinical tests for patients. The laboratory offers services such as blood testing, urine analysis, diabetes screening, and thyroid testing. With extended working hours and experienced laboratory professionals, Amala Laboratory focuses on delivering accurate diagnostic results and efficient patient care.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "8:00 AM – 8:30 PM",
+      services: "Blood Tests, Urine Analysis, Diabetes Screening, Thyroid Tests, Vitamin Tests",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Pathologist, Lab Technician",
+      rating: "New"
+    }
+  },
+  "Scanron Diagnostics": {
+    description: "Scanron Diagnostics is a diagnostic laboratory providing comprehensive clinical testing and health diagnostic services. The center performs various laboratory tests including blood testing, hormone analysis, and preventive health checkups. With modern diagnostic equipment and trained professionals, Scanron Diagnostics aims to deliver accurate reports and reliable medical testing support.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "8:00 AM – 8:00 PM",
+      services: "Scanning, Blood Tests, Clinical Laboratory Testing, Diagnostic Packages, Hormone Tests",
+      homeCollection: "Available",
+      reportDelivery: "Within 24 hours",
+      staff: "Lab Technologists, Pathologist",
+      rating: "New"
+    }
+  },
+  "ClinoTech Laboratories": {
+    description: "ClinoTech Laboratories is a modern diagnostic laboratory providing professional medical testing services for patients and healthcare providers. The laboratory offers a range of diagnostic tests including blood analysis, urine testing, and preventive health packages. With skilled laboratory technicians and advanced testing facilities, ClinoTech Laboratories ensures high-quality diagnostic services and accurate reporting for effective healthcare management.",
+    details: {
+      location: "Kanjirappally, Kottayam",
+      workingHours: "8:30 AM – 6:00 PM",
+      services: "Diagnostic Laboratory Services, Blood Tests, Urine Tests, Preventive Health Packages",
+      homeCollection: "Available",
+      reportDelivery: "Same day for routine tests",
+      staff: "Senior Lab Technicians, Pathologist",
+      rating: "5.0"
+    }
+  },
+  "Lissy's Clinical Laboratory": {
+    description: "Lissy's Clinical Laboratory is a trusted pathology testing center known for providing reliable diagnostic services for routine and specialized clinical tests. The laboratory offers accurate pathology testing with modern equipment and trained laboratory professionals. It focuses on quick report delivery and quality diagnostic support for patients and physicians.",
+    details: {
+      location: "Nearby",
+      distance: "0.5 km",
+      rating: "4.6",
+      workingHours: "7:50 AM – 7:30 PM",
+      services: "Pathology Tests, Blood Tests, Urine Tests, Health Screening",
+      homeCollection: "Available",
+      reportDelivery: "Same day for routine tests",
+      staff: "Pathologists, Technicians",
+    }
+  },
+  "Medivison": {
+    description: "Medivison Diagnostic Center is a well-known clinical testing facility offering professional pathology and laboratory services. The center provides accurate blood testing, clinical diagnostics, and preventive health screening services. With experienced laboratory technicians and efficient sample processing, Medivison ensures dependable diagnostic results.",
+    details: {
+      location: "Nearby",
+      distance: "2.8 km",
+      rating: "4.8",
+      workingHours: "7:20 AM – 6:30 PM",
+      services: "Pathology Tests, Blood Analysis, Urine Tests, Routine Health Checkups",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Technicians"
+    }
+  },
+  "Primedical Diagnostics": {
+    description: "Primedical Diagnostics is a diagnostic testing facility providing a variety of clinical laboratory services for patients and healthcare providers. The laboratory offers pathology testing, blood analysis, and diagnostic health screenings. With trained laboratory staff and modern diagnostic tools, Primedical Diagnostics focuses on delivering reliable medical test results.",
+    details: {
+      location: "Nearby",
+      distance: "4.2 km",
+      rating: "4.0",
+      workingHours: "11:50 AM – 7:30 PM",
+      services: "Pathology Tests, Blood Tests, Urine Tests, Health Screening",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Staff"
+    }
+  },
+  "Regional Public Health Laboratory": {
+    description: "Regional Public Health Laboratory is a government-supported diagnostic laboratory that provides clinical testing services for disease diagnosis and public health monitoring. The laboratory conducts a variety of pathology and medical diagnostic tests with a focus on accurate results and community healthcare support.",
+    details: {
+      location: "Nearby",
+      distance: "4.2 km",
+      rating: "4.7",
+      workingHours: "9:50 AM – 7:30 PM",
+      services: "Pathology Tests, Public Health Screening, Blood Tests, Diagnostic Testing",
+      homeCollection: "Not Available",
+      reportDelivery: "1-2 days",
+      staff: "Public Health Staff"
+    }
+  },
+  "Micro Health Laboratories": {
+    description: "Micro Health Laboratories specializes in microbiology and pathology diagnostic services. The laboratory performs clinical tests for infection detection, blood testing, and routine pathology screening. With professional technicians and standardized laboratory procedures, Micro Health Laboratories ensures reliable diagnostic outcomes.",
+    details: {
+      location: "Nearby",
+      distance: "4.3 km",
+      rating: "4.8",
+      workingHours: "Monday – Saturday (9:00 AM – 4:30 PM)",
+      services: "Microbiology Tests, Blood Tests, Pathology Testing",
+      homeCollection: "Available",
+      reportDelivery: "Within 24 hours",
+      staff: "Microbiologists, Technicians"
+    }
+  },
+  "Medline Diagnostics Center": {
+    description: "Medline Diagnostics Center is a modern diagnostic facility offering comprehensive laboratory testing services for patients. The center performs a wide range of pathology tests and clinical diagnostics with advanced laboratory equipment and trained professionals.",
+    details: {
+      location: "Ernakulam",
+      distance: "4.3 km",
+      rating: "3.5",
+      workingHours: "10:30 AM – 9:15 PM",
+      services: "Blood Tests, Clinical Pathology, Diagnostic Packages",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Specialists"
+    }
+  },
+  "Gulshan Medicare": {
+    description: "Gulshan Medicare is a clinical diagnostic center providing laboratory testing and healthcare support services. The laboratory conducts routine pathology testing and medical diagnostics for disease detection and health monitoring.",
+    details: {
+      location: "Nearby",
+      distance: "4.5 km",
+      rating: "4.7",
+      workingHours: "8:00 AM – 8:15 PM",
+      services: "Blood Tests, Urine Tests, Clinical Diagnostics",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Medical Staff"
+    }
+  },
+  "Hi-Tech Laboratory": {
+    description: "Hi-Tech Laboratory is a clinical testing facility offering pathology and diagnostic services using modern laboratory equipment. The laboratory focuses on accurate testing and timely report generation for patients and healthcare providers.",
+    details: {
+      location: "Nearby",
+      distance: "4.6 km",
+      rating: "4.1",
+      workingHours: "7:00 AM – 8:15 PM",
+      services: "Pathology Tests, Blood Tests, Routine Diagnostic Tests",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Technicians"
+    }
+  },
+  "Trust Diagnostics": {
+    description: "Trust Diagnostics is a professional laboratory providing reliable diagnostic services including pathology testing and preventive health screening. The laboratory aims to deliver accurate diagnostic reports and quality healthcare support for patients.",
+    details: {
+      location: "Nearby",
+      distance: "4.9 km",
+      rating: "4.4",
+      workingHours: "7:30 AM – 9:15 PM",
+      services: "Blood Tests, Clinical Diagnostics, Health Checkups",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Specialists"
+    }
+  },
+  "Medivision": {
+    description: "Medivision Diagnostic Laboratory offers a range of pathology and clinical testing services for disease diagnosis and preventive healthcare. With trained laboratory staff and efficient diagnostic procedures, the laboratory provides dependable medical testing solutions.",
+    details: {
+      location: "Nearby",
+      distance: "5.0 km",
+      rating: "4.8",
+      workingHours: "Monday – Sunday (9:15 AM – 5:00 PM)",
+      services: "Pathology Tests, Blood Tests, Urine Analysis",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Technicians"
+    }
+  },
+  "Celica Medical Center": {
+    description: "Celica Medical Center provides clinical laboratory and diagnostic services for patients requiring medical testing and disease screening. The center offers a variety of pathology tests supported by trained laboratory technicians and healthcare professionals.",
+    details: {
+      location: "Ernakulam",
+      distance: "5.0 km",
+      rating: "4.0",
+      workingHours: "8:20 AM – 8:30 PM",
+      services: "Clinical Tests, Blood Tests, Pathology Diagnostics",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Physicians, Technicians"
+    }
+  },
+  "DDRC Agilus": {
+    description: "DDRC Agilus is a leading diagnostic network known for high-quality laboratory services and advanced diagnostic technologies. The laboratory provides a wide range of pathology and specialized diagnostic tests, ensuring accurate results and professional healthcare support.",
+    details: {
+      location: "Panampilly Nagar",
+      distance: "5.6 km",
+      rating: "4.0",
+      workingHours: "8:10 AM – 9:15 PM",
+      services: "Advanced Diagnostics, Blood Tests, Pathology Testing",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Specialists"
+    }
+  },
+  "Amma Scans": {
+    description: "Amma Scans is a diagnostic center providing laboratory testing and medical scanning services for patient diagnosis. The facility supports healthcare professionals with reliable clinical test reports and diagnostic screening services.",
+    details: {
+      location: "Nearby",
+      distance: "5.7 km",
+      rating: "4.2",
+      workingHours: "11:40 AM – 6:15 PM",
+      services: "Blood Tests, Clinical Diagnostics, Diagnostic Screening",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Radiologists, Technicians"
+    }
+  },
+  "King Lab": {
+    description: "King Lab is a diagnostic laboratory offering routine pathology testing and clinical laboratory services. The laboratory performs blood testing, urine analysis, and other medical diagnostic procedures to support disease detection and health monitoring.",
+    details: {
+      location: "Nearby",
+      distance: "5.9 km",
+      rating: "4.1",
+      workingHours: "10:20 AM – 6:30 PM",
+      services: "Blood Tests, Urine Tests, Pathology Tests",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Technicians"
+    }
+  },
+  "Medilab": {
+    description: "Medilab is a clinical diagnostic laboratory providing pathology testing and routine health screening services. The laboratory focuses on delivering accurate test results and supporting doctors in patient diagnosis.",
+    details: {
+      location: "Nearby",
+      distance: "5.9 km",
+      rating: "3.8",
+      workingHours: "8:40 AM – 6:15 PM",
+      services: "Pathology Tests, Blood Tests, Diagnostic Screening",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Lab Technicians"
+    }
+  },
+  "Dr Lal Path Labs": {
+    description: "Dr Lal Path Labs is one of the most recognized diagnostic laboratory chains in India, offering advanced pathology testing and diagnostic services. The laboratory provides a wide range of medical tests supported by modern technology and standardized laboratory procedures.",
+    details: {
+      location: "Nearby",
+      distance: "6.0 km",
+      rating: "3.9",
+      workingHours: "9:40 AM – 8:15 PM",
+      services: "Advanced Blood Tests, Pathology Tests, Preventive Health Packages",
+      homeCollection: "Available",
+      reportDelivery: "Same day",
+      staff: "Specialized Staff"
+    }
+  },
+  "True Life Medical Company": {
+    description: "True Life Medical Company provides diagnostic laboratory services for routine clinical testing and health screening. The laboratory supports healthcare professionals by delivering accurate diagnostic reports and reliable laboratory testing services.",
+    details: {
+      location: "Nearby",
+      distance: "6.0 km",
+      rating: "3.8",
+      workingHours: "As per appointment",
+      services: "Clinical Tests, Blood Tests, Pathology Diagnostics",
+      homeCollection: "Available",
+      reportDelivery: "As per appointment",
+      staff: "Medical Professionals"
+    }
+  }
+};
+
+// Helper function to get the price of a test
+
+const getTestPrice = (testName, labId, customTests = null, labName = null) => {
+  // 1. Check if we have custom lab settings from the backend
+  if (customTests && Array.isArray(customTests)) {
+    const custom = customTests.find(t => t.name === testName);
+    if (custom && custom.price !== undefined) return custom.price;
+  }
+
+  // 2. Fallback to original logic if no custom price found
+  for (const category in TEST_PRICING) {
+    const test = TEST_PRICING[category].find(t => t.name === testName);
+    if (test) {
+      if (!labId && !labName) return test.price;
+      // Seed based on labName or labId for consistent lab-specific prices
+      const seedTarget = labName || String(labId);
+      const seed = String(seedTarget).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const randomVar = (Math.sin(seed + test.price + testName.length) * 10000) % 1;
+      // Vary price by -10% to +30%
+      const variation = 0.9 + (Math.abs(randomVar) * 0.4);
+      return Math.round((test.price * variation) / 5) * 5; // Round to nearest 5
+    }
+  }
+  return 150;
+};
+
+
+// Helper function to get random available tests for a specific lab
+const getLabAvailableTests = (labId, labName = null) => {
+  // Use lab name or ID as seed for consistent results per lab
+  const seedTarget = labName || String(labId || '');
+  const seed = String(seedTarget).split('').reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 13), 7);
+  const random = (max) => (Math.sin(seed + max) * 10000) % 1;
+
+  const availableTests = {};
+
+  // Each lab gets 40-70% of tests from each category
+  Object.keys(TEST_PRICING).forEach((category, catIndex) => {
+    const tests = TEST_PRICING[category];
+    const percentage = 0.4 + (Math.abs(random(catIndex + 1)) * 0.3); // 40-70%
+    const count = Math.max(3, Math.floor(tests.length * percentage));
+
+    // Shuffle and select tests
+    const shuffled = [...tests].sort(() => random(catIndex + tests.length) - 0.5);
+    availableTests[category] = shuffled.slice(0, count).map(t => t.name);
+  });
+
+  return availableTests;
+};
+
+const getRelativeTime = (dateStr) => {
+  if (!dateStr) return 'Just now';
+  const now = new Date();
+  const then = new Date(dateStr.replace(' ', 'T')); // Handle format YYYY-MM-DD HH:MM
+  const diff = now - then;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  return `${days}d ago`;
+};
+
+const groupNotifications = (notifs) => {
+  const groups = { TODAY: [], YESTERDAY: [], OLDER: [] };
+  const today = new Date().setHours(0, 0, 0, 0);
+  const yesterday = new Date(today - 86400000).setHours(0, 0, 0, 0);
+
+  notifs.forEach(n => {
+    const date = new Date((n.date || '').replace(' ', 'T')).setHours(0, 0, 0, 0);
+    if (date === today) groups.TODAY.push(n);
+    else if (date === yesterday) groups.YESTERDAY.push(n);
+    else groups.OLDER.push(n);
+  });
+  return groups;
+};
+
+// --- Custom Calendar Picker Component ---
+const CalendarPicker = ({ selectedDate, onSelect, labSettings }) => {
+  const [currentMonth, setCurrentMonth] = React.useState(new Date(selectedDate || new Date()));
+
+  const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const prevMonth = () => setCurrentMonth(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentMonth(new Date(year, month + 1, 1));
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  const isHoliday = (date) => {
+    if (!labSettings) return false;
+
+    // Check working days (weekdays)
+    const dayName = weekDays[date.getDay()];
+    const workingDays = labSettings.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    if (!workingDays.includes(dayName)) return true;
+
+    // Check specific holiday dates
+    const dateStr = date.toISOString().split('T')[0];
+    const holidays = labSettings.holidays || [];
+    if (holidays.includes(dateStr)) return true;
+
+    return false;
+  };
+
+  const calendarDays = [];
+  const totalDays = daysInMonth(year, month);
+  const startOffset = firstDayOfMonth(year, month);
+
+  // Padding for previous month
+  for (let i = 0; i < startOffset; i++) {
+    calendarDays.push(null);
+  }
+
+  // Days of current month
+  for (let d = 1; d <= totalDays; d++) {
+    calendarDays.push(new Date(year, month, d));
+  }
+
+  return (
+    <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <button onClick={prevMonth} style={{ background: '#f1f5f9', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}><IconChevronLeft size={18} /></button>
+        <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#1e293b' }}>{monthNames[month]} {year}</span>
+        <button onClick={nextMonth} style={{ background: '#f1f5f9', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}><IconChevronRight size={18} /></button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center' }}>
+        {weekDays.map(d => <div key={d} style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', paddingBottom: '8px' }}>{d.toUpperCase()}</div>)}
+        {calendarDays.map((date, idx) => {
+          if (!date) return <div key={`empty-${idx}`} />;
+
+          const isPast = date < today;
+          const holiday = isHoliday(date);
+          const isSelected = selectedDate === date.toISOString().split('T')[0];
+
+          return (
+            <button
+              key={date.getTime()}
+              disabled={isPast || holiday}
+              onClick={() => onSelect(date.toISOString().split('T')[0])}
+              style={{
+                aspectRatio: '1/1',
+                border: 'none',
+                borderRadius: '10px',
+                background: isSelected ? 'var(--primary)' : 'transparent',
+                color: isSelected ? 'white' : (holiday ? '#ef4444' : (isPast ? '#cbd5e1' : '#334155')),
+                fontWeight: 700,
+                cursor: (isPast || holiday) ? 'not-allowed' : 'pointer',
+                fontSize: '0.9rem',
+                transition: 'all 0.2s',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={e => !isPast && !holiday && !isSelected && (e.currentTarget.style.background = '#f1f5f9')}
+              onMouseLeave={e => !isSelected && (e.currentTarget.style.background = 'transparent')}
+            >
+              {date.getDate()}
+              {holiday && !isPast && <div style={{ position: 'absolute', bottom: '4px', width: '4px', height: '4px', borderRadius: '50%', background: '#ef4444' }}></div>}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', fontSize: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }}></div> Holiday</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)' }}></div> Selected</div>
+      </div>
+    </div>
+  );
 };
 
 const LandingPage = () => {
@@ -332,6 +952,7 @@ const LandingPage = () => {
   const fileInputRef = useRef(null);
   const profilePicInputRef = useRef(null);
   const labsSectionRef = useRef(null);
+  const chatMessagesRef = useRef(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [profilePic, setProfilePic] = useState(null);
@@ -353,7 +974,7 @@ const LandingPage = () => {
   const [showChatSidebar, setShowChatSidebar] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([
-    { id: 1, type: "ai", text: "👋 Welcome to MediBot! I'm your healthcare assistant. You can ask me how to search for labs, book a test, or where to find your medical reports. How can I help you today?" }
+    { id: 1, type: "ai", text: "👋 Welcome to MediBot! I'm your advanced healthcare assistant. I can help you find laboratories, book diagnostic tests, track your reports, or assist with site navigation. How can I help you today?" }
   ]);
 
   // Feedback Modal State
@@ -364,6 +985,10 @@ const LandingPage = () => {
   // Notifications & Reminders State
   const [notifications, setNotifications] = useState([]);
 
+  // Bill Notification Modal State
+  const [selectedBillNotification, setSelectedBillNotification] = useState(null);
+  const [showBillNotificationModal, setShowBillNotificationModal] = useState(false);
+
   const [reminders, setReminders] = useState([
     { id: 1, text: "Fasting required for Thyroid test tomorrow.", time: "Tomorrow, 8 AM" },
     { id: 2, text: "Follow-up checkup pending.", time: "Next Week" }
@@ -371,6 +996,116 @@ const LandingPage = () => {
 
   // Toast Notifications State
   const [toasts, setToasts] = useState([]);
+
+  // Booking State Variables
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedLab, setSelectedLab] = useState(null);
+  const [activeTestCategory, setActiveTestCategory] = useState('Blood Tests');
+  const [selectedTests, setSelectedTests] = useState([]);
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTime, setBookingTime] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('');
+
+  // Additional modal states
+  const [showLabDetailsModal, setShowLabDetailsModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [showViewerModal, setShowViewerModal] = useState(false);
+  const [showMyBookingsModal, setShowMyBookingsModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [userLocationInput, setUserLocationInput] = useState('');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState('');
+
+  const [userCoords, setUserCoords] = useState(null);
+  const [labSettings, setLabSettings] = useState(null); // Fetch from backend when lab selected
+
+  useEffect(() => {
+    if (selectedLab) {
+      setLabSettings(null); // Clear previous lab's settings
+      // Try to fetch custom settings for this lab from backend
+      fetch(`/api/labs/public-settings?name=${encodeURIComponent(selectedLab.name)}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) {
+            setLabSettings(data);
+            // If the lab has specific working hours, we could set defaults here
+            if (data.workingHours && data.workingHours.start) {
+              setBookingTime(data.workingHours.start);
+            }
+          } else {
+            setLabSettings(null);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching lab settings:", err);
+          setLabSettings(null);
+        });
+    } else {
+      setLabSettings(null);
+    }
+  }, [selectedLab]);
+
+  // Real-time polling for settings updates when booking modal is open
+  useEffect(() => {
+    if (!selectedLab || !showBookingModal) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/labs/public-settings?name=${encodeURIComponent(selectedLab.name)}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Check timestamp nested in workingDays (where backend persists it)
+          if (data && data.workingDays && data.workingDays.lastUpdated) {
+            const currentTimestamp = labSettings?.workingDays?.lastUpdated;
+            if (!currentTimestamp || new Date(data.workingDays.lastUpdated) > new Date(currentTimestamp)) {
+              // Settings have been updated, refresh them
+              setLabSettings(data);
+              if (data.workingHours && data.workingHours.start) {
+                setBookingTime(data.workingHours.start);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error polling lab settings:", err);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [selectedLab, showBookingModal, labSettings?.workingDays?.lastUpdated]);
+
+  // Sync fetched labSettings to list
+  useEffect(() => {
+    if (selectedLab && labSettings && labSettings.workingHours && labSettings.workingHours.start) {
+      const newTime = `${labSettings.workingHours.start} - ${labSettings.workingHours.end}`;
+      setLabsList(prev => prev.map(l => l.name === selectedLab.name && l.openTime !== newTime ? { ...l, openTime: newTime } : l));
+      setFilteredLabs(prev => prev.map(l => l.name === selectedLab.name && l.openTime !== newTime ? { ...l, openTime: newTime } : l));
+    }
+  }, [labSettings, selectedLab]);
+
+  // Derived categories based on settings or default
+  const currentTestCategories = React.useMemo(() => {
+    if (labSettings && Array.isArray(labSettings.tests) && labSettings.tests.length > 0) {
+      const disabledTests = labSettings.tests;
+      const cats = {};
+      Object.keys(TEST_CATEGORIES).forEach(category => {
+        const activeTests = TEST_CATEGORIES[category].filter(t => !disabledTests.includes(t));
+        if (activeTests.length > 0) {
+          cats[category] = activeTests;
+        }
+      });
+      return Object.keys(cats).length > 0 ? cats : TEST_CATEGORIES;
+    }
+    return TEST_CATEGORIES;
+  }, [labSettings]);
+
+  // Payment and additional booking states
+  const [bookings, setBookings] = useState([]);
+  const [paymentStatus, setPaymentStatus] = useState('Pending');
+  const [paymentStep, setPaymentStep] = useState('select'); // 'select', 'upi_scan', 'netbanking_selection', 'card_form'
+  const [selectedUpiApp, setSelectedUpiApp] = useState(null);
+  const [selectedBank, setSelectedBank] = useState(null);
 
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -433,31 +1168,72 @@ const LandingPage = () => {
     }
   };
 
+  // Handler Functions for Booking
+  const handleBookNow = (lab) => {
+    setSelectedLab(lab);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setBookingDate(tomorrow.toISOString().split('T')[0]);
+    setBookingTime('09:00');
+    setSelectedTests([]);
+    setActiveTestCategory('Blood Tests');
+    setShowBookingModal(true);
+    setShowLabDetailsModal(false);
+  };
 
+  const handleViewDetails = (lab) => {
+    setSelectedLab(lab);
+    setShowLabDetailsModal(true);
+  };
 
-  // Location Logic
-  const [userLocationInput, setUserLocationInput] = useState('');
-  const [userCoords, setUserCoords] = useState(null); // {lat, lon}
-  const [showLocationModal, setShowLocationModal] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [locationError, setLocationError] = useState('');
+  const toggleTestSelection = (testName) => {
+    setSelectedTests(prev => {
+      if (prev.includes(testName)) {
+        return prev.filter(t => t !== testName);
+      } else {
+        return [...prev, testName];
+      }
+    });
+  };
 
-  // Booking Logic
-  const [bookings, setBookings] = useState([]);
-  const [selectedLab, setSelectedLab] = useState(null);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showMyBookingsModal, setShowMyBookingsModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('Pay Online'); // Default to Online for better UX
-  const [paymentStatus, setPaymentStatus] = useState('Pending');
-  const [paymentStep, setPaymentStep] = useState('select'); // 'select', 'upi_scan', 'netbanking_selection', 'card_form'
-  const [selectedUpiApp, setSelectedUpiApp] = useState(null);
-  const [selectedBank, setSelectedBank] = useState(null);
+  const handleConfirmBooking = async () => {
+    try {
+      const username = sessionStorage.getItem('username');
+      if (!username) {
+        alert('Please login to book tests');
+        return;
+      }
 
-  // Booking Form State
-  const [bookingDate, setBookingDate] = useState('');
-  const [bookingTime, setBookingTime] = useState('');
-  const [selectedTests, setSelectedTests] = useState([]);
+      const bookingData = {
+        username,
+        labName: selectedLab?.name || '',
+        labLocation: selectedLab?.location || '',
+
+        tests: selectedTests.map(t => typeof t === 'object' ? t.name : t),
+        date: bookingDate,
+        time: bookingTime,
+        paymentMethod: paymentMethod,
+
+        totalAmount: selectedTests.reduce((total, test) => total + getTestPrice(test.name || test, selectedLab?.id, labSettings?.tests, selectedLab.name), 0)
+      };
+
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(bookingData)
+      });
+
+      if (response.ok) {
+        showToast('Booking confirmed successfully!', 'success');
+      } else {
+        showToast('Booking failed. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      showToast('Booking failed. Please try again.', 'error');
+    }
+  };
 
   const downloadFile = async (url, filename) => {
     if (!url) return;
@@ -510,8 +1286,10 @@ const LandingPage = () => {
 
   const initiateRazorpayPayment = async () => {
     try {
-      // Calculate total amount
-      const totalAmount = (selectedLab?.price || 0) + (selectedTests.length * 150);
+
+
+      // Calculate total amount - No service fee, only test prices
+      const totalAmount = selectedTests.reduce((total, test) => total + getTestPrice(test.name || test, selectedLab?.id, labSettings?.tests, selectedLab.name), 0);
 
       // Formatted list of tests for Razorpay notes
       const formattedTests = selectedTests.map(t => typeof t === 'object' ? t.name : t).join(', ');
@@ -548,6 +1326,8 @@ const LandingPage = () => {
         order_id: orderData.order_id,
         handler: async (response) => {
           try {
+            const patientName = sessionStorage.getItem('username') || 'Guest';
+
             // Verify payment on backend
             const verifyRes = await fetch('/api/verify-payment', {
               method: 'POST',
@@ -555,7 +1335,13 @@ const LandingPage = () => {
               body: JSON.stringify({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature
+                razorpay_signature: response.razorpay_signature,
+                amount: totalAmount,
+                lab_name: selectedLab?.name,
+                patient_name: patientName,
+                tests: formattedTests,
+                appointment_date: bookingDate,
+                appointment_time: bookingTime
               })
             });
 
@@ -565,7 +1351,7 @@ const LandingPage = () => {
               setPaymentStatus('Paid');
 
               // Confirm booking with updated status
-              await handleConfirmBooking('Online', 'Paid');
+              await handleConfirmBooking();
 
               setShowPaymentModal(false);
               setShowFeedbackModal(true);
@@ -622,8 +1408,6 @@ const LandingPage = () => {
   };
 
   const handleDeleteBooking = async (id) => {
-    if (!window.confirm("Are you sure you want to remove this booking from your history?")) return;
-
     try {
       const response = await fetch(`/api/user/appointments/${id}`, {
         method: 'DELETE',
@@ -662,7 +1446,13 @@ const LandingPage = () => {
     setShowFeedbackModal(true);
   };
 
-  const submitFeedback = () => {
+  const submitFeedback = async () => {
+    // Validate that a rating was selected
+    if (feedbackRating === 0) {
+      showToast("Please select a star rating before submitting.", 'error');
+      return;
+    }
+
     // Determine message based on rating
     let message = "Thank you for your feedback!";
     let type = 'success';
@@ -670,6 +1460,34 @@ const LandingPage = () => {
     else if (feedbackRating > 0 && feedbackRating < 4) {
       message = "📝 Thanks. We'll try to improve.";
       type = 'success';
+    }
+
+    try {
+      const res = await fetch('/api/labs/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          lab_id: selectedLab?.id,
+          lab_name: selectedLab?.name,
+          patient_name: userProfile?.displayName || userProfile?.username || "Guest",
+          username: userProfile?.username,
+          rating: feedbackRating,
+          comment: feedbackText,
+          category: "General"
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error("Feedback submission failed:", errData);
+        showToast(errData.message || "Failed to submit feedback. Please try again.", 'error');
+        return;
+      }
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      showToast("Failed to submit feedback. Please try again.", 'error');
+      return;
     }
 
     showToast(message, type);
@@ -688,7 +1506,7 @@ const LandingPage = () => {
     setChatInput("");
 
     try {
-      const response = await fetch('http://localhost:5000/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -726,9 +1544,8 @@ const LandingPage = () => {
 
   // Advanced Features State
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [showLabDetailsModal, setShowLabDetailsModal] = useState(false);
   const [activeLabTab, setActiveLabTab] = useState('Overview'); // Overview, Tests, Reviews
-  const [activeTestCategory, setActiveTestCategory] = useState('Blood Tests');
+
 
   // Scroll Listener for Navbar
   const [isScrolled, setIsScrolled] = useState(false);
@@ -740,6 +1557,13 @@ const LandingPage = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Auto-scroll Chat
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
 
   // Lock Body Scroll when Booking Modal is open
   useEffect(() => {
@@ -754,23 +1578,6 @@ const LandingPage = () => {
   }, [showBookingModal]);
 
   // ... (existing useEffects)
-
-  // Booking Actions
-  const handleBookNow = (lab) => {
-    setSelectedLab(lab);
-    setBookingDate(new Date().toISOString().split('T')[0]); // Default to today
-    setBookingTime('09:00');
-    // Default select all tags as suggested tests or let user pick. Let's select first one.
-    setSelectedTests(lab.tags && lab.tags.length > 0 ? [lab.tags[0]] : []);
-    setShowBookingModal(true);
-    setShowLabDetailsModal(false); // Close details if open
-  };
-
-  const handleViewDetails = (lab) => {
-    setSelectedLab(lab);
-    setActiveLabTab('Overview');
-    setShowLabDetailsModal(true);
-  };
 
   // Fetch Bookings from Backend
   const fetchBookings = async () => {
@@ -814,6 +1621,23 @@ const LandingPage = () => {
     return () => clearInterval(notificationInterval);
   }, []);
 
+  // Fetch Reports
+  const loadReports = async () => {
+    try {
+      const response = await fetch('/api/reports', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch reports:", e);
+    }
+  };
+
+  useEffect(() => {
+    loadReports();
+  }, [showReportsModal]); // Refresh when modal opens
+
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm("Are you sure you want to cancel this booking?")) return;
 
@@ -837,97 +1661,11 @@ const LandingPage = () => {
     }
   };
 
-  const handleConfirmBooking = async (method = paymentMethod, pStatus = paymentStatus) => {
-    if (!bookingDate || !bookingTime || selectedTests.length === 0) {
-      alert("Please select date, time, and at least one test.");
-      return;
-    }
-
-    const newBooking = {
-      id: Date.now(),
-      labName: selectedLab.name,
-      doctor: 'Dr. Smith (Ref)', // Mock
-      date: bookingDate,
-      time: bookingTime,
-      tests: selectedTests,
-      status: 'Confirmed',
-      location: selectedLab.location
-    };
-
-    // Send to Backend
-    try {
-      const response = await fetch('http://localhost:5000/api/admin/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          labName: newBooking.labName,
-          // NEW Layout of Data:
-          labAddress: selectedLab.address || selectedLab.location,
-          lat: selectedLab.lat,
-          lon: selectedLab.lon,
-          location: selectedLab.location, // General area name
-
-          doctor: newBooking.doctor,
-          date: newBooking.date,
-          time: newBooking.time,
-          tests: newBooking.tests,
-
-          // Patient Details from state
-          patientName: patientDetails.displayName || patientDetails.username || 'Guest',
-          age: patientDetails.age,
-          gender: patientDetails.gender,
-          email: userProfile?.email,
-          contact: patientDetails.contact,
-
-          // Payment Info
-          paymentMethod: method,
-          paymentStatus: pStatus
-        })
-      });
-      if (response.ok) {
-        // Wait for server to process, then fetch fresh list
-        await fetchBookings();
-        setShowBookingModal(false);
-
-        // Notification for Royal Clinical Laboratory
-        if (selectedLab.name === 'Royal Clinical Laboratory') {
-          setNotifications(prev => [
-            { id: Date.now(), text: `Booking confirmed at Royal Clinical Laboratory`, time: "Just now", isRead: false },
-            ...prev
-          ]);
-          setShowNotifications(true); // Open notification dropdown to show user
-        }
-
-        showToast("🎉 Booking Confirmed! Check 'Bookings' in the navbar.", 'success');
-      } else {
-        showToast("Failed to confirm booking with server.", 'error');
-      }
-    } catch (e) {
-      console.error(e);
-      // Fallback
-      showToast("Network Error. Booking might not be saved remotely.", 'error');
-      setBookings([...bookings, newBooking]); // Optimistic update fallback
-      setShowBookingModal(false);
-    }
-  };
-
-  const toggleTestSelection = (test) => {
-    if (selectedTests.includes(test)) {
-      setSelectedTests(selectedTests.filter(t => t !== test));
-    } else {
-      setSelectedTests([...selectedTests, test]);
-    }
-  };
-
   // ... (existing functions)
 
-
-  // Reports State
+  // Additional reports state
   const [reports, setReports] = useState([]);
-  const [showReportsModal, setShowReportsModal] = useState(false);
   const [activeReportTab, setActiveReportTab] = useState('Uploaded');
-  const [showViewerModal, setShowViewerModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
 
   const isAnyModalOpen = showNotifications || showReminders || showMyBookingsModal || showReportsModal || showProfileModal || showBookingModal || showViewerModal;
@@ -973,10 +1711,11 @@ const LandingPage = () => {
             location: `${baseName} Main Road`,
             address: `${baseName} Street, District`,
             rating: (4.0 + Math.random()).toFixed(1),
-            price: 400 + Math.floor(Math.random() * 400),
+            testPrice: 400 + Math.floor(Math.random() * 400),
+            price: 0, // No service fee
             tags: ['General', 'Blood Test', 'Pathology'],
             image: labImages[i % labImages.length],
-            openTime: "08:00 AM - 09:00 PM"
+            openTime: `${7 + (i % 3)}:${15 + (i % 4) * 10} AM - ${6 + (i % 5)}:${(i % 3) * 20} PM`
           });
         }
         return demos;
@@ -987,16 +1726,16 @@ const LandingPage = () => {
       const locationLower = userLocationInput ? userLocationInput.toLowerCase() : "";
       if (locationLower.includes("kanjirapally") || locationLower.includes("kanjirappally") || locationLower.includes("kply")) {
         const kLabsData = [
-          { name: "Scanron Diagnostics", location: "Kanjirappally, Kottayam", desc: "Laboratory, Medical Laboratory, Clinical Laboratory, ECG Clinic", time: "08:30 PM", rating: "New", price: 450 },
-          { name: "Sri Diagnostics Pvt (Ltd)", location: "Kanjirappally, Kottayam", desc: "Clinical and Medical Laboratory, Pathology Lab, Blood, Urine, Sputum", time: "06:30 PM", rating: "New", price: 500 },
-          { name: "DDRC SRLl Diagnostic Center", location: "Kanjirappally, Kottayam", desc: "Diagnostic center and Laboratory", time: "24 Hours", rating: 5.0, price: 600 },
-          { name: "Amala Laboratary", location: "Kanjirappally, Kottayam", desc: "Clinical and Medical Laboratory, Blood, Urine, Sputum, Stool", time: "04:30 PM", rating: "New", price: 400 },
-          { name: "Dianova", location: "Kanjirappally, Kottayam", desc: "Clinical and Medical Laboratory, Blood, Urine, Sputum, Stool", time: "06:30 PM", rating: "New", price: 550 },
-          { name: "Royal Clinical Laboratory", location: "Kanjirappally, Kottayam", desc: "Clinical laboratory and other clinical tests", time: "07:00 PM", rating: "New", price: 480 },
-          { name: "Marymatha Clinical Laboratory", location: "Kanjirappally, Kottayam", desc: "Clinical Testing of All Specimens, Blood, Urine, Stool, Body Fluids", time: "05:30 PM", rating: "New", price: 420 },
-          { name: "Dianova Clinical Laboratory", location: "Kanjirappally, Kottayam", desc: "Clinical Laboratory", time: "24 Hours", rating: "New", price: 500 },
-          { name: "ClinoTech Laboratories", location: "Kanjirappally, Kottayam", desc: "Diagnostic Laboratory", time: "08:00 PM", rating: 5.0, price: 650 },
-          { name: "Usha Clinic", location: "Kanjirappally, Kottayam", desc: "Clinical Laboratory, Medical Laboratory", time: "07:00 PM", rating: 4.0, price: 350 }
+          { name: "Royal Clinical Laboratory", location: "Kanjirappally, Kottayam", desc: "Blood Tests, Urine Analysis, Lipid Profile, LFT, KFT, Diabetes Screening", time: "8:30 AM – 5:30 PM", rating: "New", testPrice: 480 },
+          { name: "Marymatha Clinical Laboratory", location: "Kanjirappally, Kottayam", desc: "CBC, Thyroid Profile, Blood Sugar Test, Urine Test, Pregnancy Test", time: "Open 24 Hours", rating: "New", testPrice: 420 },
+          { name: "DDRC SRL Diagnostic Center", location: "Kanjirappally, Kottayam", desc: "Advanced Blood Tests, Hormone Testing, Allergy Testing, Cancer Markers, Health Checkups", time: "9:15 AM – 6:30 PM", rating: "5.0", testPrice: 600 },
+          { name: "Sri Diagnostics Pvt (Ltd)", location: "Kanjirappally, Kottayam", desc: "Pathology Tests, Blood Tests, Urine Analysis, Cholesterol Test, Vitamin Tests", time: "9:15 AM – 7:00 PM", rating: "New", testPrice: 500 },
+          { name: "Usha Clinic Laboratory", location: "Kanjirappally, Kottayam", desc: "Blood Sugar Testing, CBC, Urine Test, ECG, Health Screening", time: "8:00 AM – 6:30 PM", rating: "4.0", testPrice: 350 },
+          { name: "Dianova Laboratory", location: "Kanjirappally, Kottayam", desc: "Blood Tests, Urine Tests, Infection Screening, Liver Function Tests, Kidney Function Tests", time: "Open 24 Hours", rating: "New", testPrice: 550 },
+          { name: "Dianova Clinical Laboratory", location: "Kanjirappally, Kottayam", desc: "Blood Tests, Urine Routine Test, Thyroid Tests, CBC", time: "9:45 AM – 4:30 PM", rating: "New", testPrice: 500 },
+          { name: "Amala Laboratory", location: "Kanjirappally, Kottayam", desc: "Blood Tests, Urine Analysis, Diabetes Screening, Thyroid Tests, Vitamin Tests", time: "8:00 AM – 8:30 PM", rating: "New", testPrice: 400 },
+          { name: "Scanron Diagnostics", location: "Kanjirappally, Kottayam", desc: "Blood Tests, Clinical Laboratory Testing, Diagnostic Packages, Hormone Tests", time: "8:00 AM – 8:00 PM", rating: "New", testPrice: 450 },
+          { name: "ClinoTech Laboratories", location: "Kanjirappally, Kottayam", desc: "Diagnostic Laboratory Services, Blood Tests, Urine Tests, Preventive Health Packages", time: "8:30 AM – 6:00 PM", rating: "5.0", testPrice: 650 }
         ];
 
         const mappedKLabs = kLabsData.map((lab, i) => ({
@@ -1006,17 +1745,63 @@ const LandingPage = () => {
           lat: userCoords.lat + (((i % 4) - 1.5) * 0.005),
           lon: userCoords.lon + ((Math.floor(i / 4) - 1) * 0.005),
           location: lab.location,
-          address: "Near Junction, Kanjirapally", // Generic address if not provided
-          rating: lab.rating,
-          price: lab.price,
+          address: "Central Junction Area, Kanjirapally", // More specific but generic
+          rating: String(lab.rating),
+          testPrice: lab.testPrice,
+          price: 0, // No service fee
           tags: lab.desc.split(',').map(s => s.trim()).slice(0, 3), // Take first 3 tags
           image: labImages[i % labImages.length],
-          openTime: lab.time.includes("24") ? "24 Hours" : `Open until ${lab.time}`
+          openTime: lab.time,
+          phone: "Contact via App"
         }));
 
         setLabsList(mappedKLabs);
         setLocationLoading(false);
         return; // Skip fetch
+      }
+
+      // CHECK FOR KOCHI DEMO DATA
+      if (locationLower.includes("kochi") || locationLower.includes("ernakulam") || locationLower.includes("kochi city")) {
+        const kochiLabsData = [
+          { name: "Lissy's Clinical Laboratory", location: "Kochi, Kerala", desc: "Pathology Tests, Blood Tests, Urine Tests, Health Screening", time: "7:50 AM – 7:30 PM", rating: "4.6", distance: "0.5 km" },
+          { name: "Medivison", location: "Kochi, Kerala", desc: "Pathology Tests, Blood Analysis, Urine Tests, Routine Health Checkups", time: "7:20 AM – 6:30 PM", rating: "4.8", distance: "2.8 km" },
+          { name: "Primedical Diagnostics", location: "Kochi, Kerala", desc: "Pathology Tests, Blood Tests, Urine Tests, Health Screening", time: "11:50 AM – 7:30 PM", rating: "4.0", distance: "4.2 km" },
+          { name: "Regional Public Health Laboratory", location: "Kochi, Kerala", desc: "Pathology Tests, Public Health Screening, Blood Tests, Diagnostic Testing", time: "9:50 AM – 7:30 PM", rating: "4.7", distance: "4.2 km" },
+          { name: "Micro Health Laboratories", location: "Kochi, Kerala", desc: "Microbiology Tests, Blood Tests, Pathology Testing", time: "9:00 AM – 4:30 PM", rating: "4.8", distance: "4.3 km" },
+          { name: "Medline Diagnostics Center", location: "Ernakulam, Kochi", desc: "Blood Tests, Clinical Pathology, Diagnostic Packages", time: "10:30 AM – 9:15 PM", rating: "3.5", distance: "4.3 km" },
+          { name: "Gulshan Medicare", location: "Kochi, Kerala", desc: "Blood Tests, Urine Tests, Clinical Diagnostics", time: "8:00 AM – 8:15 PM", rating: "4.7", distance: "4.5 km" },
+          { name: "Hi-Tech Laboratory", location: "Kochi, Kerala", desc: "Pathology Tests, Blood Tests, Routine Diagnostic Tests", time: "7:00 AM – 8:15 PM", rating: "4.1", distance: "4.6 km" },
+          { name: "Trust Diagnostics", location: "Kochi, Kerala", desc: "Blood Tests, Clinical Diagnostics, Health Checkups", time: "7:30 AM – 9:15 PM", rating: "4.4", distance: "4.9 km" },
+          { name: "Medivision", location: "Kochi, Kerala", desc: "Pathology Tests, Blood Tests, Urine Analysis", time: "9:15 AM – 5:00 PM", rating: "4.8", distance: "5.0 km" },
+          { name: "Celica Medical Center", location: "Ernakulam, Kochi", desc: "Clinical Tests, Blood Tests, Pathology Diagnostics", time: "8:20 AM – 8:30 PM", rating: "4.0", distance: "5.0 km" },
+          { name: "DDRC Agilus", location: "Panampilly Nagar, Kochi", desc: "Advanced Diagnostics, Blood Tests, Pathology Testing", time: "8:10 AM – 9:15 PM", rating: "4.0", distance: "5.6 km" },
+          { name: "Amma Scans", location: "Kochi, Kerala", desc: "Blood Tests, Clinical Diagnostics, Diagnostic Screening", time: "11:40 AM – 6:15 PM", rating: "4.2", distance: "5.7 km" },
+          { name: "King Lab", location: "Kochi, Kerala", desc: "Blood Tests, Urine Tests, Pathology Tests", time: "10:20 AM – 6:30 PM", rating: "4.1", distance: "5.9 km" },
+          { name: "Medilab", location: "Kochi, Kerala", desc: "Pathology Tests, Blood Tests, Diagnostic Screening", time: "8:40 AM – 6:15 PM", rating: "3.8", distance: "5.9 km" },
+          { name: "Dr Lal Path Labs", location: "Kochi, Kerala", desc: "Advanced Blood Tests, Pathology Tests, Preventive Health Packages", time: "9:40 AM – 8:15 PM", rating: "3.9", distance: "6.0 km" },
+          { name: "True Life Medical Company", location: "Kochi, Kerala", desc: "Clinical Tests, Blood Tests, Pathology Diagnostics", time: "As per appointment", rating: "3.8", distance: "6.0 km" }
+        ];
+
+        const mappedKochiLabs = kochiLabsData.map((lab, i) => ({
+          id: 9000 + i,
+          name: lab.name,
+          lat: userCoords.lat + (((i % 5) - 2) * 0.006),
+          lon: userCoords.lon + ((Math.floor(i / 5) - 1.5) * 0.006),
+          location: lab.location,
+          address: `${lab.name}, ${lab.location}`,
+          rating: String(lab.rating),
+          distance: lab.distance,
+          testPrice: 350 + (i * 10),
+          price: 0,
+          tags: lab.desc.split(',').map(s => s.trim()).slice(0, 3),
+          image: labImages[i % labImages.length],
+          openTime: lab.time,
+          phone: "Contact via App"
+        }));
+
+        setLabsList(mappedKochiLabs);
+        setLocationLoading(false);
+        return;
       }
 
       try {
@@ -1127,11 +1912,12 @@ const LandingPage = () => {
                 lon: lon,
                 location: district || "Detailed Location",
                 address: fullAddr || "Address available on map",
-                rating: (3.5 + Math.random() * 1.5).toFixed(1),
-                price: Math.floor((300 + Math.random() * 400) / 50) * 50,
+                rating: ENHANCED_LAB_DATA[validName]?.details.rating || (3.5 + Math.random() * 1.5).toFixed(1),
+                testPrice: Math.floor((300 + Math.random() * 400) / 50) * 50,
+                price: 0, // No service fee
                 tags: ['Pathology', 'Clinical Test'],
                 image: labImages[i % labImages.length],
-                openTime: t.opening_hours || "09:00 AM - 06:00 PM",
+                openTime: ENHANCED_LAB_DATA[validName]?.details.workingHours || t.opening_hours || `${7 + (i % 5)}:${(i % 6) * 10 || '00'} AM - ${6 + (i % 4)}:${(i % 3) * 15 || '15'} PM`,
                 phone: t.phone || t['contact:phone'] || "Contact via App"
               };
             });
@@ -1157,6 +1943,51 @@ const LandingPage = () => {
 
     fetchOsmLabs();
   }, [userCoords]);
+
+  // Fetch working hours for each lab from backend after labs are loaded
+  useEffect(() => {
+    if (labsList.length > 0) {
+      const fetchWorkingHoursForLabs = async () => {
+        const updatedLabs = await Promise.all(labsList.map(async (lab) => {
+          try {
+            const response = await fetch(`http://localhost:5000/api/labs/working-hours?name=${encodeURIComponent(lab.name)}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.workingHours) {
+                const start = data.workingHours.start || '09:00';
+                const end = data.workingHours.end || '19:00';
+
+                // Convert 24-hour format to 12-hour format with AM/PM
+                const formatTime = (time24) => {
+                  const [hours, minutes] = time24.split(':');
+                  const h = parseInt(hours);
+                  const ampm = h >= 12 ? 'PM' : 'AM';
+                  const h12 = h % 12 || 12;
+                  return `${h12}:${minutes} ${ampm}`;
+                };
+
+                return {
+                  ...lab,
+                  openTime: `${formatTime(start)} - ${formatTime(end)}`
+                };
+              }
+            }
+          } catch (e) {
+            console.error(`Error fetching working hours for ${lab.name}:`, e);
+          }
+          return lab;
+        }));
+
+        // Only update if there were actual changes to avoid infinite loop
+        const hasChanges = updatedLabs.some((lab, idx) => lab.openTime !== labsList[idx].openTime);
+        if (hasChanges) {
+          setLabsList(updatedLabs);
+        }
+      };
+
+      fetchWorkingHoursForLabs();
+    }
+  }, [labsList.length]); // Only run when labs count changes
 
 
   // Update filtered labs when inputs or labsList change
@@ -1502,9 +2333,118 @@ const LandingPage = () => {
             <div className="fs-split-layout">
               {/* Sidebar Card - Enhanced */}
               <div className="fs-sidebar-card" style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.05)' }}>
-                <div className="sidebar-avatar" style={{ backgroundImage: `url(${selectedLab.image})`, width: '100px', height: '100px', border: '4px solid white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-                  {!selectedLab.image && <IconMapPin size={40} />}
+                {/* Professional Lab Logo/Image Container */}
+                <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto' }}>
+                  {/* Outer gradient ring */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    left: '-6px',
+                    right: '-6px',
+                    bottom: '-6px',
+                    background: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #3b82f6 100%)',
+                    borderRadius: '50%',
+                    padding: '3px',
+                    boxShadow: '0 8px 32px rgba(14, 165, 233, 0.3), 0 0 0 4px rgba(14, 165, 233, 0.1)',
+                    animation: 'pulse 3s ease-in-out infinite'
+                  }}>
+                    {/* White ring separator */}
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'white',
+                      borderRadius: '50%',
+                      padding: '4px'
+                    }}>
+                      {/* Main image container */}
+                      <div className="sidebar-avatar" style={{
+                        backgroundImage: `url(${selectedLab.image})`,
+                        width: '100%',
+                        height: '100%',
+                        border: 'none',
+                        boxShadow: 'inset 0 2px 12px rgba(0, 0, 0, 0.1)',
+                        background: selectedLab.image
+                          ? `url(${selectedLab.image})`
+                          : 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Medical icon overlay when no image */}
+                        {!selectedLab.image && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            {/* Medical cross/plus icon */}
+                            <div style={{
+                              width: '36px',
+                              height: '36px',
+                              background: 'linear-gradient(135deg, #0ea5e9, #2563eb)',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 4px 12px rgba(14, 165, 233, 0.4)'
+                            }}>
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 2v20M2 12h20" />
+                              </svg>
+                            </div>
+                            {/* Lab beaker icon */}
+                            <div style={{
+                              fontSize: '10px',
+                              color: '#0ea5e9',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Lab
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Verified badge */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '-4px',
+                          right: '-4px',
+                          width: '32px',
+                          height: '32px',
+                          background: 'linear-gradient(135deg, #10b981, #059669)',
+                          borderRadius: '50%',
+                          border: '3px solid white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                          zIndex: 10
+                        }}>
+                          <IconCheckCircle size={16} color="white" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Pulse animation */}
+                <style>{`
+                  @keyframes pulse {
+                    0%, 100% {
+                      box-shadow: 0 8px 32px rgba(14, 165, 233, 0.3), 0 0 0 4px rgba(14, 165, 233, 0.1);
+                    }
+                    50% {
+                      box-shadow: 0 8px 32px rgba(14, 165, 233, 0.5), 0 0 0 8px rgba(14, 165, 233, 0.15);
+                    }
+                  }
+                `}</style>
 
                 <div className="sidebar-info">
                   <h3 style={{ fontSize: '1.4rem', color: '#1e293b' }}>{selectedLab.name}</h3>
@@ -1517,11 +2457,6 @@ const LandingPage = () => {
                   <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.5rem', color: '#64748b' }}>
                     <IconMapPin size={14} /> {selectedLab.location}
                   </p>
-
-                  <div className="sidebar-price-row" style={{ marginTop: '2rem' }}>
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Consultation Fee</p>
-                    <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1, textShadow: '0 2px 4px rgba(14, 165, 233, 0.1)' }}>₹{selectedLab.price}</p>
-                  </div>
                 </div>
               </div>
 
@@ -1542,13 +2477,14 @@ const LandingPage = () => {
                     <div>
                       <label className="fs-label" style={{ marginBottom: '0.75rem' }}><IconDroplet size={16} style={{ marginBottom: -3, marginRight: 8, color: 'var(--primary)' }} /> Test Category</label>
                       <div className="select-wrapper">
+
                         <select
                           className="fs-input"
                           value={activeTestCategory}
                           onChange={(e) => setActiveTestCategory(e.target.value)}
                           style={{ marginBottom: 0, height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0' }}
                         >
-                          {Object.keys(TEST_CATEGORIES).map(cat => (
+                          {Object.keys(currentTestCategories).map(cat => (
                             <option key={cat} value={cat}>{cat}</option>
                           ))}
                         </select>
@@ -1566,12 +2502,20 @@ const LandingPage = () => {
                         }}
                         style={{ marginBottom: 0, height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0' }}
                       >
+
+
                         <option value="">-- Choose a test --</option>
-                        {TEST_CATEGORIES[activeTestCategory].map(test => (
-                          <option key={test} value={test} disabled={selectedTests.includes(test)}>
-                            {test} {selectedTests.includes(test) ? '(Selected)' : ''}
-                          </option>
-                        ))}
+                        {(() => {
+                          const availableTests = labSettings && labSettings.tests && labSettings.tests.length > 0
+                            ? (labSettings.tests.filter(t => t.category === activeTestCategory && t.enabled).map(t => t.name))
+                            : (getLabAvailableTests(selectedLab.id, selectedLab.name)[activeTestCategory] || []);
+
+                          return availableTests.map(test => (
+                            <option key={test} value={test} disabled={selectedTests.includes(test)}>
+                              {test} - ₹{getTestPrice(test, selectedLab?.id, labSettings?.tests, selectedLab.name)} {selectedTests.includes(test) ? '(Selected)' : ''}
+                            </option>
+                          ));
+                        })()}
                       </select>
                     </div>
                   </div>
@@ -1581,8 +2525,10 @@ const LandingPage = () => {
                     {selectedTests.length === 0 && <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontStyle: 'italic' }}>No tests selected yet.</span>}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                       {selectedTests.map(test => (
+
+
                         <div key={test} className="selected-test-chip" style={{ background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', padding: '0.5rem 1rem' }}>
-                          <span style={{ fontWeight: 600, color: '#334155' }}>{test}</span>
+                          <span style={{ fontWeight: 600, color: '#334155' }}>{test} (₹{getTestPrice(test, selectedLab?.id, labSettings?.tests, selectedLab.name)})</span>
                           <button onClick={() => toggleTestSelection(test)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '50%', padding: 2, display: 'flex' }}>
                             <IconX size={12} />
                           </button>
@@ -1595,7 +2541,11 @@ const LandingPage = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                     <div>
                       <label className="fs-label" style={{ marginBottom: '0.75rem' }}><IconCalendar size={16} style={{ marginBottom: -3, marginRight: 8, color: 'var(--primary)' }} /> Preferred Date</label>
-                      <input className="fs-input" type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} style={{ marginBottom: 0, height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+                      <CalendarPicker
+                        selectedDate={bookingDate}
+                        onSelect={setBookingDate}
+                        labSettings={labSettings}
+                      />
                     </div>
                     <div>
                       <label className="fs-label" style={{ marginBottom: '0.75rem' }}><IconClock size={16} style={{ marginBottom: -3, marginRight: 8, color: 'var(--primary)' }} /> Preferred Time</label>
@@ -1606,10 +2556,11 @@ const LandingPage = () => {
                   {/* Footer */}
                   <div className="booking-footer" style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #f1f5f9' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <p className="total-est-label" style={{ color: '#64748b', fontSize: '0.9rem' }}>Total Estimated Cost</p>
+                      <p className="total-est-label" style={{ color: '#64748b', fontSize: '0.9rem' }}>Total Testing Cost</p>
                       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '1rem', color: '#cbd5e1', textDecoration: 'line-through' }}>₹{selectedLab.price + (selectedTests.length * 200) + 100}</span>
-                        <p className="total-est-amount" style={{ fontSize: '2rem', color: '#0f172a' }}>₹{selectedLab.price + (selectedTests.length * 150)}</p>
+
+
+                        <p className="total-est-amount" style={{ fontSize: '2rem', color: '#0f172a' }}>₹{selectedTests.reduce((total, test) => total + getTestPrice(test.name || test, selectedLab?.id, labSettings?.tests, selectedLab.name), 0)}</p>
                       </div>
                     </div>
                     <button className="confirm-booking-btn" onClick={handleProceedToPayment} style={{ borderRadius: '12px', padding: '1rem 2rem', fontSize: '1.1rem', boxShadow: '0 4px 12px rgba(14, 165, 233, 0.25)' }}>
@@ -1669,37 +2620,89 @@ const LandingPage = () => {
                 <div style={{ ani: 'fadeIn 0.3s' }}>
                   <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>About Laboratory</h4>
                   <p style={{ lineHeight: 1.6, color: '#475569', marginBottom: '1.5rem' }}>
-                    {selectedLab.name} is a state-of-the-art diagnostic center providing comprehensive services.
-                    Known for accurate reports and quick turnaround time. Verified by MediBot for quality assurance.
+                    {ENHANCED_LAB_DATA[selectedLab.name]?.description || `${selectedLab.name} is a state-of-the-art diagnostic center providing comprehensive services. Known for accurate reports and quick turnaround time. Verified by MediBot for quality assurance.`}
                   </p>
 
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Available Amenities</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
-                    {['Home Collection', 'Digital Reports', '24/7 Support', 'Wheelchair Access'].map(item => (
-                      <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.9rem' }}>
-                        <IconCheckCircle size={16} style={{ color: 'var(--secondary)' }} />
-                        {item}
+                  {ENHANCED_LAB_DATA[selectedLab.name] && (
+                    <div style={{ marginTop: '1.5rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#0f172a' }}>Details</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#475569', fontSize: '0.95rem' }}>
+                          <IconMapPin size={18} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
+                          <div><strong>Location:</strong> {ENHANCED_LAB_DATA[selectedLab.name].details.location}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#475569', fontSize: '0.95rem' }}>
+                          <IconClock size={18} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
+                          <div><strong>Working Hours:</strong> {(labSettings && labSettings.workingHours && labSettings.workingHours.start) ? `${labSettings.workingHours.start} - ${labSettings.workingHours.end}` : ENHANCED_LAB_DATA[selectedLab.name].details.workingHours}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#475569', fontSize: '0.95rem' }}>
+                          <IconActivity size={18} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
+                          <div><strong>Services:</strong> {ENHANCED_LAB_DATA[selectedLab.name].details.services}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#475569', fontSize: '0.95rem' }}>
+                          <IconShield size={18} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
+                          <div><strong>Home Sample Collection:</strong> {ENHANCED_LAB_DATA[selectedLab.name].details.homeCollection}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#475569', fontSize: '0.95rem' }}>
+                          <IconBell size={18} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
+                          <div><strong>Report Delivery:</strong> {ENHANCED_LAB_DATA[selectedLab.name].details.reportDelivery}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#475569', fontSize: '0.95rem' }}>
+                          <IconUser size={18} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
+                          <div><strong>Staff:</strong> {ENHANCED_LAB_DATA[selectedLab.name].details.staff}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#475569', fontSize: '0.95rem' }}>
+                          <IconStar size={18} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
+                          <div><strong>Rating:</strong> {ENHANCED_LAB_DATA[selectedLab.name].details.rating}</div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {!ENHANCED_LAB_DATA[selectedLab.name] && (
+                    <>
+                      <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Available Amenities</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                        {['Home Collection', 'Digital Reports', '24/7 Support', 'Wheelchair Access'].map(item => (
+                          <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.9rem' }}>
+                            <IconCheckCircle size={16} style={{ color: 'var(--secondary)' }} />
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
+
 
               {activeLabTab === 'Tests & Pricing' && (
                 <div>
                   <h4 style={{ marginBottom: '1rem' }}>Available Tests</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {selectedLab.tags.map((test, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                        <div>
-                          <span style={{ display: 'block', fontWeight: 600, color: 'var(--text-main)' }}>{test}</span>
-                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Report in 24 hrs</span>
+                    {(() => {
+                      let displayTests = [];
+
+                      const labTests = getLabAvailableTests(selectedLab.id, selectedLab.name);
+                      const allNames = Object.values(labTests).flat();
+                      displayTests = allNames.map(name => ({ name, price: getTestPrice(name, selectedLab.id, null, selectedLab.name) }));
+
+                      if (labSettings && Array.isArray(labSettings.tests) && labSettings.tests.length > 0) {
+                        displayTests = displayTests.filter(t => !labSettings.tests.includes(t.name));
+                      }
+
+                      return displayTests.map((test, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                          <div>
+                            <span style={{ display: 'block', fontWeight: 600, color: 'var(--text-main)' }}>{test.name}</span>
+                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Report in 24 hrs</span>
+                          </div>
+                          <div style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
+                            ₹{test.price}
+                          </div>
                         </div>
-                        <div style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
-                          ₹{selectedLab.price + (idx * 150)}
-                        </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 </div>
               )}
@@ -1733,9 +2736,9 @@ const LandingPage = () => {
 
             {/* Footer */}
             <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748b' }}>Consultation Fee</span>
-                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary-dark)' }}>₹{selectedLab.price}</span>
+              <div style={{ visibility: 'hidden' }}>
+                <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748b' }}>Test Price (per test)</span>
+                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary-dark)' }}>₹{selectedLab.testPrice}</span>
               </div>
               <button
                 className="location-submit-btn"
@@ -1783,7 +2786,7 @@ const LandingPage = () => {
               <IconCalendar />
               <span>Bookings {bookings.length > 0 && `(${bookings.length})`}</span>
             </button>
-            <button className="nav-item-btn" onClick={fetchReports}>
+            <button className="nav-item-btn" onClick={() => { setShowReportsModal(true); loadReports(); }}>
               <IconFileText />
               <span>Reports</span>
             </button>
@@ -1865,8 +2868,8 @@ const LandingPage = () => {
                   {/* Uploaded Reports */}
                   {activeReportTab === 'Uploaded' && (
                     <>
-                      {reports.length > 0 ? (
-                        reports.map((report) => (
+                      {reports.filter(r => r.type === 'Uploaded').length > 0 ? (
+                        reports.filter(r => r.type === 'Uploaded').map((report) => (
                           <div key={report.id} className="report-card" style={{
                             background: 'linear-gradient(to bottom, #ffffff, #f8fafc)',
                             borderRadius: '20px',
@@ -2026,8 +3029,8 @@ const LandingPage = () => {
                   {/* Generated Reports */}
                   {activeReportTab === 'Generated' && (
                     <>
-                      {reports.filter(r => r.status === 'Completed').length > 0 ? (
-                        reports.filter(r => r.status === 'Completed').map((report) => (
+                      {reports.filter(r => r.type === 'Generated').length > 0 ? (
+                        reports.filter(r => r.type === 'Generated').map((report) => (
                           <div key={`gen-${report.id}`} className="report-card" style={{
                             background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
                             borderRadius: '24px',
@@ -2168,15 +3171,35 @@ const LandingPage = () => {
         showProfileModal && (
           <div className="page-container">
             <div className="page-content-wrapper">
-              <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <h2>My Profile</h2>
-                </div>
+              {/* Professional Header */}
+              <div style={{
+                padding: '0 0 1.5rem 0',
+                borderBottom: '3px solid #e0f2fe',
+                marginBottom: '2rem'
+              }}>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '2rem',
+                  fontWeight: 700,
+                  color: '#0c4a6e',
+                  letterSpacing: '-0.02em'
+                }}>My Profile</h2>
               </div>
 
               <div className="fs-split-layout">
                 {/* Sidebar: Avatar & Actions */}
-                <div className="fs-sidebar-card">
+                <div style={{
+                  background: 'white',
+                  borderRadius: '20px',
+                  padding: '2rem',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                  border: '1px solid #f1f5f9',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  maxWidth: '320px'
+                }}>
                   <input
                     type="file"
                     ref={profilePicInputRef}
@@ -2184,106 +3207,318 @@ const LandingPage = () => {
                     accept="image/*"
                     onChange={handleProfileImageUpload}
                   />
-                  <div
-                    className="sidebar-avatar"
-                    onClick={() => profilePicInputRef.current.click()}
-                    style={{
-                      backgroundImage: profilePic ? `url(${profilePic})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      cursor: 'pointer',
-                      position: 'relative'
-                    }}
-                    title="Click to upload profile picture"
-                  >
-                    {!profilePic && <IconUser />}
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      background: 'var(--primary)',
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      border: '2px solid white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <IconUploadCloud size={12} color="white" />
+
+                  {/* Professional Avatar */}
+                  <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                    <div
+                      onClick={() => profilePicInputRef.current.click()}
+                      style={{
+                        width: '140px',
+                        height: '140px',
+                        borderRadius: '50%',
+                        background: profilePic
+                          ? `url(${profilePic})`
+                          : 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        border: '4px solid #f0f9ff',
+                        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(14, 165, 233, 0.25)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(14, 165, 233, 0.15)';
+                      }}
+                      title="Click to upload profile picture"
+                    >
+                      {!profilePic && <IconUser size={60} color="#0ea5e9" />}
+
+                      {/* Edit Badge */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 4,
+                        right: 4,
+                        background: '#0ea5e9',
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        border: '3px solid white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(14, 165, 233, 0.3)'
+                      }}>
+                        <IconUploadCloud size={16} color="white" />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="sidebar-info">
-                    <h3>{displayName}</h3>
-                    {userProfile?.username && <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem' }}>@{userProfile.username}</p>}
-                    <p>{userProfile?.email || 'No Email'}</p>
+                  {/* User Info */}
+                  <div style={{ marginBottom: '1.5rem', width: '100%' }}>
+                    <h3 style={{
+                      margin: '0 0 0.5rem 0',
+                      fontSize: '1.4rem',
+                      fontWeight: 700,
+                      color: '#0c4a6e',
+                      letterSpacing: '-0.02em'
+                    }}>{displayName}</h3>
+                    {userProfile?.username && (
+                      <p style={{
+                        margin: '0 0 0.5rem 0',
+                        fontSize: '0.95rem',
+                        color: '#64748b',
+                        fontWeight: 500
+                      }}>@{userProfile.username}</p>
+                    )}
+                    <p style={{
+                      margin: 0,
+                      fontSize: '0.9rem',
+                      color: '#94a3b8',
+                      fontWeight: 400
+                    }}>{userProfile?.email || 'No Email'}</p>
                   </div>
 
-                  <button className="book-btn" style={{ marginTop: '2rem', width: '100%', borderColor: '#ef4444', color: '#ef4444', background: 'transparent' }} onClick={handleLogout}>
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    style={{
+                      width: '100%',
+                      padding: '0.9rem 1.5rem',
+                      borderRadius: '12px',
+                      border: '2px solid #fee2e2',
+                      background: 'white',
+                      color: '#ef4444',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fef2f2';
+                      e.currentTarget.style.borderColor = '#fecaca';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.borderColor = '#fee2e2';
+                    }}
+                  >
                     Logout
                   </button>
                 </div>
 
                 {/* Main Content: Details Form */}
-                <div className="fs-main-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--text-main)' }}>Personal Information</h3>
+                <div style={{
+                  background: 'white',
+                  borderRadius: '20px',
+                  padding: '2.5rem',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                  border: '1px solid #f1f5f9',
+                  flex: 1
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '2.5rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '1.6rem',
+                      margin: 0,
+                      color: '#0c4a6e',
+                      fontWeight: 700,
+                      letterSpacing: '-0.02em'
+                    }}>Personal Information</h3>
                     {!isEditingProfile && (
-                      <button className="book-btn" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsEditingProfile(true)}>
+                      <button
+                        onClick={() => setIsEditingProfile(true)}
+                        style={{
+                          padding: '0.7rem 1.5rem',
+                          borderRadius: '10px',
+                          border: '2px solid #0ea5e9',
+                          background: 'white',
+                          color: '#0ea5e9',
+                          fontSize: '0.95rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#eff6ff';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'white';
+                        }}
+                      >
                         <IconUser size={16} /> Edit Profile
                       </button>
                     )}
                   </div>
 
-                  <div className="fs-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem 3rem' }}>
                     <div>
-                      <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Username</label>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.6rem',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em'
+                      }}>Username</label>
                       {isEditingProfile ? (
                         <input
                           className="fs-input"
                           value={patientDetails.username !== undefined ? patientDetails.username : (userProfile?.username || '')}
                           onChange={e => setPatientDetails({ ...patientDetails, username: e.target.value })}
                           placeholder="Enter username"
+                          style={{
+                            marginBottom: 0,
+                            padding: '0.8rem 1rem',
+                            borderRadius: '10px',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '1rem'
+                          }}
                         />
                       ) : (
-                        <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{userProfile?.username ? `@${userProfile.username}` : '--'}</div>
+                        <div style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 600,
+                          color: '#0ea5e9',
+                          padding: '0.3rem 0'
+                        }}>{userProfile?.username ? `@${userProfile.username}` : '--'}</div>
                       )}
                     </div>
 
-
                     <div>
-                      <label className="fs-label">Email Address</label>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 500, padding: '0.9rem 0' }}>{userProfile?.email || 'No Email'}</div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.6rem',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em'
+                      }}>Email Address</label>
+                      <div style={{
+                        fontSize: '1.05rem',
+                        fontWeight: 500,
+                        color: '#0c4a6e',
+                        padding: '0.3rem 0'
+                      }}>{userProfile?.email || 'No Email'}</div>
                     </div>
 
                     <div>
-                      <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Age</label>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.6rem',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em'
+                      }}>Age</label>
                       {isEditingProfile ? (
-                        <input className="fs-input" type="number" placeholder="Eg. 28" value={patientDetails.age} onChange={e => setPatientDetails({ ...patientDetails, age: e.target.value })} />
+                        <input
+                          className="fs-input"
+                          type="number"
+                          placeholder="Eg. 28"
+                          value={patientDetails.age}
+                          onChange={e => setPatientDetails({ ...patientDetails, age: e.target.value })}
+                          style={{
+                            marginBottom: 0,
+                            padding: '0.8rem 1rem',
+                            borderRadius: '10px',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '1rem'
+                          }}
+                        />
                       ) : (
-                        <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.age || '--'}</div>
+                        <div style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 500,
+                          color: '#0c4a6e',
+                          padding: '0.3rem 0'
+                        }}>{patientDetails.age || '--'}</div>
                       )}
                     </div>
 
                     <div>
-                      <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Gender</label>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.6rem',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em'
+                      }}>Gender</label>
                       {isEditingProfile ? (
-                        <select className="fs-input" value={patientDetails.gender} onChange={e => setPatientDetails({ ...patientDetails, gender: e.target.value })}>
+                        <select
+                          className="fs-input"
+                          value={patientDetails.gender}
+                          onChange={e => setPatientDetails({ ...patientDetails, gender: e.target.value })}
+                          style={{
+                            marginBottom: 0,
+                            padding: '0.8rem 1rem',
+                            borderRadius: '10px',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '1rem'
+                          }}
+                        >
                           <option value="">Select Gender</option>
                           <option>Male</option>
                           <option>Female</option>
                           <option>Other</option>
                         </select>
                       ) : (
-                        <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.gender || '--'}</div>
+                        <div style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 500,
+                          color: '#0c4a6e',
+                          padding: '0.3rem 0'
+                        }}>{patientDetails.gender || '--'}</div>
                       )}
                     </div>
 
                     <div>
-                      <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Blood Group</label>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.6rem',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em'
+                      }}>Blood Group</label>
                       {isEditingProfile ? (
-                        <select className="fs-input" value={patientDetails.bloodGroup} onChange={e => setPatientDetails({ ...patientDetails, bloodGroup: e.target.value })}>
+                        <select
+                          className="fs-input"
+                          value={patientDetails.bloodGroup}
+                          onChange={e => setPatientDetails({ ...patientDetails, bloodGroup: e.target.value })}
+                          style={{
+                            marginBottom: 0,
+                            padding: '0.8rem 1rem',
+                            borderRadius: '10px',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '1rem'
+                          }}
+                        >
                           <option>Select</option>
                           <option>A+</option>
                           <option>O+</option>
@@ -2295,25 +3530,84 @@ const LandingPage = () => {
                           <option>AB-</option>
                         </select>
                       ) : (
-                        <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.bloodGroup || '--'}</div>
+                        <div style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 500,
+                          color: '#0c4a6e',
+                          padding: '0.3rem 0'
+                        }}>{patientDetails.bloodGroup || '--'}</div>
                       )}
                     </div>
 
                     <div>
-                      <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Contact Number</label>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.6rem',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em'
+                      }}>Contact Number</label>
                       {isEditingProfile ? (
-                        <input className="fs-input" type="tel" placeholder="+91 9876543210" value={patientDetails.contact} onChange={e => setPatientDetails({ ...patientDetails, contact: e.target.value })} />
+                        <input
+                          className="fs-input"
+                          type="tel"
+                          placeholder="+91 9876543210"
+                          value={patientDetails.contact}
+                          onChange={e => setPatientDetails({ ...patientDetails, contact: e.target.value })}
+                          style={{
+                            marginBottom: 0,
+                            padding: '0.8rem 1rem',
+                            borderRadius: '10px',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '1rem'
+                          }}
+                        />
                       ) : (
-                        <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{patientDetails.contact || '--'}</div>
+                        <div style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 500,
+                          color: '#0c4a6e',
+                          padding: '0.3rem 0'
+                        }}>{patientDetails.contact || '--'}</div>
                       )}
                     </div>
 
                     <div style={{ gridColumn: '1/-1' }}>
-                      <label className="fs-label" style={{ color: isEditingProfile ? 'var(--primary)' : '#64748b' }}>Home Address</label>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.6rem',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em'
+                      }}>Home Address</label>
                       {isEditingProfile ? (
-                        <textarea className="fs-input" rows="3" placeholder="Enter full address for home collection..." value={patientDetails.savedLocation} onChange={e => setPatientDetails({ ...patientDetails, savedLocation: e.target.value })}></textarea>
+                        <textarea
+                          className="fs-input"
+                          rows="3"
+                          placeholder="Enter full address for home collection..."
+                          value={patientDetails.savedLocation}
+                          onChange={e => setPatientDetails({ ...patientDetails, savedLocation: e.target.value })}
+                          style={{
+                            marginBottom: 0,
+                            padding: '0.8rem 1rem',
+                            borderRadius: '10px',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '1rem',
+                            resize: 'vertical'
+                          }}
+                        ></textarea>
                       ) : (
-                        <div style={{ fontSize: '1.1rem', fontWeight: 500, lineHeight: 1.6 }}>{patientDetails.savedLocation || '--'}</div>
+                        <div style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 500,
+                          lineHeight: 1.6,
+                          color: '#0c4a6e',
+                          padding: '0.3rem 0'
+                        }}>{patientDetails.savedLocation || '--'}</div>
                       )}
                     </div>
                   </div>
@@ -2408,152 +3702,177 @@ const LandingPage = () => {
                 </div>
               </div>
 
-              <div className="form-card" style={{ maxWidth: '900px', background: 'transparent', boxShadow: 'none', border: 'none', padding: 0 }}>
-                {notifications.length > 0 ? (
-                  notifications.map(n => (
-                    <div key={n.id} className="list-item-card" style={{
-                      borderLeft: n.isRead ? '4px solid #cbd5e1' : '4px solid var(--primary)',
-                      background: n.isRead ? 'white' : 'linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)',
-                      marginBottom: '1rem',
-                      transition: 'all 0.3s',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      padding: '1.5rem',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}>
-                      {/* Decorative corner element for unread */}
-                      {!n.isRead && (
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          right: 0,
-                          width: '60px',
-                          height: '60px',
-                          background: 'linear-gradient(135deg, var(--primary) 0%, transparent 100%)',
-                          opacity: 0.1,
-                          borderRadius: '0 0 0 100%'
-                        }} />
-                      )}
+              <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+                {notifications.length > 0 ? (() => {
+                  const groups = groupNotifications(notifications);
+                  return Object.entries(groups).map(([label, notifs]) => {
+                    if (notifs.length === 0) return null;
+                    return (
+                      <div key={label}>
+                        <div className="notif-group-header">{label}</div>
+                        {notifs.map(n => {
+                          // Detect bill notification
+                          const isBill = n.message && n.message.startsWith('BILL_JSON:');
+                          let billData = null;
+                          if (isBill) {
+                            try { billData = JSON.parse(n.message.replace('BILL_JSON:', '')); } catch (e) { }
+                          }
 
-                      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start', flex: 1, zIndex: 1 }}>
-                        <div style={{
-                          background: n.isRead ? '#f1f5f9' : 'var(--primary-soft)',
-                          padding: '1rem',
-                          borderRadius: '12px',
-                          transition: 'all 0.3s',
-                          boxShadow: n.isRead ? 'none' : '0 4px 6px -1px rgba(14, 165, 233, 0.2)'
-                        }}>
-                          <IconCheckCircle size={24} color={n.isRead ? '#94a3b8' : 'var(--primary)'} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <p style={{
-                            margin: '0 0 0.75rem 0',
-                            fontWeight: n.isRead ? 500 : 700,
-                            fontSize: '1.1rem',
-                            color: n.isRead ? '#64748b' : '#1e293b',
-                            lineHeight: 1.6
-                          }}>
-                            {n.message}
-                          </p>
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            color: '#94a3b8',
-                            fontSize: '0.9rem'
-                          }}>
-                            <IconClock size={14} />
-                            <span>{n.date}</span>
-                          </div>
-                        </div>
-                      </div>
+                          const config = (() => {
+                            if (isBill) {
+                              return {
+                                title: 'Payment Receipt',
+                                icon: <IconCreditCard size={24} color="#10b981" />,
+                                bg: '#ecfdf5',
+                                type: 'bill'
+                              };
+                            }
+                            const msg = n.message.toLowerCase();
+                            if (msg.includes('confirmed') || msg.includes('appointment')) {
+                              return {
+                                title: 'Appointment Confirmed',
+                                icon: <IconCalendar size={24} color="#f97316" />,
+                                bg: '#fff7ed',
+                                type: 'appointment'
+                              };
+                            }
+                            if (msg.includes('report') || msg.includes('results')) {
+                              return {
+                                title: 'New Laboratory Results',
+                                icon: <IconMicroscope size={24} color="#3b82f6" />,
+                                bg: '#eff6ff',
+                                type: 'report'
+                              };
+                            }
+                            if (msg.includes('prescription')) {
+                              return {
+                                title: 'Prescription Refill Ready',
+                                icon: <IconClipboard size={24} color="#10b981" />,
+                                bg: '#ecfdf5',
+                                type: 'prescription'
+                              };
+                            }
+                            if (msg.includes('survey') || msg.includes('feedback')) {
+                              return {
+                                title: 'Post-Visit Survey',
+                                icon: <IconMessageCircle size={24} color="#f59e0b" />,
+                                bg: '#fffbeb',
+                                type: 'survey'
+                              };
+                            }
+                            return {
+                              title: 'Notification',
+                              icon: <IconBell size={24} color="var(--primary)" />,
+                              bg: 'var(--primary-light)',
+                              type: 'default'
+                            };
+                          })();
 
-                      <div style={{ display: 'flex', gap: '0.5rem', zIndex: 1 }}>
-                        {!n.isRead && (
-                          <button
-                            onClick={() => markNotificationRead(n.id)}
-                            title="Mark as Read"
-                            style={{
-                              border: '1px solid #dcfce7',
-                              background: '#f0fdf4',
-                              color: '#166534',
-                              padding: '0.6rem',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => {
-                              e.target.style.background = '#dcfce7';
-                              e.target.style.transform = 'scale(1.05)';
-                            }}
-                            onMouseOut={(e) => {
-                              e.target.style.background = '#f0fdf4';
-                              e.target.style.transform = 'scale(1)';
-                            }}
-                          >
-                            <IconCheckCircle size={18} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => clearNotification(n.id)}
-                          title="Clear"
-                          style={{
-                            border: '1px solid #fee2e2',
-                            background: '#fef2f2',
-                            color: '#ef4444',
-                            padding: '0.6rem',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseOver={(e) => {
-                            e.target.style.background = '#fee2e2';
-                            e.target.style.transform = 'scale(1.05)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.target.style.background = '#fef2f2';
-                            e.target.style.transform = 'scale(1)';
-                          }}
-                        >
-                          <IconX size={18} />
-                        </button>
+                          // Extract clean description
+                          const cleanDesc = isBill && billData
+                            ? `Payment of ₹${billData.payment_amount} for ${billData.tests_booked || 'tests'} at ${billData.lab_name} — ${billData.payment_status}`
+                            : n.message
+                              .replace(/\*/g, '')
+                              .replace(/✅|🏥|📅|🧪|💳|👤|🔑/g, '')
+                              .trim();
+
+                          return (
+                            <div key={n.id} className="notif-card" style={{ opacity: n.isRead ? 0.7 : 1 }}>
+                              <div className="notif-icon-container" style={{ background: config.bg }}>
+                                {config.icon}
+                              </div>
+                              <div className="notif-content">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                                  <div style={{ flex: 1 }}>
+                                    <h3 className="notif-title">{config.title}</h3>
+                                    <p className="notif-desc">
+                                      {cleanDesc}
+                                    </p>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                                    <span className="notif-time">{getRelativeTime(n.date)}</span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); clearNotification(n.id); }}
+                                      style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#64748b',
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        borderRadius: '4px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transition: 'all 0.2s'
+                                      }}
+                                      onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fee2e2'; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; }}
+                                      title="Delete notification"
+                                    >
+                                      <IconTrash size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {config.type === 'bill' && billData && (
+                                  <div className="notif-actions">
+                                    <button
+                                      className="notif-btn notif-btn-primary"
+                                      onClick={() => { setSelectedBillNotification(billData); setShowBillNotificationModal(true); markNotificationRead(n.id); }}
+                                    >
+                                      View Bill
+                                    </button>
+                                  </div>
+                                )}
+
+                                {config.type === 'report' && (
+                                  <div className="notif-actions">
+                                    <button className="notif-btn notif-btn-primary" onClick={() => setShowReportsModal(true)}>View All Reports</button>
+                                  </div>
+                                )}
+
+                                {!n.isRead && (
+                                  <button
+                                    className="notif-badge"
+                                    onClick={() => markNotificationRead(n.id)}
+                                    style={{
+                                      background: 'var(--primary)',
+                                      width: '10px',
+                                      height: '10px',
+                                      borderRadius: '50%',
+                                      padding: 0,
+                                      border: '2px solid white',
+                                      cursor: 'pointer'
+                                    }}
+                                    title="Mark as read"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
+                    );
+                  });
+                })() : (
+                  <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ background: 'var(--primary-light)', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                      <IconBell size={40} color="var(--primary)" />
                     </div>
-                  ))
-                ) : (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: '6rem 2rem',
-                    background: 'white',
-                    borderRadius: '24px',
-                    border: '2px dashed #e2e8f0'
-                  }}>
-                    <div style={{
-                      background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
-                      width: '100px',
-                      height: '100px',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 2rem auto',
-                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <IconBell size={48} color="#94a3b8" />
-                    </div>
-                    <h3 style={{ color: '#1e293b', marginBottom: '0.5rem', fontSize: '1.5rem' }}>No Notifications Yet</h3>
-                    <p style={{ color: '#64748b', fontSize: '1rem', margin: 0 }}>You're all caught up! New notifications will appear here.</p>
+                    <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>All Caught Up!</h3>
+                    <p style={{ color: '#64748b' }}>No new notifications at the moment. We'll alert you when something important happens.</p>
+                  </div>
+                )}
+
+                {notifications.length > 5 && (
+                  <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                    <button className="notif-btn notif-btn-secondary" style={{ padding: '0.75rem 2rem', borderRadius: '99px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      View Older Notifications <IconActivity size={16} style={{ transform: 'rotate(90deg)' }} />
+                    </button>
                   </div>
                 )}
               </div>
+
             </div>
           </div>
         )
@@ -2821,7 +4140,28 @@ const LandingPage = () => {
         <div className="labs-grid">
           {filteredLabs.length > 0 ? (
             filteredLabs.slice(0, visibleLimit).map((lab) => (
-              <div className="lab-card" key={lab.id} onClick={() => handleViewDetails(lab)} style={{ cursor: 'pointer' }}>
+              <div className="lab-card" key={lab.id} onClick={() => handleViewDetails(lab)} style={{ cursor: 'pointer', position: 'relative' }}>
+                {/* Working Hours Floating Tag */}
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  zIndex: 20,
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '5px 12px',
+                  borderRadius: '10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  color: '#0369a1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.5)'
+                }}>
+                  <IconClock size={14} /> {lab.openTime}
+                </div>
                 <div className="lab-image-placeholder">
                   <img src={lab.image} alt={lab.name} onError={(e) => e.target.style.display = 'none'} />
                 </div>
@@ -2835,7 +4175,6 @@ const LandingPage = () => {
                     {lab.tags.map((tag, i) => <span key={i}>{tag}</span>)}
                   </div>
                   <div className="price-row">
-                    <span className="price">Starts ₹{lab.price}</span>
                     <button className="book-btn" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }} onClick={(e) => { e.stopPropagation(); handleBookNow(lab); }}>Book Now</button>
                   </div>
                 </div>
@@ -3150,164 +4489,295 @@ const LandingPage = () => {
                   {paymentStep === 'select' && (
                     <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
 
-                      {/* Bill Summary - Compact Design */}
+                      {/* Bill Summary - Professional Invoice Design */}
                       <div style={{
-                        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                        padding: '1.2rem',
-                        borderRadius: '14px',
-                        border: '1px solid #e2e8f0',
-                        marginBottom: '1.5rem',
-                        boxShadow: '0 2px 8px -2px rgba(0, 0, 0, 0.05)'
+                        background: 'white',
+                        padding: '0',
+                        borderRadius: '12px',
+                        border: '2px solid #e2e8f0',
+                        marginBottom: '1rem',
+                        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+                        overflow: 'hidden'
                       }}>
-                        {/* Bill Header */}
+                        {/* Bill Header - Receipt Style */}
                         <div style={{
-                          marginBottom: '1rem',
-                          paddingBottom: '0.6rem',
-                          borderBottom: '1px solid #e2e8f0'
+                          background: 'linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%)',
+                          padding: '0.8rem 1rem',
+                          borderBottom: '2px dashed #e2e8f0',
+                          position: 'relative',
+                          overflow: 'hidden'
                         }}>
+                          {/* Decorative circles for receipt feel */}
+                          <div style={{
+                            position: 'absolute',
+                            left: '-6px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: '12px',
+                            height: '12px',
+                            background: '#f8fafc',
+                            borderRadius: '50%'
+                          }}></div>
+                          <div style={{
+                            position: 'absolute',
+                            right: '-6px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: '12px',
+                            height: '12px',
+                            background: '#f8fafc',
+                            borderRadius: '50%'
+                          }}></div>
+
                           <h3 style={{
                             margin: 0,
-                            fontSize: '1rem',
+                            fontSize: '0.95rem',
                             fontWeight: 700,
-                            color: '#0f172a',
+                            color: 'white',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.4rem'
+                            gap: '0.4rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
                           }}>
-                            <span style={{ fontSize: '1.1rem' }}>📋</span>
+                            <span style={{ fontSize: '1rem' }}>📋</span>
                             Bill Summary
                           </h3>
+                          <p style={{
+                            margin: '0.2rem 0 0 0',
+                            fontSize: '0.7rem',
+                            color: '#bae6fd',
+                            fontWeight: 500
+                          }}>Invoice for Laboratory Services</p>
                         </div>
 
-                        {/* Combined Details Card */}
+                        {/* Laboratory Info Card */}
                         <div style={{
-                          background: 'white',
-                          padding: '0.8rem',
-                          borderRadius: '10px',
-                          marginBottom: '0.8rem',
-                          border: '1px solid #e2e8f0'
+                          padding: '0.8rem 1rem',
+                          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                          borderBottom: '2px dashed #cbd5e1'
                         }}>
-                          {/* Top Row: Lab Name & Location */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
-                            <div>
-                              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <span style={{ fontSize: '1.1rem' }}>🏥</span>
-                                {selectedLab?.name || 'Lab'}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                color: '#0c4a6e',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                marginBottom: '0.5rem'
+                              }}>
+                                <span style={{ fontSize: '1rem' }}>🏥</span>
+                                {selectedLab?.name || 'Laboratory'}
                               </div>
                               {selectedLab?.location && (
-                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '1.5rem', marginTop: '0.1rem' }}>
-                                  📍 {selectedLab.location}
+                                <div style={{
+                                  fontSize: '0.85rem',
+                                  color: '#64748b',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem'
+                                }}>
+                                  <span>📍</span> {selectedLab.location}
                                 </div>
                               )}
                             </div>
-                            {/* Date & Time Compact */}
-                            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#475569', background: '#f8fafc', padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
-                              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end' }}>
-                                📅 {bookingDate ? new Date(bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '--'}
-                              </div>
-                              <div style={{ marginTop: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end' }}>
-                                ⏰ {bookingTime || '--'}
-                              </div>
-                            </div>
-                          </div>
 
-                          {/* Tests List - Compact */}
-                          <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.6rem' }}>
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                              Selected Tests ({selectedTests.length})
-                            </div>
+                            {/* Date & Time Badge */}
                             <div style={{
-                              display: 'flex',
-                              flexWrap: 'wrap',
-                              gap: '0.4rem'
+                              background: 'white',
+                              padding: '0.8rem 1rem',
+                              borderRadius: '10px',
+                              border: '2px solid #0ea5e9',
+                              boxShadow: '0 2px 8px rgba(14, 165, 233, 0.15)'
                             }}>
-                              {selectedTests.length > 0 ? selectedTests.map((test, idx) => (
-                                <span key={idx} style={{
-                                  fontSize: '0.75rem',
-                                  color: '#334155',
-                                  padding: '0.2rem 0.6rem',
-                                  background: '#f1f5f9',
-                                  borderRadius: '100px',
-                                  border: '1px solid #e2e8f0',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem'
+                              <div style={{
+                                fontSize: '0.75rem',
+                                color: '#64748b',
+                                fontWeight: 600,
+                                marginBottom: '0.3rem',
+                                textAlign: 'center'
+                              }}>Appointment</div>
+                              <div style={{
+                                fontWeight: 700,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                color: '#0c4a6e',
+                                fontSize: '0.9rem'
+                              }}>
+                                <span>📅</span> {bookingDate ? new Date(bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '--'}
+                              </div>
+                              <div style={{
+                                marginTop: '0.2rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                color: '#0c4a6e',
+                                fontSize: '0.9rem',
+                                fontWeight: 600
+                              }}>
+                                <span>⏰</span> {bookingTime || '--'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Tests List Section */}
+                        <div style={{ padding: '0.8rem 1rem', background: 'white' }}>
+                          <div style={{
+                            fontSize: '0.8rem',
+                            color: '#64748b',
+                            fontWeight: 700,
+                            marginBottom: '1rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            paddingBottom: '0.5rem',
+                            borderBottom: '1px solid #e2e8f0'
+                          }}>
+                            Selected Tests ({selectedTests.length})
+                          </div>
+
+                          {/* Tests Items */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {selectedTests.length > 0 ? selectedTests.map((test, idx) => (
+                              <div key={idx} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '0.5rem',
+                                background: '#f8fafc',
+                                borderRadius: '6px',
+                                border: '1px solid #e2e8f0'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700
+                                  }}>{idx + 1}</span>
+                                  <span style={{
+                                    fontSize: '0.9rem',
+                                    color: '#0f172a',
+                                    fontWeight: 600
+                                  }}>
+                                    {test.name || test}
+                                  </span>
+                                </div>
+                                <span style={{
+                                  fontSize: '0.95rem',
+                                  fontWeight: 700,
+                                  color: '#0c4a6e'
                                 }}>
-                                  <span style={{ color: '#10b981', fontSize: '0.6rem' }}>●</span>
-                                  {test.name || test}
+                                  ₹{getTestPrice(test.name || test, selectedLab?.id, labSettings?.tests, selectedLab.name)}
                                 </span>
-                              )) : (
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>None</span>
-                              )}
-                            </div>
+                              </div>
+                            )) : (
+                              <div style={{
+                                textAlign: 'center',
+                                padding: '2rem',
+                                color: '#94a3b8',
+                                fontSize: '0.9rem'
+                              }}>
+                                No tests selected
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* Bill Breakdown - Compact Row */}
-                        <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1rem' }}>
-                          <div style={{
-                            flex: 1,
-                            padding: '0.6rem',
-                            background: 'white',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Service Fee</span>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>₹{selectedLab?.price || 0}</span>
-                          </div>
-                          <div style={{
-                            flex: 1,
-                            padding: '0.6rem',
-                            background: 'white',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Tests Total</span>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>₹{selectedTests.length * 150}</span>
-                          </div>
-                        </div>
-
-                        {/* Total & Pay - Compact */}
+                        {/* Subtotal Section */}
                         <div style={{
+                          padding: '0.6rem 1rem',
+                          background: '#f8fafc',
                           borderTop: '1px dashed #cbd5e1',
-                          paddingTop: '1rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '1rem'
+                          borderBottom: '1px dashed #cbd5e1'
                         }}>
-                          {/* Total Display */}
-                          <div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>TOTAL TO PAY</div>
-                            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
-                              ₹{(selectedLab?.price || 0) + (selectedTests.length * 150)}
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                              Tests Subtotal
+                            </span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>
+                              ₹{selectedTests.reduce((total, test) => total + getTestPrice(test.name || test, selectedLab?.id, labSettings?.tests, selectedLab.name), 0)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Total Section - Highlighted */}
+                        <div style={{
+                          padding: '0.8rem 1rem',
+                          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                          borderTop: '3px solid #0ea5e9'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '0.8rem'
+                          }}>
+                            <div>
+                              <div style={{
+                                fontSize: '0.8rem',
+                                color: '#64748b',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '0.3rem'
+                              }}>Total Amount</div>
+                              <div style={{
+                                fontSize: '2rem',
+                                fontWeight: 800,
+                                color: '#0c4a6e',
+                                lineHeight: 1
+                              }}>
+                                ₹{selectedTests.reduce((total, test) => total + getTestPrice(test.name || test, selectedLab?.id, labSettings?.tests, selectedLab.name), 0)}
+                              </div>
+                            </div>
+
+                            {/* Payment Icon */}
+                            <div style={{
+                              width: '50px',
+                              height: '50px',
+                              background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)'
+                            }}>
+                              <span style={{ fontSize: '1.5rem' }}>💳</span>
                             </div>
                           </div>
 
-                          {/* Action Buttons Group */}
-                          <div style={{ display: 'flex', gap: '0.6rem', flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                          {/* Action Buttons */}
+                          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
                             {/* Cancel Button */}
                             <button
                               onClick={() => setShowPaymentModal(false)}
                               style={{
-                                padding: '0.8rem',
-                                borderRadius: '10px',
-                                background: 'transparent',
-                                color: '#94a3b8',
-                                border: 'none',
-                                fontSize: '0.9rem',
+                                padding: '0.7rem 1rem',
+                                borderRadius: '8px',
+                                background: 'white',
+                                color: '#64748b',
+                                border: '2px solid #e2e8f0',
+                                fontSize: '0.85rem',
                                 fontWeight: 600,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s'
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = '#f1f5f9'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'transparent'; }}
+                              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}
                             >
                               Cancel
                             </button>
@@ -3321,17 +4791,18 @@ const LandingPage = () => {
                                 setShowFeedbackModal(true);
                               }}
                               style={{
-                                padding: '0.8rem 1rem',
-                                borderRadius: '10px',
+                                flex: 1,
+                                padding: '0.7rem 1rem',
+                                borderRadius: '8px',
                                 background: 'white',
-                                color: '#0f172a',
-                                border: '1px solid #cbd5e1',
-                                fontSize: '0.9rem',
+                                color: '#0c4a6e',
+                                border: '2px solid #0ea5e9',
+                                fontSize: '0.85rem',
                                 fontWeight: 600,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s'
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#f0f9ff'; }}
                               onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; }}
                             >
                               Pay at Lab
@@ -3343,15 +4814,13 @@ const LandingPage = () => {
                                 initiateRazorpayPayment();
                               }}
                               style={{
-                                flex: 1,
-                                minWidth: '140px',
-                                maxWidth: '200px',
-                                padding: '0.8rem 1rem',
-                                borderRadius: '10px',
+                                flex: 1.5,
+                                padding: '0.7rem 1rem',
+                                borderRadius: '8px',
                                 background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                                 color: 'white',
                                 border: 'none',
-                                fontSize: '1rem',
+                                fontSize: '0.9rem',
                                 fontWeight: 700,
                                 cursor: 'pointer',
                                 boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
@@ -3375,8 +4844,6 @@ const LandingPage = () => {
                           </div>
                         </div>
                       </div>
-
-                      {/* Security Badges Removed */}
                     </div>
                   )}
 
@@ -3569,7 +5036,7 @@ const LandingPage = () => {
               </button>
             </div>
 
-            <div className="simple-chat-messages">
+            <div className="simple-chat-messages" ref={chatMessagesRef}>
               {chatMessages.map(msg => (
                 <div key={msg.id} className={`simple-msg ${msg.type}`}>
                   {msg.text}
@@ -3890,6 +5357,69 @@ const LandingPage = () => {
           </div>
         )
       }
+
+      {/* Bill Receipt Modal (from payment notification) */}
+      {showBillNotificationModal && selectedBillNotification && (() => {
+        const b = selectedBillNotification;
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, backdropFilter: 'blur(4px)' }}>
+            <div style={{ background: 'white', padding: '40px', borderRadius: '24px', width: '450px', maxWidth: '95vw', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', position: 'relative' }}>
+              <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                <div style={{ width: '60px', height: '60px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                </div>
+                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>Payment Receipt</h2>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>TXN: {b.payment_id || 'N/A'}</p>
+              </div>
+
+              <div style={{ borderTop: '1px dashed #e2e8f0', borderBottom: '1px dashed #e2e8f0', padding: '24px 0', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Patient Name</span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{b.patient_name || 'Patient'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Laboratory</span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{b.lab_name || 'N/A'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Date</span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{b.payment_date || 'N/A'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Time</span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{b.payment_time || 'N/A'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Tests Ordered</span>
+                  <span style={{ fontWeight: 600, color: '#0369a1', textAlign: 'right', maxWidth: '60%' }}>{b.tests_booked || 'General Checkup'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Payment Method</span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{b.payment_method || 'Online'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Total Amount</span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0369a1' }}>₹{b.payment_amount || 0}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => { setShowBillNotificationModal(false); setSelectedBillNotification(null); }}
+                style={{ width: '100%', padding: '14px', borderRadius: '14px', marginTop: '4px', border: 'none', background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)', color: 'white', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                Done &amp; Close
+              </button>
+              <button
+                onClick={() => window.print()}
+                style={{ width: '100%', marginTop: '12px', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <IconDownload size={16} /> Print Receipt
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div >
   );
 };

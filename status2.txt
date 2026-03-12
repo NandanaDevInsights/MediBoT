@@ -1,0 +1,96 @@
+﻿On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   diff.txt
+	deleted:    find_sherya.py
+	modified:   log.txt
+	modified:   server/backend/__pycache__/app.cpython-314.pyc
+	modified:   server/backend/app.py
+	modified:   server/backend/requirements.txt
+	deleted:    sherya_results.txt
+	modified:   src/pages/LandingPage.css
+	modified:   src/pages/LandingPage.jsx
+	modified:   src/pages/LoginPage.jsx
+	modified:   src/pages/SuperAdminDashboard.css
+	modified:   src/pages/SuperAdminDashboard.jsx
+	modified:   src/services/api.js
+	modified:   status.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.firebase/
+	.firebaserc
+	WORKING_HOURS_INTEGRATION.md
+	check_all.py
+	check_data_simple.py
+	check_data_usernames.py
+	check_lab_tests_db.py
+	check_labs_debug.py
+	check_reports_cols.py
+	check_reports_cols_v2.py
+	check_reports_detailed.py
+	check_reports_manual.py
+	check_reports_mysql.py
+	check_reports_v3.py
+	check_reports_v4.py
+	check_schema_local.py
+	check_structure_exact.py
+	debug_gemini.py
+	debug_output.txt
+	diff_super.txt
+	feedback_hits.txt
+	fetch_osm_labs.py
+	files.txt
+	filesizes.json
+	filetimes.json
+	filetimes.txt
+	firebase.json
+	fix_feedback_data.py
+	get_lab_feedback_schema.py
+	git_log.txt
+	lab_search_error.png
+	list_cols.py
+	manual_migrate.py
+	models_list.txt
+	old_super.jsx
+	old_super_utf8.jsx
+	osm_labs_list.txt
+	reports_cols.txt
+	reports_cols_v2.txt
+	reports_debug.txt
+	reports_debug_v2.txt
+	scan_feedback.py
+	schema_output.txt
+	search_numbers.py
+	server/backend/__pycache__/app.cpython-312.pyc
+	server/backend/__pycache__/db_connect.cpython-312.pyc
+	server/backend/__pycache__/super_admin_endpoints.cpython-312.pyc
+	server/backend/__pycache__/validators.cpython-312.pyc
+	server/backend/create_payments_table.py
+	server/backend/print_schema_payments.py
+	server/backend/static/reports/report_4_1772853279.pdf
+	server/backend/static/reports/report_4_1772853374.pdf
+	server/backend/static/reports/report_4_1772855888.pdf
+	server/backend/temp_check_payments.py
+	simulate_api.py
+	src/pages/LabAdminDashboard.css.bak.utf8.css
+	src/pages/LabAdminDashboard.css.bak_utf8.css
+	src/pages/LabAdminDashboard_backup_temp.jsx
+	src/pages/LabAdminDashboard_cecb037_utf8.jsx
+	src/pages/LabAdminDashboard_old_utf8.jsx
+	status2.txt
+	super_curr.jsx
+	tabs.txt
+	temp_downloads.txt
+	test_whatsapp_number.py
+	tmp_check_db.py
+	tmp_check_notifications.py
+	tmp_check_user.py
+	tmp_check_user_profile_schema.py
+	tmp_check_users_schema.py
+	working_hours_integration_instructions.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")

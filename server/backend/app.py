@@ -4309,14 +4309,51 @@ def get_admin_patients():
 
 
 
-@app.get("/api/view-report/<int:report_id>")
+@app.get("/api/view-report/<string:report_id>")
 def view_report(report_id):
-    """View a PDF report from the 'reports' table."""
+    """View a PDF report from the 'reports' table or a summary for an appointment."""
     conn = get_connection()
     try:
         cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT test_name, file_path, report_content FROM reports WHERE id = %s", (report_id,))
-        report = cur.fetchone()
+        
+        # Handle appointment-based lookups
+        if report_id.startswith('A-'):
+            appt_id = report_id.replace('A-', '')
+            # Try to find a report for this appointment first
+            cur.execute("SELECT id, test_name, file_path, report_content FROM reports WHERE appointment_id = %s LIMIT 1", (appt_id,))
+            report = cur.fetchone()
+            
+            if not report:
+                # If no report, return appointment details as a simple HTML/PDF placeholder
+                cur.execute("SELECT patient_name, test_type, tests, appointment_date, lab_name FROM appointments WHERE id = %s", (appt_id,))
+                appt = cur.fetchone()
+                if not appt:
+                    return "Entry not found", 404
+                
+                # For now, return a simple HTML summary as PDF-like view
+                test_display = appt['test_type'] or appt['tests'] or "Laboratory Test"
+                html_content = f"""
+                <html>
+                <body style="font-family: sans-serif; padding: 40px; line-height: 1.6;">
+                    <h1 style="color: #2563eb;">{appt['lab_name'] or 'MediBot Lab'}</h1>
+                    <hr/>
+                    <h2>Test Summary</h2>
+                    <p><strong>Patient Name:</strong> {appt['patient_name']}</p>
+                    <p><strong>Test Type:</strong> {test_display}</p>
+                    <p><strong>Date:</strong> {appt['appointment_date']}</p>
+                    <p><strong>Status:</strong> Completed</p>
+                    <br/><br/>
+                    <div style="padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <p style="color: #64748b; font-size: 0.9em;">This is an automatically generated summary of the laboratory appointment. The official detailed report may be pending or available through another channel.</p>
+                    </div>
+                </body>
+                </html>
+                """
+                return html_content, 200, {'Content-Type': 'text/html'}
+        else:
+            # Traditional report lookup
+            cur.execute("SELECT test_name, file_path, report_content FROM reports WHERE id = %s", (report_id,))
+            report = cur.fetchone()
         
         if not report:
             return "Report not found", 404
@@ -6948,7 +6985,7 @@ def get_all_reports():
                     "id": f"A-{a[0]}",
                     "patient_name": a[1] or "Guest",
                     "test_name": a[2] or a[6] or "Unknown Test",
-                    "file_path": "",
+                    "file_path": f"{request.host_url.rstrip('/')}/api/view-report/A-{a[0]}" if a[4] == 'Completed' else "",
                     "status": "Pending Upload" if a[4] == 'Confirmed' else "Available",
                     "uploaded_at": str(a[3]),
                     "patient_id": a[5],

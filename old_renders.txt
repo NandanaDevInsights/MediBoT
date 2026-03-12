@@ -1,0 +1,22 @@
+﻿831 const renderSidebar = () => {
+875 const renderHeader = () => (
+1034 const renderOverview = () => (
+1233 const renderAppointments = () => {
+1251 const renderAppointmentTable = (apptList, title, emptyMsg) => (
+1468 const renderTestOrders = () => {
+1681 const renderPatients = () => {
+1815 const renderReports = () => {
+1923 const renderStaff = () => {
+2421 const renderSettings = () => (
+2427 const renderProfile = () => (
+2500 const renderPatientHistoryModal = () => {
+2629 const renderPayments = () => {
+2708 {activeSection === 'Overview' && renderOverview()}
+2709 {activeSection === 'Appointments' && renderAppointments()}
+2710 {activeSection === 'Test Orders' && renderTestOrders()}
+2711 {activeSection === 'Patients' && renderPatients()}
+2712 {activeSection === 'Reports' && renderReports()}
+2713 {activeSection === 'Lab Staff' && renderStaff()}
+2714 {activeSection === 'Settings' && renderSettings()}
+2717 {activeSection === 'Payments' && renderPayments()}
+2722 {renderPatientHistoryModal()}

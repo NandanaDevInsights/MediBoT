@@ -1,0 +1,46 @@
+﻿2450 def ensure_lab_staff_table():
+2452 """Create lab_staff table if not exists with all required fields."""
+2462 CREATE TABLE IF NOT EXISTS lab_staff (
+2530 cur.execute("SHOW COLUMNS FROM lab_staff LIKE 'image_url'")
+2584 cur.execute(f"SHOW COLUMNS FROM lab_staff LIKE '{col}'")
+2588 print(f"[INFO] Adding missing column '{col}' to lab_staff...")
+2590 cur.execute(f"ALTER TABLE lab_staff ADD COLUMN {col} {dtype}")
+2598 cur.execute("ALTER TABLE lab_staff MODIFY COLUMN documents LONGTEXT")
+2600 cur.execute("ALTER TABLE lab_staff MODIFY COLUMN profile_photo LONGTEXT")
+2620 ensure_lab_staff_table()
+2676 def ensure_lab_feedback_table():
+2678 """Create lab_feedback table if not exists."""
+2688 CREATE TABLE IF NOT EXISTS lab_feedback (
+2720 cur.execute("SHOW COLUMNS FROM lab_feedback LIKE 'username'")
+2724 print("[INFO] Adding 'username' column to lab_feedback...")
+2726 cur.execute("ALTER TABLE lab_feedback ADD COLUMN username VARCHAR(255) AFTER patient_name")
+2730 cur.execute("UPDATE lab_feedback SET username = LOWER(REPLACE(patient_name, ' ', '_')) WHERE username IS NULL")
+2742 ensure_lab_feedback_table()
+2748 def get_lab_feedback():
+2816 FROM lab_feedback
+2888 def submit_lab_feedback():
+2906 INSERT INTO lab_feedback (lab_id, lab_name, patient_name, username, rating, comment, category)
+4049 @app.get("/api/admin/payments")
+4663 # Staff (lab_staff only has lab_id, no lab_name)
+4683 cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE status = 'Available' {where_clause_staff}", params_staff)
+4689 cur.execute(f"SELECT COUNT(*) FROM lab_staff WHERE 1=1 {where_clause_staff}", params_staff)
+4779 @app.route("/api/admin/appointments", methods=["GET", "POST"])
+5457 def ensure_lab_staff_extended_schema():
+5469 CREATE TABLE IF NOT EXISTS lab_staff (
+5553 cur.execute(f"SHOW COLUMNS FROM lab_staff LIKE '{col}'")
+5557 print(f"[INFO] Adding missing column '{col}' to lab_staff...")
+5559 cur.execute(f"ALTER TABLE lab_staff ADD COLUMN {col} {dtype}")
+5567 cur.execute("ALTER TABLE lab_staff MODIFY COLUMN image_url LONGTEXT")
+5587 ensure_lab_staff_extended_schema()
+5591 @app.post("/api/admin/staff")
+5638 INSERT INTO lab_staff (
+5719 @app.get("/api/admin/staff")
+5773 query = f"SELECT * FROM lab_staff {where_clause} ORDER BY staff_id DESC"
+5911 @app.put("/api/admin/staff/<int:staff_id>/status")
+5939 cur.execute("UPDATE lab_staff SET status = %s WHERE id = %s", (new_status, staff_id))
+6013 @app.route("/api/admin/profile", methods=["GET", "POST"])
+6159 @app.route("/api/admin/lab-settings", methods=["GET", "POST"])
+7572 @app.route("/webhook/whatsapp", methods=["POST"])
+8178 @app.route('/api/chat', methods=['POST'])
+8438 @app.route('/api/create-payment-order', methods=['POST'])
+8498 @app.route('/api/verify-payment', methods=['POST'])

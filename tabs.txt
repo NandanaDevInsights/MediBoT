@@ -1,0 +1,25 @@
+1122: if (activeTab === 'bookings') {
+1878: <button className="btn btn-primary" onClick={() => setActiveTab('labs')}>View All Monitor</button>
+1934: <button className="btn-action-eye" onClick={() => { setSelectedLab(lab); setActiveTab('lab-detail'); }} title="View Lab Dossier">
+2094: <button className="btn-action-eye" onClick={() => { setSelectedLab(lab); setActiveTab('lab-detail'); }} title="Open Detailed Report"><Icon.Eye /></button>
+2144: if (!selectedLab) { setActiveTab('labs'); return null; }
+2152: <button className="btn btn-ghost" onClick={() => setActiveTab('labs')} style={{ paddingLeft: 0 }}>
+4506: <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
+4514: <div className={`nav-item ${['labs', 'lab-detail'].includes(activeTab) ? 'active' : ''}`} onClick={() => setActiveTab('labs')}>
+4522: <div className={`nav-item ${activeTab === 'bookings' ? 'active' : ''}`} onClick={() => setActiveTab('bookings')}>
+4538: <div className={`nav-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+4546: <div className={`nav-item ${activeTab === 'tests' ? 'active' : ''}`} onClick={() => setActiveTab('tests')}>
+4554: <div className={`nav-item ${activeTab === 'revenue' ? 'active' : ''}`} onClick={() => setActiveTab('revenue')}>
+4570: <div className={`nav-item ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
+4578: <div className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+4590: <div className={`user-profile-mini ${activeTab === 'profile' ? 'active' : ''}`}
+4592: onClick={() => setActiveTab('profile')}
+4660: <button className="icon-btn" onClick={() => setActiveTab('notifications')}>
+4696: if (activeTab === 'labs') {
+4700: } else if (activeTab === 'bookings') {
+4704: } else if (activeTab === 'users') {
+4708: } else if (activeTab === 'tests') {
+4712: } else if (activeTab === 'notifications') {
+4716: } else if (activeTab === 'revenue') {
+4720: } else if (activeTab === 'settings') {
+4732: <Icon.Download /> {activeTab === 'overview' ? 'Print Summary' : 'Export Full Report'}

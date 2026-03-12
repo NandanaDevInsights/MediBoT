@@ -733,12 +733,104 @@ body {
 }
 
 .med-btn-gradient {
-    background: linear-gradient(90deg, var(--med-primary) 0%, var(--med-primary-hover) 100%);
+    background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%);
     color: white;
-    padding: 10px 20px;
+    padding: 10px 24px;
     border-radius: 99px;
-    box-shadow: 0 4px 6px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+    border: none;
+    font-weight: 700;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+.med-btn-gradient:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.5);
+    background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
+}
+
+.med-btn-primary {
+    background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.med-btn-primary:hover {
+    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+    box-shadow: 0 6px 15px rgba(14, 165, 233, 0.4);
+    transform: translateY(-1px);
+}
+
+/* --- Payment Ticket Format --- */
+.med-payments-tickets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 24px 0;
+}
+
+.med-payment-ticket {
+    background: var(--med-surface);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    border: 1px solid var(--med-border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.med-payment-ticket:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+}
+
+.med-payment-ticket::before,
+.med-payment-ticket::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: var(--med-bg);
+    border-radius: 50%;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 1px solid var(--med-border);
+}
+
+.med-payment-ticket::after {
+    left: auto;
+    right: -10px;
+}
+
+.ticket-divider {
+    border-top: 2px dashed var(--med-border);
+    margin: 16px 0;
+    position: relative;
+}
+
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.ticket-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--med-primary);
+}
+
+.ticket-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
 
 .med-btn-icon {
     background: transparent;
@@ -3934,3 +4026,318 @@ input:checked+.med-toggle-slider:before {
     background: #f8fafc;
     transform: translateX(4px);
 }
+
+/* --- Professional Tab Buttons --- */
+.med-btn-tab {
+    padding: 10px 24px;
+    border-radius: 99px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: 1px solid var(--med-border);
+    background: var(--med-surface);
+    color: var(--med-text-muted);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.med-btn-tab:hover {
+    color: var(--med-primary);
+    border-color: var(--med-primary);
+    background: var(--med-primary-light);
+}
+
+.med-btn-tab.active {
+    background: linear-gradient(135deg, var(--med-primary) 0%, var(--med-primary-hover) 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+/* --- Premium Toggle Switch --- */
+.med-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 22px;
+}
+
+.med-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.med-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.med-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked+.med-toggle-slider {
+    background-color: var(--med-primary);
+}
+
+input:checked+.med-toggle-slider:before {
+    transform: translateX(22px);
+}
+
+.med-loader-premium {
+    width: 48px;
+    height: 48px;
+    border: 5px solid var(--med-primary-light);
+    border-bottom-color: var(--med-primary);
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- Professional Modals --- */
+.med-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.med-modal {
+    background: var(--med-surface);
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 500px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.med-modal-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--med-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+}
+
+.med-modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--med-text-main);
+}
+
+.med-modal-body {
+    padding: 32px 24px;
+}
+
+.med-modal-footer {
+    padding: 16px 24px;
+    background: #f8fafc;
+    border-top: 1px solid var(--med-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.med-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--med-text-muted);
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.med-close-btn:hover {
+    background: var(--med-border);
+    color: var(--med-error);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.zoom-in-enter {
+    animation: modalZoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalZoomIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.bg-gray {
+    background: #64748b !important;
+    color: white !important;
+}
+
+.med-btn-gradient {
+    background: linear-gradient(135deg, var(--med-primary) 0%, var(--med-primary-hover) 100%);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.med-btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.4);
+}
+
+/* Token Management System Styles */
+.med-token-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px; /* For scrollbar */
+}
+
+/* Custom Scrollbar for Token Grid */
+.med-token-cards-grid::-webkit-scrollbar {
+    width: 6px;
+}
+.med-token-cards-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+.med-token-cards-grid::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+.med-token-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    border-radius: 16px;
+    cursor: pointer;
+    background: #ffffff;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid transparent;
+}
+
+.med-token-card:hover:not(:disabled) {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+.token-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    color: white;
+}
+
+.token-time {
+    font-size: 0.95rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+
+.token-status {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+}
+
+/* Available Card (Red) */
+.med-token-card.available {
+    border-color: #fee2e2;
+    background: #fff5f5;
+}
+.med-token-card.available .token-icon {
+    background: #ef4444;
+}
+.med-token-card.available .token-time,
+.med-token-card.available .token-status {
+    color: #ef4444;
+}
+
+/* Booked Card (Green) */
+.med-token-card.booked {
+    border-color: #dcfce7;
+    background: #f0fdf4;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+.med-token-card.booked .token-icon {
+    background: #10b981;
+}
+.med-token-card.booked .token-time,
+.med-token-card.booked .token-status {
+    color: #10b981;
+}
+
+.med-token-card:disabled {
+    pointer-events: none;
+}

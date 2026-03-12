@@ -1,0 +1,52 @@
+// Helper utility to fetch working hours for labs from backend
+// Add this code inside the LandingPage component, after the existing useEffects
+
+/*
+Add this useEffect after line 1276 in LandingPage.jsx:
+
+  // Fetch working hours for each lab from the backend
+  useEffect(() =\u003e {
+    if (labsList.length \u003e 0) {
+      const fetchWorkingHoursForLabs = async () =\u003e {
+        const updatedLabs = await Promise.all(labsList.map(async (lab) =\u003e {
+          try {
+            const response = await fetch(`http://localhost:5000/api/labs/working-hours?name=${encodeURIComponent(lab.name)}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.workingHours) {
+                const start = data.workingHours.start || '09:00';
+                const end = data.workingHours.end || '19:00';
+                
+                // Convert 24-hour format to 12-hour format with AM/PM
+                const formatTime = (time24) =\u003e {
+                  const [hours, minutes] = time24.split(':');
+                  const h = parseInt(hours);
+                  const ampm = h \u003e= 12 ? 'PM' : 'AM';
+                  const h12 = h % 12 || 12;
+                  return `${h12}:${minutes} ${ampm}`;
+                };
+                
+                return {
+                  ...lab,
+                  openTime: `${formatTime(start)} - ${formatTime(end)}`
+                };
+              }
+            }
+          } catch (e) {
+            console.error(`Error fetching working hours for ${lab.name}:`, e);
+          }
+          return lab;
+        }));
+        
+        // Only update if there were actual changes
+        const hasChanges = updatedLabs.some((lab, idx) =\u003e lab.openTime !== labsList[idx].openTime);
+        if (hasChanges) {
+          setLabsList(updatedLabs);
+        }
+      };
+      
+      fetchWorkingHoursForLabs();
+    }
+  }, [labsList.length]); // Only run when labs count changes to avoid infinite loop
+
+*/
