@@ -13,20 +13,16 @@ from mysql.connector import pooling
 load_dotenv()
 
 
-def get_pool():
-	"""Create or return a shared MySQL connection pool."""
-	return pooling.MySQLConnectionPool(
-		pool_name="medibot_flask_pool",
-		pool_size=int(os.environ.get("DB_POOL_SIZE", 5)),
-		host=os.environ.get("DB_HOST", "127.0.0.1"),
-		port=int(os.environ.get("DB_PORT", 3306)),
-		user=os.environ.get("DB_USER"),
-		password=os.environ.get("DB_PASSWORD"),
-		database=os.environ.get("DB_NAME"),
-		auth_plugin="mysql_native_password",
-		charset="utf8mb4",
-		use_unicode=True,
-	)
+
+def get_connection():
+    return mysql.connector.connect(
+        host=os.environ.get("MYSQLHOST"),
+        port=int(os.environ.get("MYSQLPORT", 3306)),
+        user=os.environ.get("MYSQLUSER"),
+        password=os.environ.get("MYSQLPASSWORD"),
+        database=os.environ.get("MYSQLDATABASE"),
+        ssl_mode=os.environ.get("MYSQL_SSL_MODE", "REQUIRED")
+    )
 
 
 pool = None
