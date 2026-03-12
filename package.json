@@ -1,4 +1,11 @@
-{
+"scripts": {
+  "start": "react-scripts start",
+  "build": "react-scripts build",
+  "test": "react-scripts test"
+}"scripts": {
+  "start": "vite",
+  "build": "vite build"
+}{
   "name": "medibot",
   "private": true,
   "version": "0.0.0",
